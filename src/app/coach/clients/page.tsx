@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation"
 import { CoachLayout } from "@/components/layout/CoachLayout"
-import { Card, CardTitle, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { ClientCard } from "@/components/ui/ClientCard"
 import { PageSkeleton } from "@/components/ui/skeleton"
 import { useCoachData } from "@/hooks/useCoach"
 import { useState } from "react"
+import { Plus, Search, Users } from "lucide-react"
+import Link from "next/link"
 
 export default function CoachClientsPage() {
   const { clients, loading } = useCoachData()
@@ -24,58 +25,53 @@ export default function CoachClientsPage() {
 
   return (
     <CoachLayout>
-      <h1 className="font-heading text-3xl text-white mb-2">CLIENTS</h1>
-      <p className="text-sm text-white/40 mb-4">{clients.length} total clients</p>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Users className="size-5 text-purple" />
+            <h1 className="font-heading text-2xl text-white">Clients</h1>
+          </div>
+          <p className="text-xs text-zinc-500 mt-0.5">{clients.length} total clients</p>
+        </div>
+        <Link
+          href="/coach/clients/new"
+          className="rounded-full bg-purple px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-colors flex items-center gap-1.5"
+        >
+          <Plus className="size-3.5" />
+          Add
+        </Link>
+      </div>
 
-      <Input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search clients..."
-        className="mb-4"
-      />
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search clients..."
+          className="pl-10"
+        />
+      </div>
 
       {filtered.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-2">
           {filtered.map((c) => (
-            <button
+            <ClientCard
               key={c.uid}
+              name={c.displayName}
+              email={c.email}
+              plan={c.plan}
+              status={c.status}
               onClick={() => router.push(`/coach/clients/${c.uid}`)}
-              className="text-left"
-            >
-              <Card className="transition-colors hover:border-gold/30 cursor-pointer">
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-base">{c.displayName}</CardTitle>
-                  <Badge
-                    variant={
-                      c.status === "active"
-                        ? "success"
-                        : c.status === "paused"
-                          ? "warning"
-                          : "outline"
-                    }
-                  >
-                    {c.status}
-                  </Badge>
-                </div>
-                <CardContent className="p-0">
-                  <p className="text-xs text-white/40 truncate">{c.email}</p>
-                  <div className="flex gap-3 mt-2 text-xs text-white/30">
-                    {c.goal && <span>Goal: {c.goal}</span>}
-                    {c.plan && <span>Plan: {c.plan}</span>}
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+            />
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent>
-            <p className="text-sm text-white/40 text-center py-8">
-              {search ? "No clients match your search" : "No clients yet"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
+          <Users className="size-10 text-zinc-600 mx-auto mb-3" />
+          <p className="text-sm text-zinc-500">
+            {search ? "No clients match your search" : "No clients yet"}
+          </p>
+        </div>
       )}
     </CoachLayout>
   )

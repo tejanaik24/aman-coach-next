@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { ClientLayout } from "@/components/layout/ClientLayout"
-import { Card, CardContent } from "@/components/ui/card"
 import { useAuth } from "@/hooks/useAuth"
 import { sendMessage, getMessages } from "@/lib/firestore"
 import { Message } from "@/types"
 import toast from "react-hot-toast"
+import { MessageSquare, Send } from "lucide-react"
 
 export default function MessagesPage() {
   const { user } = useAuth()
@@ -16,11 +16,11 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!user?.uid) return
-    const uid = user.uid
+    const uid = user?.uid
+    if (!uid) return
     async function load() {
       try {
-        const msgs = await getMessages(uid, "coach")
+        const msgs = await getMessages(uid!, "coach")
         setMessages(msgs)
       } catch {
         // ignore
@@ -54,60 +54,64 @@ export default function MessagesPage() {
 
   return (
     <ClientLayout>
-      <h1 className="font-heading text-3xl text-white mb-6">MESSAGES</h1>
+      <div className="flex items-center gap-2 mb-6">
+        <MessageSquare className="size-5 text-purple" />
+        <h1 className="font-heading text-2xl text-white">Messages</h1>
+      </div>
 
-      <Card className="mb-4">
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-white/40 text-center py-8">Loading...</p>
-          ) : messages.length > 0 ? (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {messages.reverse().map((m) => (
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 mb-4">
+        {loading ? (
+          <p className="text-sm text-zinc-500 text-center py-8">Loading...</p>
+        ) : messages.length > 0 ? (
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {[...messages].reverse().map((m) => (
+              <div
+                key={m.id}
+                className={`flex ${m.senderId === user?.uid ? "justify-end" : "justify-start"}`}
+              >
                 <div
-                  key={m.id}
-                  className={`flex ${m.senderId === user?.uid ? "justify-end" : "justify-start"}`}
+                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                    m.senderId === user?.uid
+                      ? "bg-purple text-white rounded-br-md"
+                      : "bg-zinc-800 text-zinc-200 rounded-bl-md"
+                  }`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                      m.senderId === user?.uid
-                        ? "bg-gold text-black"
-                        : "bg-white/10 text-white"
-                    }`}
-                  >
-                    {m.text}
-                    <p className="text-[10px] mt-1 opacity-50">
-                      {new Date(m.createdAt).toLocaleTimeString("en-IN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
+                  {m.text}
+                  <p className={`text-[10px] mt-1 ${
+                    m.senderId === user?.uid ? "text-purple-light/60" : "text-zinc-500"
+                  }`}>
+                    {m.createdAt ? new Date(m.createdAt).toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }) : ""}
+                  </p>
                 </div>
-              ))}
-              <div ref={bottomRef} />
-            </div>
-          ) : (
-            <p className="text-sm text-white/40 text-center py-8">
-              No messages yet. Start a conversation with your coach.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <MessageSquare className="size-8 text-zinc-600 mx-auto mb-2" />
+            <p className="text-sm text-zinc-500">No messages yet. Start a conversation!</p>
+          </div>
+        )}
+      </div>
 
       <div className="flex gap-2">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/40 outline-none transition-colors focus:border-gold focus:ring-1 focus:ring-gold/30"
+          className="flex-1 rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
           placeholder="Type a message..."
         />
         <button
           onClick={handleSend}
           disabled={!text.trim()}
-          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rounded-xl bg-purple px-4 py-3 text-white hover:bg-purple-dark disabled:opacity-50 transition-colors"
         >
-          Send
+          <Send className="size-5" />
         </button>
       </div>
     </ClientLayout>

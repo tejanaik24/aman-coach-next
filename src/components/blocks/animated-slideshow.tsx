@@ -98,7 +98,7 @@ export const TextStaggerHover = React.forwardRef<
             transition={{
               delay: index * 0.025,
               duration: 0.3,
-              ease: [0.25, 0.46, 0.45, 0.94],
+              ease: [0.25, 0.46, 0.45, 0.94] as const,
             }}
           >
             <motion.span
@@ -158,7 +158,7 @@ export const HoverSliderImage = React.forwardRef<
   return (
     <motion.img
       className={cn("inline-block align-middle", className)}
-      transition={{ ease: [0.33, 1, 0.68, 1], duration: 0.8 }}
+      transition={{ ease: [0.33, 1, 0.68, 1] as const, duration: 0.8 }}
       variants={clipPathVariants}
       animate={activeSlide === index ? "visible" : "hidden"}
       ref={ref}

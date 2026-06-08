@@ -4,16 +4,17 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
+import { LayoutDashboard, Users, ClipboardList, ClipboardCheck, IndianRupee, Users2, BarChart3, Send } from "lucide-react"
 
 const coachLinks = [
-  { href: "/coach/admin", label: "Dashboard", icon: "▦" },
-  { href: "/coach/clients", label: "Clients", icon: "◉" },
-  { href: "/coach/plans", label: "Plans", icon: "◈" },
-  { href: "/coach/checkins", label: "Check-ins", icon: "◉" },
-  { href: "/coach/payments", label: "Payments", icon: "₨" },
-  { href: "/coach/leads", label: "Leads", icon: "○" },
-  { href: "/coach/analytics", label: "Analytics", icon: "▤" },
-  { href: "/coach/broadcast", label: "Broadcast", icon: "☰" },
+  { href: "/coach/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/coach/clients", label: "Clients", icon: Users },
+  { href: "/coach/plans", label: "Plans", icon: ClipboardList },
+  { href: "/coach/checkins", label: "Check-ins", icon: ClipboardCheck },
+  { href: "/coach/payments", label: "Payments", icon: IndianRupee },
+  { href: "/coach/leads", label: "Leads", icon: Users2 },
+  { href: "/coach/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/coach/broadcast", label: "Broadcast", icon: Send },
 ]
 
 export function Sidebar() {
@@ -21,15 +22,16 @@ export function Sidebar() {
   const { user } = useAuth()
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-full w-56 border-r border-white/10 bg-black/95 backdrop-blur-md lg:block">
-      <div className="flex h-16 items-center border-b border-white/10 px-4">
-        <Link href="/" className="font-heading text-lg text-gold">
+    <aside className="fixed left-0 top-0 z-40 hidden h-full w-56 border-r border-zinc-800 bg-black/95 backdrop-blur-md lg:block">
+      <div className="flex h-14 items-center border-b border-zinc-800 px-4">
+        <Link href="/" className="font-heading text-lg text-white tracking-wider">
           AK FITNESS
         </Link>
       </div>
       <nav className="space-y-1 p-3">
         {coachLinks.map((link) => {
           const active = pathname === link.href || pathname.startsWith(link.href + "/")
+          const Icon = link.icon
           return (
             <Link
               key={link.href}
@@ -37,18 +39,18 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-gold/10 text-gold"
-                  : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                  ? "bg-purple/10 text-purple"
+                  : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
               )}
             >
-              <span className="text-lg">{link.icon}</span>
+              <Icon className="size-4" />
               <span>{link.label}</span>
             </Link>
           )
         })}
       </nav>
-      <div className="absolute bottom-4 left-3 right-3 border-t border-white/10 pt-3">
-        <div className="px-3 text-xs text-white/30 truncate">
+      <div className="absolute bottom-4 left-3 right-3 border-t border-zinc-800 pt-3">
+        <div className="px-3 text-xs text-zinc-500 truncate">
           {user?.email}
         </div>
       </div>

@@ -1,7 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import { motion } from "motion/react"
 import { PublicLayout } from "@/components/layout/PublicLayout"
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback"
+import { ArrowRight } from "lucide-react"
 
 const transformations = [
   { name: "Client A", program: "Contest Prep", result: "-12 kg in 16 weeks" },
@@ -15,39 +18,46 @@ export default function TransformationsPage() {
     <PublicLayout>
       <section className="px-4 py-20">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-light mb-2">
             / transformations
           </p>
           <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl text-white leading-none mb-4">
             REAL RESULTS
           </h1>
-          <p className="text-sm text-white/50 mb-12">
+          <p className="text-sm text-zinc-400 mb-12">
             Every transformation is a story of dedication, consistency, and the right guidance.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {transformations.map((t, i) => (
-              <div
+              <motion.div
                 key={i}
-                className="rounded-xl border border-white/10 bg-white/[0.02] p-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6"
               >
-                <div className="mb-4 aspect-[4/3] rounded-lg bg-white/5 flex items-center justify-center">
-                  <span className="text-4xl text-white/10">📷</span>
+                <div className="mb-4 aspect-[4/3] rounded-xl bg-zinc-900 overflow-hidden flex items-center justify-center border border-zinc-800">
+                  <ImageWithFallback
+                    src=""
+                    alt={`${t.name} transformation`}
+                    className="size-full"
+                  />
                 </div>
-                <p className="font-heading text-xl text-gold">{t.name}</p>
-                <p className="text-xs text-white/30 mt-1">{t.program}</p>
-                <p className="text-sm text-white/60 mt-2">{t.result}</p>
-              </div>
+                <p className="font-heading text-xl text-purple-light">{t.name}</p>
+                <p className="text-xs text-zinc-500 mt-1">{t.program}</p>
+                <p className="text-sm text-zinc-300 mt-2">{t.result}</p>
+              </motion.div>
             ))}
           </div>
           <div className="mt-12 text-center">
-            <p className="text-sm text-white/40 mb-4">
+            <p className="text-sm text-zinc-500 mb-4">
               Want results like these? Start your journey today.
             </p>
             <Link
               href="/contact"
-              className="inline-block rounded-lg bg-gold px-8 py-3 text-base font-semibold text-black"
+              className="inline-flex items-center gap-2 rounded-full bg-purple px-8 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-all"
             >
-              Start Your Transformation
+              Start Your Transformation <ArrowRight className="size-4" />
             </Link>
           </div>
         </div>

@@ -3,23 +3,23 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Dumbbell, ClipboardCheck, BarChart3, User } from "lucide-react"
+import { Users, ClipboardCheck, Users2, IndianRupee, Settings } from "lucide-react"
 
-const clientLinks = [
-  { href: "/client/dashboard", label: "Home", icon: Home },
-  { href: "/client/workout", label: "Workouts", icon: Dumbbell },
-  { href: "/client/checkin", label: "Check-in", icon: ClipboardCheck },
-  { href: "/client/progress", label: "Progress", icon: BarChart3 },
-  { href: "/client/profile", label: "Profile", icon: User },
+const coachLinks = [
+  { href: "/coach/clients", label: "Clients", icon: Users },
+  { href: "/coach/checkins", label: "Check-ins", icon: ClipboardCheck },
+  { href: "/coach/leads", label: "Leads", icon: Users2 },
+  { href: "/coach/payments", label: "Payments", icon: IndianRupee },
+  { href: "/coach/admin", label: "Settings", icon: Settings },
 ]
 
-export function BottomNav() {
+export function CoachBottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-black/95 backdrop-blur-md">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-black/95 backdrop-blur-md lg:hidden">
       <div className="mx-auto flex max-w-lg justify-around px-2 py-1">
-        {clientLinks.map((link) => {
+        {coachLinks.map((link) => {
           const active = pathname.startsWith(link.href)
           const Icon = link.icon
           return (

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Bebas_Neue, Barlow } from "next/font/google"
+import { Bebas_Neue, DM_Sans } from "next/font/google"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "react-hot-toast"
 import "./globals.css"
@@ -10,7 +10,7 @@ const bebasNeue = Bebas_Neue({
   weight: "400",
 })
 
-const barlow = Barlow({
+const dmSans = DM_Sans({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bebasNeue.variable} ${barlow.variable} dark h-full antialiased`}
+      className={`${bebasNeue.variable} ${dmSans.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -61,8 +61,8 @@ export default function RootLayout({
                 color: "#fff",
                 border: "1px solid rgba(255,255,255,0.1)",
               },
-              success: { iconTheme: { primary: "#FFB800", secondary: "#000" } },
-              error: { iconTheme: { primary: "#E8501A", secondary: "#fff" } },
+              success: { iconTheme: { primary: "#7C3AED", secondary: "#fff" } },
+              error: { iconTheme: { primary: "#EF4444", secondary: "#fff" } },
             }}
           />
           {children}

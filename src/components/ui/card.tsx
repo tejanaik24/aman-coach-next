@@ -5,7 +5,7 @@ function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     <div
       data-slot="card"
       className={cn(
-        "rounded-xl border border-white/10 bg-black/40 p-4 backdrop-blur-sm",
+        "rounded-2xl border border-zinc-800 bg-zinc-900 p-4",
         className
       )}
       {...props}
@@ -21,7 +21,7 @@ function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElem
   return (
     <h3
       data-slot="card-title"
-      className={cn("font-heading text-lg text-gold", className)}
+      className={cn("font-heading text-lg text-white", className)}
       {...props}
     />
   )
