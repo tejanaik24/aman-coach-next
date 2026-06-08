@@ -7,6 +7,7 @@ import { PageSkeleton } from "@/components/ui/skeleton"
 import { useCoachData } from "@/hooks/useCoach"
 import { IndianRupee, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
+import { generateInvoice } from "@/lib/invoice"
 
 const months = [
   "January", "February", "March", "April", "May", "June",
@@ -76,16 +77,33 @@ export default function CoachPaymentsPage() {
 
       {filtered.length > 0 ? (
         <div className="space-y-2">
-          {filtered.map((p) => (
-            <PaymentRow
-              key={p.id}
-              clientName={clientMap.get(p.clientId)?.displayName}
-              amount={p.amount}
-              date={p.date}
-              status={p.status}
-              plan={p.plan}
-            />
-          ))}
+          {filtered.map((p) => {
+            const client = clientMap.get(p.clientId)
+            return (
+              <PaymentRow
+                key={p.id}
+                clientName={client?.displayName}
+                clientEmail={client?.email}
+                amount={p.amount}
+                date={p.date}
+                status={p.status}
+                plan={p.plan}
+                month={p.month}
+                onDownload={() => {
+                  const doc = generateInvoice({
+                    invoiceId: p.invoiceId || `INV-${p.id.slice(0, 8)}`,
+                    clientName: client?.displayName || "Client",
+                    clientEmail: client?.email || "",
+                    amount: p.amount,
+                    month: p.month || months[monthIdx],
+                    plan: p.plan || "Coaching",
+                    date: p.date,
+                  })
+                  doc.save(`invoice-${(client?.displayName || "client").replace(/\s+/g, "-").toLowerCase()}-${format(p.date, "yyyy-MM")}.pdf`)
+                }}
+              />
+            )
+          })}
         </div>
       ) : (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">

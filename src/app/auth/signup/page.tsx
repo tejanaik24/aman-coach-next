@@ -36,9 +36,10 @@ export default function SignupPage() {
     }
     setLoading(true)
     try {
-      await register(form.email, form.password, form.name, "client")
+      const { role: userRole } = await register(form.email, form.password, form.name, "client")
       toast.success("Account created!")
-      router.push("/client/dashboard")
+      if (userRole === "coach") router.push("/coach/admin")
+      else router.push("/client/dashboard")
     } catch (err: unknown) {
       toast.error((err as Error).message || "Signup failed")
     } finally {

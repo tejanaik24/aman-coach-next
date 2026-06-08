@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   email       TEXT NOT NULL,
   display_name TEXT NOT NULL,
   photo_url   TEXT, phone TEXT,
+  role        TEXT NOT NULL DEFAULT 'client' CHECK (role IN ('client','coach','admin')),
   coach_id    TEXT NOT NULL DEFAULT '',
   goal        TEXT, height NUMERIC, weight NUMERIC, age INTEGER,
   gender      TEXT CHECK (gender IN ('male','female','other')),

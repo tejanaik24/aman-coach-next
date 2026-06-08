@@ -30,10 +30,10 @@ const itemVariants = {
 }
 
 export default function ClientDashboardPage() {
-  const { user } = useAuth()
+  const { profile } = useAuth()
   const { client, checkins, payments } = useClientData()
 
-  const firstName = user?.displayName?.split(" ")[0] || "there"
+  const firstName = profile?.displayName?.split(" ")[0] || "there"
   const lastCheckin = checkins[0]
   const latestPayment = payments[0]
 

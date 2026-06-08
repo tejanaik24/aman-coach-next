@@ -7,11 +7,14 @@ import { Download } from "lucide-react"
 
 interface PaymentRowProps {
   clientName?: string
+  clientEmail?: string
   amount: number
   date: Date
   status: "pending" | "completed" | "failed" | "refunded"
   plan?: string
+  month?: string
   onMarkPaid?: () => void
+  onDownload?: () => void
 }
 
 const statusConfig = {
@@ -21,7 +24,7 @@ const statusConfig = {
   refunded: { variant: "outline" as const, label: "Refunded" },
 }
 
-export function PaymentRow({ clientName, amount, date, status, plan, onMarkPaid }: PaymentRowProps) {
+export function PaymentRow({ clientName, clientEmail, amount, date, status, plan, month, onMarkPaid, onDownload }: PaymentRowProps) {
   const config = statusConfig[status]
 
   return (
@@ -41,7 +44,7 @@ export function PaymentRow({ clientName, amount, date, status, plan, onMarkPaid 
       <div className="flex items-center gap-2">
         <Badge variant={config.variant}>{config.label}</Badge>
         {status === "completed" && (
-          <button className="text-zinc-400 hover:text-white transition-colors">
+          <button onClick={onDownload} className="text-zinc-400 hover:text-white transition-colors">
             <Download className="size-4" />
           </button>
         )}

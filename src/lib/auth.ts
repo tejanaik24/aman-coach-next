@@ -1,25 +1,11 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  updateProfile,
-  User,
-} from "firebase/auth"
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
-import firebase from "./firebase"
-import { AppUser } from "@/types"
+import { getSupabaseClient } from "./supabase"
+import type { AppUser } from "@/types"
+import type { Session } from "@supabase/supabase-js"
 
-const { auth, db } = firebase
-
-function ensureAuth() {
-  if (!auth) throw new Error("Firebase Auth not initialized. Check your config.")
-  return auth
-}
-
-function ensureDb() {
-  if (!db) throw new Error("Firebase Firestore not initialized. Check your config.")
-  return db
+function sb() {
+  const c = getSupabaseClient()
+  if (!c) throw new Error("Supabase not configured")
+  return c
 }
 
 export async function signUp(
@@ -28,45 +14,74 @@ export async function signUp(
   displayName: string,
   role: "client" | "coach" = "client"
 ) {
-  const a = ensureAuth()
-  const d = ensureDb()
-  const cred = await createUserWithEmailAndPassword(a, email, password)
-  await updateProfile(cred.user, { displayName })
-  const userData: AppUser = {
-    uid: cred.user.uid,
+  const { data, error } = await sb().auth.signUp({
     email,
-    displayName,
-    role,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-  await setDoc(doc(d, "users", cred.user.uid), {
-    ...userData,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    password,
+    options: { data: { display_name: displayName, role } },
   })
-  return cred.user
+  if (error) throw error
+  if (!data.user) throw new Error("Signup failed")
+
+  const { error: insertError } = await sb().from("users").upsert({
+    id: data.user.id,
+    email,
+    display_name: displayName,
+    role,
+    status: "active",
+  })
+  if (insertError) throw insertError
+
+  return data.user
 }
 
 export async function signIn(email: string, password: string) {
-  const a = ensureAuth()
-  const cred = await signInWithEmailAndPassword(a, email, password)
-  return cred.user
+  const { data, error } = await sb().auth.signInWithPassword({ email, password })
+  if (error) throw error
+  return data.user
 }
 
 export async function signOut() {
-  const a = ensureAuth()
-  await firebaseSignOut(a)
+  const { error } = await sb().auth.signOut()
+  if (error) throw error
 }
 
 export async function getUserRole(uid: string): Promise<"client" | "coach" | "admin" | null> {
-  const d = ensureDb()
-  const snap = await getDoc(doc(d, "users", uid))
-  if (!snap.exists()) return null
-  return snap.data().role as "client" | "coach" | "admin"
+  const { data, error } = await sb()
+    .from("users")
+    .select("role")
+    .eq("id", uid)
+    .single()
+  if (error || !data) return null
+  return data.role as "client" | "coach" | "admin"
 }
 
-export function onAuthChange(callback: (user: User | null) => void) {
-  const a = ensureAuth()
-  return onAuthStateChanged(a, callback)
+export async function getUserProfile(uid: string): Promise<AppUser | null> {
+  const { data, error } = await sb()
+    .from("users")
+    .select("*")
+    .eq("id", uid)
+    .single()
+  if (error || !data) return null
+  return {
+    uid: data.id,
+    email: data.email,
+    displayName: data.display_name,
+    photoURL: data.photo_url,
+    phone: data.phone,
+    role: data.role || "client",
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at),
+  }
+}
+
+export function onAuthChange(callback: (user: import("@supabase/supabase-js").User | null) => void) {
+  const client = getSupabaseClient()
+  if (!client) {
+    callback(null)
+    return () => {}
+  }
+  const { data: { subscription } } = client.auth.onAuthStateChange((_event: string, session: Session | null) => {
+    callback(session?.user ?? null)
+  })
+  return () => subscription.unsubscribe()
 }

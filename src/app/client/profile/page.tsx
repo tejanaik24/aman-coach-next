@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
+  const { user, profile, logout } = useAuth()
   const { client, payments, loading } = useClientData()
   const router = useRouter()
 
@@ -21,7 +21,7 @@ export default function ProfilePage() {
 
   if (loading) return <ClientLayout><PageSkeleton /></ClientLayout>
 
-  const initials = user?.displayName
+  const initials = profile?.displayName
     ?.split(" ")
     .map(n => n[0])
     .join("")
@@ -38,7 +38,7 @@ export default function ProfilePage() {
           <div className="size-20 rounded-full bg-purple/20 flex items-center justify-center mb-4">
             <span className="font-heading text-3xl text-purple-light">{initials}</span>
           </div>
-          <h1 className="font-heading text-xl text-white">{user?.displayName}</h1>
+          <h1 className="font-heading text-xl text-white">{profile?.displayName || user?.email}</h1>
           <p className="text-sm text-zinc-500">{user?.email}</p>
         </div>
 

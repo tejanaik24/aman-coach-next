@@ -23,11 +23,11 @@ export default function PaymentsPage() {
   const [selected, setSelected] = useState<string | null>(null)
 
   const handlePay = async (plan: string, amount: number) => {
-    if (!user?.uid) return
+    if (!user?.id) return
     setSelected(plan)
     try {
       await addPayment({
-        clientId: user.uid,
+        clientId: user.id,
         coachId: "",
         amount,
         currency: "INR",

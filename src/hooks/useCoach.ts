@@ -25,7 +25,7 @@ export function useCoachData() {
       return
     }
 
-    const cid: string = user.uid
+    const cid: string = user.id
     async function load() {
       try {
         const [cl, ch, p, l] = await Promise.all([

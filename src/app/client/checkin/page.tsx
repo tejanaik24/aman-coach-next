@@ -70,11 +70,11 @@ export default function CheckinPage() {
   }
 
   const handleSubmit = async () => {
-    if (!user?.uid) return
+    if (!user?.id) return
     setSubmitting(true)
     try {
       await addCheckin({
-        clientId: user.uid,
+        clientId: user.id,
         coachId: "",
         date: new Date(),
         weight: form.weight ? Number(form.weight) : undefined,

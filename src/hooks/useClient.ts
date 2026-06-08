@@ -7,7 +7,7 @@ import { Client, Checkin, Payment, WorkoutPlan, DietPlan } from "@/types"
 
 export function useClientData(clientId?: string) {
   const { user } = useAuth()
-  const uid = clientId || user?.uid
+  const uid = clientId || user?.id
   const [client, setClient] = useState<Client | null>(null)
   const [checkins, setCheckins] = useState<Checkin[]>([])
   const [payments, setPayments] = useState<Payment[]>([])

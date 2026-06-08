@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Bebas_Neue, DM_Sans } from "next/font/google"
 import { AuthProvider } from "@/contexts/AuthContext"
+import { StoreInitializer } from "@/components/StoreInitializer"
 import { Toaster } from "react-hot-toast"
 import "./globals.css"
 

@@ -22,7 +22,7 @@ export default function ContactPage() {
     }
     setSubmitting(true)
     try {
-      const { addLead } = await import("@/lib/firestore")
+      const { addLead } = await import("@/lib/store")
       await addLead({
         name: form.name,
         email: form.email,

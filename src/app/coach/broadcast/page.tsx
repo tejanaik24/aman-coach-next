@@ -13,11 +13,11 @@ export default function CoachBroadcastPage() {
   const [sending, setSending] = useState(false)
 
   const handleBroadcast = async () => {
-    if (!text.trim() || !user?.uid) return
+    if (!text.trim() || !user?.id) return
     setSending(true)
     try {
       await sendMessage({
-        senderId: user.uid,
+        senderId: user.id,
         receiverId: "all-clients",
         text: text.trim(),
         read: false,

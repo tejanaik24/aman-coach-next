@@ -1,8 +1,8 @@
 "use client"
 
 import { createContext, useEffect, useState, ReactNode } from "react"
-import { User } from "firebase/auth"
-import { onAuthChange, getUserRole, signUp, signIn, signOut } from "@/lib/auth"
+import type { User } from "@supabase/supabase-js"
+import { onAuthChange, getUserRole, getUserProfile, signUp, signIn, signOut } from "@/lib/auth"
 import { AppUser } from "@/types"
 
 interface AuthContextValue {
@@ -10,13 +10,13 @@ interface AuthContextValue {
   profile: AppUser | null
   role: "client" | "coach" | "admin" | null
   loading: boolean
-  login: (email: string, password: string) => Promise<User>
+  login: (email: string, password: string) => Promise<{ user: User; role: string | null }>
   register: (
     email: string,
     password: string,
     name: string,
     role: "client" | "coach"
-  ) => Promise<User>
+  ) => Promise<{ user: User; role: string | null }>
   logout: () => Promise<void>
 }
 
@@ -25,12 +25,8 @@ export const AuthContext = createContext<AuthContextValue>({
   profile: null,
   role: null,
   loading: true,
-  login: async () => {
-    throw new Error("AuthContext not initialized")
-  },
-  register: async () => {
-    throw new Error("AuthContext not initialized")
-  },
+  login: async () => { throw new Error("AuthContext not initialized") },
+  register: async () => { throw new Error("AuthContext not initialized") },
   logout: async () => {},
 })
 
@@ -41,19 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsub = onAuthChange(async (fbUser) => {
-      setUser(fbUser)
-      if (fbUser) {
-        const r = await getUserRole(fbUser.uid)
-        setRole(r)
-        setProfile({
-          uid: fbUser.uid,
-          email: fbUser.email || "",
-          displayName: fbUser.displayName || "",
-          role: r || "client",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
+    const unsub = onAuthChange(async (supabaseUser) => {
+      setUser(supabaseUser)
+      if (supabaseUser) {
+        const p = await getUserProfile(supabaseUser.id)
+        setProfile(p)
+        setRole(p?.role || null)
       } else {
         setRole(null)
         setProfile(null)
@@ -65,7 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const u = await signIn(email, password)
-    return u
+    const p = await getUserProfile(u.id)
+    setProfile(p)
+    setRole(p?.role || null)
+    return { user: u, role: p?.role || null }
   }
 
   const register = async (
@@ -75,11 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     r: "client" | "coach"
   ) => {
     const u = await signUp(email, password, name, r)
-    return u
+    const p = await getUserProfile(u.id)
+    setProfile(p)
+    setRole(p?.role || null)
+    return { user: u, role: p?.role || null }
   }
 
   const logout = async () => {
     await signOut()
+    setUser(null)
+    setProfile(null)
+    setRole(null)
   }
 
   return (

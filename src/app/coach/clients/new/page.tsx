@@ -5,6 +5,7 @@ import { CoachLayout } from "@/components/layout/CoachLayout"
 import toast from "react-hot-toast"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, UserPlus } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 const planTypes = [
   { value: "fat-loss", label: "Fat Loss" },
@@ -22,11 +23,13 @@ const planDurations = [
 
 export default function AddClientPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     name: "",
     phone: "",
     email: "",
+    password: "",
     planType: "fat-loss",
     duration: "3",
     startDate: new Date().toISOString().split("T")[0],
@@ -35,17 +38,33 @@ export default function AddClientPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.phone || !form.email) {
+    if (!form.name || !form.phone || !form.email || !form.password) {
       toast.error("Please fill in all required fields")
       return
     }
     setLoading(true)
-    // TODO: Create Firebase auth user + Firestore record
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/create-client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          display_name: form.name,
+          phone: form.phone,
+          plan: form.planType,
+          coach_id: user?.id,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to create client")
       toast.success("Client added successfully!")
-      setLoading(false)
       router.push("/coach/clients")
-    }, 1500)
+    } catch (err: unknown) {
+      toast.error((err as Error).message || "Failed to add client")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -89,6 +108,17 @@ export default function AddClientPage() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
               placeholder="client@email.com"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-500 font-medium mb-1.5 uppercase tracking-wider">Temporary Password *</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              placeholder="Set initial password"
+              minLength={6}
             />
           </div>
         </div>

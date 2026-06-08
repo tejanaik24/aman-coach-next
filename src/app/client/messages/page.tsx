@@ -16,7 +16,7 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const uid = user?.uid
+    const uid = user?.id
     if (!uid) return
     async function load() {
       try {
@@ -36,16 +36,16 @@ export default function MessagesPage() {
   }, [messages])
 
   const handleSend = async () => {
-    if (!text.trim() || !user?.uid) return
+    if (!text.trim() || !user?.id) return
     try {
       await sendMessage({
-        senderId: user.uid,
+        senderId: user.id,
         receiverId: "coach",
         text: text.trim(),
         read: false,
       })
       setText("")
-      const msgs = await getMessages(user.uid, "coach")
+      const msgs = await getMessages(user.id, "coach")
       setMessages(msgs)
     } catch {
       toast.error("Failed to send message")
@@ -67,18 +67,18 @@ export default function MessagesPage() {
             {[...messages].reverse().map((m) => (
               <div
                 key={m.id}
-                className={`flex ${m.senderId === user?.uid ? "justify-end" : "justify-start"}`}
+                className={`flex ${m.senderId === user?.id ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                    m.senderId === user?.uid
+                    m.senderId === user?.id
                       ? "bg-purple text-white rounded-br-md"
                       : "bg-zinc-800 text-zinc-200 rounded-bl-md"
                   }`}
                 >
                   {m.text}
                   <p className={`text-[10px] mt-1 ${
-                    m.senderId === user?.uid ? "text-purple-light/60" : "text-zinc-500"
+                    m.senderId === user?.id ? "text-purple-light/60" : "text-zinc-500"
                   }`}>
                     {m.createdAt ? new Date(m.createdAt).toLocaleTimeString("en-IN", {
                       hour: "2-digit",
