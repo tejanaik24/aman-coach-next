@@ -41,7 +41,12 @@ export default function SignupPage() {
       if (userRole === "coach") router.push("/coach/admin")
       else router.push("/client/dashboard")
     } catch (err: unknown) {
-      toast.error((err as Error).message || "Signup failed")
+      const msg = (err as Error).message || ""
+      if (msg.includes("rate_limit") || msg.includes("rate limit") || msg.includes("429") || msg.includes("security purposes")) {
+        toast.error("Too many signup attempts. Please wait a minute and try again.")
+      } else {
+        toast.error(msg || "Signup failed")
+      }
     } finally {
       setLoading(false)
     }
