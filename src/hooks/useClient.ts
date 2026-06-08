@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useAuth } from "./useAuth"
-import { getClientProfile, getCheckins, getPayments, getWorkoutPlan, getDietPlan } from "@/lib/firestore"
+import { getClientProfile, getCheckins, getPayments, getWorkoutPlan, getDietPlan } from "@/lib/store"
 import { Client, Checkin, Payment, WorkoutPlan, DietPlan } from "@/types"
 
 export function useClientData(clientId?: string) {

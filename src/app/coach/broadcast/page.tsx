@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { CoachLayout } from "@/components/layout/CoachLayout"
-import { sendMessage } from "@/lib/firestore"
+import { sendMessage } from "@/lib/store"
 import { useAuth } from "@/hooks/useAuth"
 import toast from "react-hot-toast"
 import { Send } from "lucide-react"

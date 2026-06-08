@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
-import { sendMessage, getMessages } from "@/lib/firestore"
+import { sendMessage, getMessages } from "@/lib/store"
 import { Message } from "@/types"
 import toast from "react-hot-toast"
 import { MessageSquare, Send } from "lucide-react"

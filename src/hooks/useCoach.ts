@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useAuth } from "./useAuth"
-import { getCoachClients, getCoachCheckins, getCoachPayments, getLeads } from "@/lib/firestore"
+import { getCoachClients, getCoachCheckins, getCoachPayments, getLeads } from "@/lib/store"
 import { Client, Checkin, Payment, Lead, Analytics } from "@/types"
 
 export function useCoachData() {

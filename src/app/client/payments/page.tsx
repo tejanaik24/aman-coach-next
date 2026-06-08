@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { PageSkeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/hooks/useAuth"
 import { useClientData } from "@/hooks/useClient"
-import { addPayment } from "@/lib/firestore"
+import { addPayment } from "@/lib/store"
 import { generateUpiLink } from "@/lib/upi"
 import toast from "react-hot-toast"
 

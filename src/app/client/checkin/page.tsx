@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
-import { addCheckin } from "@/lib/firestore"
+import { addCheckin } from "@/lib/store"
 import toast from "react-hot-toast"
 import { motion, AnimatePresence } from "motion/react"
 import { Camera, Check, ChevronLeft, ChevronRight, ClipboardCheck } from "lucide-react"
