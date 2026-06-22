@@ -10,13 +10,13 @@ export default function AboutPage() {
     <PublicLayout>
       <section className="px-4 py-20">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-light mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FFD200] mb-2">
             / about
           </p>
           <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl text-white leading-none mb-8">
             MEET AMAN
             <br />
-            <span className="text-purple">KHURANA</span>
+            <span className="text-[#FFB800]">KHURANA</span>
           </h1>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -51,7 +51,7 @@ export default function AboutPage() {
                   className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3"
                 >
                   <span className="text-sm text-zinc-500">{item.label}</span>
-                  <span className="text-sm font-medium text-purple-light">{item.value}</span>
+                  <span className="text-sm font-medium text-[#FFD200]">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -69,7 +69,7 @@ export default function AboutPage() {
           <div className="mt-8">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-full bg-purple px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-all"
+              className="inline-flex items-center gap-2 rounded-full bg-[#FFB800] px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-all"
             >
               Work With Me <ArrowRight className="size-4" />
             </Link>

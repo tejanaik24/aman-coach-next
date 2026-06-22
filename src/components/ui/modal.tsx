@@ -46,7 +46,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       >
         {title && (
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-heading text-xl text-gold">{title}</h2>
+            <h2 className="font-heading text-xl text-[#FFB800]">{title}</h2>
             <button
               onClick={onClose}
               className="text-white/50 transition-colors hover:text-white"

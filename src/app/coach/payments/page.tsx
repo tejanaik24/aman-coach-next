@@ -39,7 +39,7 @@ export default function CoachPaymentsPage() {
   return (
     <CoachLayout>
       <div className="flex items-center gap-2 mb-4">
-        <IndianRupee className="size-5 text-purple" />
+        <IndianRupee className="size-5 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">Payments</h1>
       </div>
 

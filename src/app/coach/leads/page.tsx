@@ -15,7 +15,7 @@ import { format } from "date-fns"
 const pipelineStages = [
   { key: "new", label: "New", color: "bg-blue-500/20 text-blue-400" },
   { key: "contacted", label: "Contacted", color: "bg-yellow-500/20 text-yellow-400" },
-  { key: "qualified", label: "Trial", color: "bg-purple/20 text-purple-light" },
+  { key: "qualified", label: "Trial", color: "bg-[#FFB800]/20 text-[#FFD200]" },
   { key: "converted", label: "Converted", color: "bg-green-500/20 text-green-400" },
   { key: "lost", label: "Lost", color: "bg-red-500/20 text-red-400" },
 ]
@@ -48,7 +48,7 @@ export default function CoachLeadsPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Users2 className="size-5 text-purple" />
+            <Users2 className="size-5 text-[#FFB800]" />
             <h1 className="font-heading text-2xl text-white">Leads</h1>
           </div>
           <p className="text-xs text-zinc-500 mt-0.5">{leads.length} total leads</p>
@@ -68,7 +68,7 @@ export default function CoachLeadsPage() {
               <Columns3 className="size-4" />
             </button>
           </div>
-          <button className="rounded-full bg-purple p-2 text-white hover:bg-purple-dark transition-colors">
+          <button className="rounded-full bg-[#FFB800] p-2 text-white hover:bg-[#B28000] transition-colors">
             <Plus className="size-4" />
           </button>
         </div>
@@ -155,7 +155,7 @@ export default function CoachLeadsPage() {
                               const idx = stages.indexOf(l.status)
                               if (idx < stages.length - 1) handleStatus(l.id, stages[idx + 1] as Lead["status"])
                             }}
-                            className="rounded-full bg-purple/20 px-2 py-0.5 text-[10px] text-purple-light font-medium"
+                            className="rounded-full bg-[#FFB800]/20 px-2 py-0.5 text-[10px] text-[#FFD200] font-medium"
                           >
                             Move → {pipelineStages[Math.min(pipelineStages.indexOf(pipelineStages.find(s => s.key === l.status)!) + 1, pipelineStages.length - 1)].label}
                           </button>

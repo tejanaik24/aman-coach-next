@@ -45,7 +45,7 @@ export default function ContactPage() {
     <PublicLayout>
       <section className="px-4 py-20">
         <div className="mx-auto max-w-2xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-light mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FFD200] mb-2">
             / contact
           </p>
           <h1 className="font-heading text-5xl sm:text-6xl text-white leading-none mb-4">
@@ -66,7 +66,7 @@ export default function ContactPage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="Your full name"
               />
             </div>
@@ -76,7 +76,7 @@ export default function ContactPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="your@email.com"
               />
             </div>
@@ -86,7 +86,7 @@ export default function ContactPage() {
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="+91 98765 43210"
               />
             </div>
@@ -95,7 +95,7 @@ export default function ContactPage() {
               <select
                 value={form.goal}
                 onChange={(e) => setForm({ ...form, goal: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
               >
                 <option value="" className="bg-zinc-900">Select a goal</option>
                 <option value="contest-prep" className="bg-zinc-900">Contest Prep</option>
@@ -108,7 +108,7 @@ export default function ContactPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-full bg-purple px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-purple-dark disabled:opacity-50"
+              className="w-full rounded-full bg-[#FFB800] px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-[#B28000] disabled:opacity-50"
             >
               {submitting ? "Sending..." : "Send Message"}
             </button>

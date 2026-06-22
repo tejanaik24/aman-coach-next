@@ -37,7 +37,7 @@ export default function ServicesPage() {
     <PublicLayout>
       <section className="px-4 py-20">
         <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-light mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FFD200] mb-2">
             / services
           </p>
           <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl text-white leading-none mb-12">
@@ -50,14 +50,14 @@ export default function ServicesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition-colors hover:border-purple/30"
+                className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition-colors hover:border-[#FFB800]/30"
               >
-                <p className="font-heading text-2xl text-purple-light mb-2">{p.title}</p>
+                <p className="font-heading text-2xl text-[#FFD200] mb-2">{p.title}</p>
                 <p className="text-sm text-zinc-400 mb-4">{p.desc}</p>
                 <ul className="space-y-1.5 mb-4">
                   {p.features.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-xs text-zinc-500">
-                      <span className="text-purple">▸</span>
+                      <span className="text-[#FFB800]">▸</span>
                       {f}
                     </li>
                   ))}
@@ -69,7 +69,7 @@ export default function ServicesPage() {
           <div className="mt-12 text-center">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-full bg-purple px-8 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-all"
+              className="inline-flex items-center gap-2 rounded-full bg-[#FFB800] px-8 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-all"
             >
               Get Started <ArrowRight className="size-4" />
             </Link>

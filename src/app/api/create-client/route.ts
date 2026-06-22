@@ -1,6 +1,29 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
+async function fireWelcomeFlow(client: { id: string; email: string; display_name: string; phone?: string }) {
+  const n8nUrl = process.env.NEW_CLIENT_WEBHOOK_URL
+  if (n8nUrl) {
+    try {
+      await fetch(n8nUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(client),
+      })
+      return
+    } catch { /* fall through to direct email */ }
+  }
+
+  try {
+    const { sendWelcomeEmail } = await import("@/lib/email")
+    await sendWelcomeEmail(
+      client.email,
+      client.display_name,
+      `${process.env.APP_URL || "https://aman-coach-next.vercel.app"}/auth/login`
+    )
+  } catch { /* email is best-effort */ }
+}
+
 export async function POST(request: Request) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey) {
@@ -56,6 +79,13 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
+
+  fireWelcomeFlow({
+    id: authUser.user.id,
+    email,
+    display_name,
+    phone,
+  })
 
   return NextResponse.json({ success: true, id: authUser.user.id })
 }

@@ -20,7 +20,7 @@ export function ImageWithFallback({ src, alt, className, fill, width, height }: 
     return (
       <div className={cn("bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center", className)}>
         <div className="text-center">
-          <div className="size-12 rounded-full bg-purple/20 flex items-center justify-center mx-auto mb-2">
+          <div className="size-12 rounded-full bg-[#FFB800]/20 flex items-center justify-center mx-auto mb-2">
             <span className="text-2xl">💪</span>
           </div>
           <p className="text-xs text-zinc-500">{alt}</p>

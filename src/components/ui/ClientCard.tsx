@@ -27,11 +27,11 @@ export function ClientCard({ name, email, plan, status, daysRemaining, totalDays
     <motion.div
       whileHover={{ scale: 1.02 }}
       onClick={onClick}
-      className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 cursor-pointer transition-colors hover:border-purple/30"
+      className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 cursor-pointer transition-colors hover:border-[#FFB800]/30"
     >
       <div className="flex items-center gap-3 mb-3">
-        <div className="size-10 rounded-full bg-purple/20 flex items-center justify-center">
-          <span className="font-heading text-sm text-purple-light">{initials}</span>
+        <div className="size-10 rounded-full bg-[#FFB800]/20 flex items-center justify-center">
+          <span className="font-heading text-sm text-[#FFD200]">{initials}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white truncate">{name}</p>

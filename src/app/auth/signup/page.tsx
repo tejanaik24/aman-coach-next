@@ -54,8 +54,8 @@ export default function SignupPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-black px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.12),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(124,58,237,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,184,0,0.12),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,184,0,0.05),transparent_50%)]" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -76,7 +76,7 @@ export default function SignupPage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="Aman Khurana"
               />
             </div>
@@ -86,7 +86,7 @@ export default function SignupPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="your@email.com"
               />
             </div>
@@ -97,7 +97,7 @@ export default function SignupPage() {
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 pr-10 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 pr-10 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                   placeholder="Min. 6 characters"
                   minLength={6}
                 />
@@ -116,14 +116,14 @@ export default function SignupPage() {
                 type="password"
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="Confirm your password"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-purple px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-purple-dark disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full rounded-full bg-[#FFB800] px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-[#B28000] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function SignupPage() {
 
         <p className="mt-6 text-center text-xs text-zinc-500">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-purple-light font-medium hover:text-purple transition-colors">
+          <Link href="/auth/login" className="text-[#FFD200] font-medium hover:text-[#FFB800] transition-colors">
             Sign in
           </Link>
         </p>

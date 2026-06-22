@@ -55,7 +55,7 @@ export default function MessagesPage() {
   return (
     <ClientLayout>
       <div className="flex items-center gap-2 mb-6">
-        <MessageSquare className="size-5 text-purple" />
+        <MessageSquare className="size-5 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">Messages</h1>
       </div>
 
@@ -72,13 +72,13 @@ export default function MessagesPage() {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                     m.senderId === user?.id
-                      ? "bg-purple text-white rounded-br-md"
+                      ? "bg-[#FFB800] text-white rounded-br-md"
                       : "bg-zinc-800 text-zinc-200 rounded-bl-md"
                   }`}
                 >
                   {m.text}
                   <p className={`text-[10px] mt-1 ${
-                    m.senderId === user?.id ? "text-purple-light/60" : "text-zinc-500"
+                    m.senderId === user?.id ? "text-[#FFD200]/60" : "text-zinc-500"
                   }`}>
                     {m.createdAt ? new Date(m.createdAt).toLocaleTimeString("en-IN", {
                       hour: "2-digit",
@@ -103,13 +103,13 @@ export default function MessagesPage() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+          className="flex-1 rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
           placeholder="Type a message..."
         />
         <button
           onClick={handleSend}
           disabled={!text.trim()}
-          className="rounded-xl bg-purple px-4 py-3 text-white hover:bg-purple-dark disabled:opacity-50 transition-colors"
+          className="rounded-xl bg-[#FFB800] px-4 py-3 text-white hover:bg-[#B28000] disabled:opacity-50 transition-colors"
         >
           <Send className="size-5" />
         </button>

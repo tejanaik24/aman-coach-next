@@ -34,7 +34,7 @@ export default function CoachBroadcastPage() {
   return (
     <CoachLayout>
       <div className="flex items-center gap-2 mb-2">
-        <Send className="size-5 text-purple" />
+        <Send className="size-5 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">Broadcast</h1>
       </div>
       <p className="text-sm text-zinc-500 mb-6">
@@ -47,7 +47,7 @@ export default function CoachBroadcastPage() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30 min-h-[120px] resize-none"
+            className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30 min-h-[120px] resize-none"
             placeholder="Type your broadcast message..."
           />
           <div className="flex items-center justify-between">
@@ -55,7 +55,7 @@ export default function CoachBroadcastPage() {
             <button
               onClick={handleBroadcast}
               disabled={!text.trim() || sending}
-              className="rounded-full bg-purple px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark disabled:opacity-50 transition-colors"
+              className="rounded-full bg-[#FFB800] px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] disabled:opacity-50 transition-colors"
             >
               {sending ? "Sending..." : "Send Broadcast"}
             </button>

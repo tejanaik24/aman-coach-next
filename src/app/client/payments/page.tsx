@@ -5,6 +5,7 @@ import { ClientLayout } from "@/components/layout/ClientLayout"
 import { Card, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PageSkeleton } from "@/components/ui/skeleton"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { useAuth } from "@/hooks/useAuth"
 import { useClientData } from "@/hooks/useClient"
 import { addPayment } from "@/lib/store"
@@ -17,7 +18,7 @@ const plans = [
   { name: "Elite", amount: 15000 },
 ]
 
-export default function PaymentsPage() {
+function PaymentsContent() {
   const { user } = useAuth()
   const { payments, loading } = useClientData()
   const [selected, setSelected] = useState<string | null>(null)
@@ -52,7 +53,7 @@ export default function PaymentsPage() {
     <ClientLayout>
       <h1 className="font-heading text-3xl text-white mb-6">PAYMENTS</h1>
 
-      <h2 className="font-heading text-xl text-gold mb-3">Make a Payment</h2>
+      <h2 className="font-heading text-xl text-[#FFD200] mb-3">Make a Payment</h2>
       <div className="grid gap-3 mb-8">
         {plans.map((p) => (
           <Card key={p.name}>
@@ -66,7 +67,7 @@ export default function PaymentsPage() {
               <button
                 onClick={() => handlePay(p.name, p.amount)}
                 disabled={selected === p.name}
-                className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="rounded-lg bg-[#FFB800] px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {selected === p.name ? "Opening..." : "Pay Now"}
               </button>
@@ -75,7 +76,7 @@ export default function PaymentsPage() {
         ))}
       </div>
 
-      <h2 className="font-heading text-xl text-gold mb-3">Payment History</h2>
+      <h2 className="font-heading text-xl text-[#FFD200] mb-3">Payment History</h2>
       {payments.length > 0 ? (
         <div className="space-y-2">
           {payments.slice(0, 10).map((p) => (
@@ -89,7 +90,7 @@ export default function PaymentsPage() {
                       year: "numeric",
                     })}
                   </p>
-                  <p className="font-heading text-lg text-gold mt-0.5">
+                  <p className="font-heading text-lg text-[#FFD200] mt-0.5">
                     ₹{p.amount.toLocaleString("en-IN")}
                   </p>
                 </div>
@@ -118,5 +119,13 @@ export default function PaymentsPage() {
         </Card>
       )}
     </ClientLayout>
+  )
+}
+
+export default function PaymentsPage() {
+  return (
+    <ErrorBoundary>
+      <PaymentsContent />
+    </ErrorBoundary>
   )
 }

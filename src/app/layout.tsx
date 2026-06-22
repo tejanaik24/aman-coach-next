@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next"
-import { Bebas_Neue, DM_Sans } from "next/font/google"
+import { Bebas_Neue, Barlow } from "next/font/google"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { StoreInitializer } from "@/components/StoreInitializer"
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt"
 import { Toaster } from "react-hot-toast"
 import "./globals.css"
 
@@ -11,7 +12,7 @@ const bebasNeue = Bebas_Neue({
   weight: "400",
 })
 
-const dmSans = DM_Sans({
+const barlow = Barlow({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bebasNeue.variable} ${dmSans.variable} dark h-full antialiased`}
+      className={`${bebasNeue.variable} ${barlow.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -52,8 +53,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
       </head>
-      <body className="min-h-full bg-black text-white font-body">
+      <body className="min-h-full bg-black text-white font-body overflow-x-hidden">
         <AuthProvider>
+          <StoreInitializer />
           <Toaster
             position="top-center"
             toastOptions={{
@@ -62,11 +64,12 @@ export default function RootLayout({
                 color: "#fff",
                 border: "1px solid rgba(255,255,255,0.1)",
               },
-              success: { iconTheme: { primary: "#7C3AED", secondary: "#fff" } },
+              success: { iconTheme: { primary: "#FFB800", secondary: "#000" } },
               error: { iconTheme: { primary: "#EF4444", secondary: "#fff" } },
             }}
           />
           {children}
+          <PWAInstallPrompt />
         </AuthProvider>
       </body>
     </html>

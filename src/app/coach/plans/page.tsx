@@ -19,7 +19,7 @@ export default function CoachPlansPage() {
   return (
     <CoachLayout>
       <div className="flex items-center gap-2 mb-6">
-        <ClipboardList className="size-5 text-purple" />
+        <ClipboardList className="size-5 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">Plans</h1>
       </div>
 
@@ -27,7 +27,7 @@ export default function CoachPlansPage() {
         {Object.entries(planCounts).map(([plan, count]) => (
           <div key={plan} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
             <p className="text-xs text-zinc-500 uppercase tracking-wider capitalize">{plan}</p>
-            <p className="font-heading text-4xl text-purple-light mt-1">{count}</p>
+            <p className="font-heading text-4xl text-[#FFD200] mt-1">{count}</p>
             <p className="text-xs text-zinc-600">clients</p>
           </div>
         ))}
@@ -43,7 +43,7 @@ export default function CoachPlansPage() {
                 className="flex items-center justify-between rounded-xl bg-zinc-800/50 px-3 py-2"
               >
                 <span className="text-sm text-zinc-300">{c.displayName}</span>
-                <span className="text-xs text-purple-light capitalize">
+                <span className="text-xs text-[#FFD200] capitalize">
                   {c.plan || "Not assigned"}
                 </span>
               </div>

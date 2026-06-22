@@ -1,0 +1,68 @@
+{
+  "name": "New Client Welcome",
+  "nodes": [
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "new-client-welcome",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [0, 0]
+    },
+    {
+      "name": "Send WhatsApp Welcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chatId", "value": "={{ $json.phone }}@c.us" },
+            { "name": "text", "value": "={{ 'Welcome to AK Fitness! 🎉\nHi ' + $json.display_name + ', your account is ready.\nLogin here: ' + $env.APP_URL + '/auth/login\nYour coach Aman will assign your plan shortly.' }}" }
+          ]
+        }
+      },
+      "position": [200, 0]
+    },
+    {
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/send-email",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "type", "value": "welcome" },
+            { "name": "to", "value": "={{ $json.email }}" },
+            { "name": "name", "value": "={{ $json.display_name }}" },
+            { "name": "loginUrl", "value": "={{ $env.APP_URL }}/auth/login" }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [400, 0]
+    },
+    {
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true }) }}"
+      },
+      "position": [600, 0]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[ { "node": "Send WhatsApp Welcome", "type": "main", "index": 0 } ]] },
+    "Send WhatsApp Welcome": { "main": [[ { "node": "Send Welcome Email", "type": "main", "index": 0 } ]] },
+    "Send Welcome Email": { "main": [[ { "node": "Respond OK", "type": "main", "index": 0 } ]] }
+  }
+}

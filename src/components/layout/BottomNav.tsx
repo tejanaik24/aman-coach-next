@@ -3,14 +3,14 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Dumbbell, ClipboardCheck, BarChart3, User } from "lucide-react"
+import { Home, UtensilsCrossed, Dumbbell, CheckSquare, Grid3X3 } from "lucide-react"
 
 const clientLinks = [
   { href: "/client/dashboard", label: "Home", icon: Home },
+  { href: "/client/nutrition", label: "Nutrition", icon: UtensilsCrossed },
   { href: "/client/workout", label: "Workouts", icon: Dumbbell },
-  { href: "/client/checkin", label: "Check-in", icon: ClipboardCheck },
-  { href: "/client/progress", label: "Progress", icon: BarChart3 },
-  { href: "/client/profile", label: "Profile", icon: User },
+  { href: "/client/habits", label: "Habits", icon: CheckSquare },
+  { href: "/client/more", label: "More", icon: Grid3X3 },
 ]
 
 export function BottomNav() {
@@ -28,10 +28,10 @@ export function BottomNav() {
               href={link.href}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs transition-colors",
-                active ? "text-purple" : "text-zinc-500 hover:text-zinc-300"
+                active ? "text-[#FFB800]" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
-              <Icon className={cn("size-5", active && "fill-purple/20")} />
+              <Icon className={cn("size-5", active && "fill-[rgba(255,184,0,0.2)]")} />
               <span className="font-medium">{link.label}</span>
             </Link>
           )

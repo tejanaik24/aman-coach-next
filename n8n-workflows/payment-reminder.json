@@ -1,0 +1,205 @@
+{
+  "name": "Payment Reminder",
+  "nodes": [
+    {
+      "name": "Cron: Every Day 10AM IST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "ruleData": {
+          "interval": [{ "field": "cron", "expression": "30 4 * * *" }]
+        }
+      },
+      "position": [0, 0]
+    },
+    {
+      "name": "Get Pending Payments",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/pending-payments",
+        "method": "POST",
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [200, 0]
+    },
+    {
+      "name": "Loop Over Overdue Clients",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": { "batchSize": 1 },
+      "position": [400, 0]
+    },
+    {
+      "name": "IF: Day 3",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{ $json.days_overdue }}", "operation": "equal", "value2": 3 }
+          ]
+        }
+      },
+      "position": [600, 0]
+    },
+    {
+      "name": "WhatsApp Reminder #1",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chatId", "value": "={{ $json.phone }}@c.us" },
+            { "name": "text", "value": "={{ 'Hi ' + $json.display_name + ' 🙂 Just a friendly reminder that your payment of ₹' + $json.amount + ' is 3 days overdue. Please make the payment at your earliest convenience.\n\nUPI: aman@akfitness\n\nPay here: ' + $env.APP_URL + '/client/payments' }}" }
+          ]
+        }
+      },
+      "position": [800, 0]
+    },
+    {
+      "name": "Email Reminder #1",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/send-email",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "type", "value": "payment_reminder" },
+            { "name": "to", "value": "={{ $json.email }}" },
+            { "name": "name", "value": "={{ $json.display_name }}" },
+            { "name": "amount", "value": "={{ $json.amount }}" },
+            { "name": "dueDate", "value": "" },
+            { "name": "dayNumber", "value": 3 }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [1000, 0]
+    },
+    {
+      "name": "IF: Day 7",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{ $json.days_overdue }}", "operation": "equal", "value2": 7 }
+          ]
+        }
+      },
+      "position": [600, 500]
+    },
+    {
+      "name": "WhatsApp Reminder #2",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chatId", "value": "={{ $json.phone }}@c.us" },
+            { "name": "text", "value": "={{ 'Hi ' + $json.display_name + ' ⚠️ Your payment of ₹' + $json.amount + ' is now 7 days overdue. Please clear the dues to continue your plan without interruption.\n\nUPI: aman@akfitness\n\nPay here: ' + $env.APP_URL + '/client/payments' }}" }
+          ]
+        }
+      },
+      "position": [800, 500]
+    },
+    {
+      "name": "Email Reminder #2",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/send-email",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "type", "value": "payment_reminder" },
+            { "name": "to", "value": "={{ $json.email }}" },
+            { "name": "name", "value": "={{ $json.display_name }}" },
+            { "name": "amount", "value": "={{ $json.amount }}" },
+            { "name": "dueDate", "value": "" },
+            { "name": "dayNumber", "value": 7 }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [1000, 500]
+    },
+    {
+      "name": "IF: Day 10",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [
+            { "value1": "={{ $json.days_overdue }}", "operation": "equal", "value2": 10 }
+          ]
+        }
+      },
+      "position": [600, 1000]
+    },
+    {
+      "name": "WhatsApp Reminder #3",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chatId", "value": "={{ $json.phone }}@c.us" },
+            { "name": "text", "value": "={{ 'Hi ' + $json.display_name + ' 🚨 Final reminder! Your payment of ₹' + $json.amount + ' is 10 days overdue. Please pay immediately to avoid plan suspension.\n\nUPI: aman@akfitness\n\nPay here: ' + $env.APP_URL + '/client/payments' }}" }
+          ]
+        }
+      },
+      "position": [800, 1000]
+    },
+    {
+      "name": "Email Reminder #3",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/send-email",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "type", "value": "payment_reminder" },
+            { "name": "to", "value": "={{ $json.email }}" },
+            { "name": "name", "value": "={{ $json.display_name }}" },
+            { "name": "amount", "value": "={{ $json.amount }}" },
+            { "name": "dueDate", "value": "" },
+            { "name": "dayNumber", "value": 10 }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [1000, 1000]
+    }
+  ],
+  "connections": {
+    "Cron: Every Day 10AM IST": { "main": [[ { "node": "Get Pending Payments", "type": "main", "index": 0 } ]] },
+    "Get Pending Payments": { "main": [[ { "node": "Loop Over Overdue Clients", "type": "main", "index": 0 } ]] },
+    "Loop Over Overdue Clients": { "main": [[ { "node": "IF: Day 3", "type": "main", "index": 0 } ]] },
+    "IF: Day 3": { "main": [[ { "node": "WhatsApp Reminder #1", "type": "main", "index": 0 } ]] },
+    "WhatsApp Reminder #1": { "main": [[ { "node": "Email Reminder #1", "type": "main", "index": 0 } ]] },
+    "IF: Day 7": { "main": [[ { "node": "WhatsApp Reminder #2", "type": "main", "index": 0 } ]] },
+    "WhatsApp Reminder #2": { "main": [[ { "node": "Email Reminder #2", "type": "main", "index": 0 } ]] },
+    "IF: Day 10": { "main": [[ { "node": "WhatsApp Reminder #3", "type": "main", "index": 0 } ]] },
+    "WhatsApp Reminder #3": { "main": [[ { "node": "Email Reminder #3", "type": "main", "index": 0 } ]] }
+  }
+}

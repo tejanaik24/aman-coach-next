@@ -28,14 +28,14 @@ export default function CoachClientsPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Users className="size-5 text-purple" />
+            <Users className="size-5 text-[#FFB800]" />
             <h1 className="font-heading text-2xl text-white">Clients</h1>
           </div>
           <p className="text-xs text-zinc-500 mt-0.5">{clients.length} total clients</p>
         </div>
         <Link
           href="/coach/clients/new"
-          className="rounded-full bg-purple px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-colors flex items-center gap-1.5"
+          className="rounded-full bg-[#FFB800] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center gap-1.5"
         >
           <Plus className="size-3.5" />
           Add

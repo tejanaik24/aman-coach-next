@@ -86,7 +86,7 @@ export default function AddClientPage() {
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
               placeholder="Client name"
             />
           </div>
@@ -94,9 +94,10 @@ export default function AddClientPage() {
             <label className="block text-xs text-zinc-500 font-medium mb-1.5 uppercase tracking-wider">Phone Number *</label>
             <input
               type="tel"
+              inputMode="tel"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
               placeholder="+91 98765 43210"
             />
           </div>
@@ -106,7 +107,7 @@ export default function AddClientPage() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
               placeholder="client@email.com"
             />
           </div>
@@ -116,7 +117,7 @@ export default function AddClientPage() {
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
               placeholder="Set initial password"
               minLength={6}
             />
@@ -134,7 +135,7 @@ export default function AddClientPage() {
                   onClick={() => setForm({ ...form, planType: pt.value })}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
                     form.planType === pt.value
-                      ? "bg-purple text-white"
+                      ? "bg-[#FFB800] text-white"
                       : "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:border-zinc-500"
                   }`}
                 >
@@ -153,7 +154,7 @@ export default function AddClientPage() {
                   onClick={() => setForm({ ...form, duration: d.value })}
                   className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
                     form.duration === d.value
-                      ? "bg-purple text-white"
+                      ? "bg-[#FFB800] text-white"
                       : "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:border-zinc-500"
                   }`}
                 >
@@ -168,16 +169,17 @@ export default function AddClientPage() {
               type="date"
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
             />
           </div>
           <div>
             <label className="block text-xs text-zinc-500 font-medium mb-1.5 uppercase tracking-wider">Fee Amount (INR)</label>
             <input
               type="number"
+              inputMode="numeric"
               value={form.fee}
               onChange={(e) => setForm({ ...form, fee: e.target.value })}
-              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple focus:ring-1 focus:ring-purple/30"
+              className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
               placeholder="5000"
             />
           </div>
@@ -186,7 +188,7 @@ export default function AddClientPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-purple py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          className="w-full rounded-full bg-[#FFB800] py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
         >
           {loading ? "Adding..." : <><UserPlus className="size-4" /> Add Client</>}
         </button>

@@ -1,0 +1,80 @@
+{
+  "name": "Weekly Check-in Reminder",
+  "nodes": [
+    {
+      "name": "Cron: Every Sunday 9AM IST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "ruleData": {
+          "interval": [{ "field": "cron", "expression": "30 3 * * 0" }]
+        }
+      },
+      "position": [0, 0]
+    },
+    {
+      "name": "Get Active Clients",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/weekly-checkin",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [200, 0]
+    },
+    {
+      "name": "Loop Over Clients",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": { "batchSize": 1 },
+      "position": [400, 0]
+    },
+    {
+      "name": "Send WhatsApp Check-in Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chatId", "value": "={{ $json.phone }}@c.us" },
+            { "name": "text", "value": "={{ 'Hi ' + $json.display_name + ' 👋 Time for your weekly check-in!\n\nPlease update:\n• Current Weight\n• Energy Level (1-5)\n• Sleep Quality (1-5)\n• Any notes\n\nClick here: ' + $env.APP_URL + '/client/checkin' }}" }
+          ]
+        }
+      },
+      "position": [600, 0]
+    },
+    {
+      "name": "Mark Check-in Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/mark-checkin-sent",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "client_id", "value": "={{ $json.id }}" }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [800, 0]
+    }
+  ],
+  "connections": {
+    "Cron: Every Sunday 9AM IST": { "main": [[ { "node": "Get Active Clients", "type": "main", "index": 0 } ]] },
+    "Get Active Clients": { "main": [[ { "node": "Loop Over Clients", "type": "main", "index": 0 } ]] },
+    "Loop Over Clients": { "main": [[ { "node": "Send WhatsApp Check-in Reminder", "type": "main", "index": 0 } ]] },
+    "Send WhatsApp Check-in Reminder": { "main": [[ { "node": "Mark Check-in Sent", "type": "main", "index": 0 } ]] }
+  }
+}

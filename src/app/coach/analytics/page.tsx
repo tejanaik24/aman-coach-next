@@ -20,7 +20,7 @@ export default function CoachAnalyticsPage() {
   return (
     <CoachLayout>
       <div className="flex items-center gap-2 mb-6">
-        <BarChart3 className="size-5 text-purple" />
+        <BarChart3 className="size-5 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">Analytics</h1>
       </div>
 
@@ -30,7 +30,7 @@ export default function CoachAnalyticsPage() {
           return (
             <div key={card.label} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Icon className="size-4 text-purple-light" />
+                <Icon className="size-4 text-[#FFD200]" />
                 <p className="text-xs text-zinc-500 uppercase tracking-wider">{card.label}</p>
               </div>
               <p className="font-heading text-3xl text-white">{card.value}</p>
@@ -45,19 +45,19 @@ export default function CoachAnalyticsPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-xl bg-zinc-800/50 px-3 py-2.5">
             <span className="text-sm text-zinc-400">Monthly Revenue</span>
-            <span className="font-heading text-lg text-purple-light">
+            <span className="font-heading text-lg text-[#FFD200]">
               ₹{(analytics?.monthlyRevenue || 0).toLocaleString("en-IN")}
             </span>
           </div>
           <div className="flex items-center justify-between rounded-xl bg-zinc-800/50 px-3 py-2.5">
             <span className="text-sm text-zinc-400">Check-in Rate</span>
-            <span className="font-heading text-lg text-purple-light">
+            <span className="font-heading text-lg text-[#FFD200]">
               {Math.round((analytics?.checkinRate || 0) * 100)}%
             </span>
           </div>
           <div className="flex items-center justify-between rounded-xl bg-zinc-800/50 px-3 py-2.5">
             <span className="text-sm text-zinc-400">New Leads</span>
-            <span className="font-heading text-lg text-purple-light">{analytics?.newLeads || 0}</span>
+            <span className="font-heading text-lg text-[#FFD200]">{analytics?.newLeads || 0}</span>
           </div>
         </div>
       </div>

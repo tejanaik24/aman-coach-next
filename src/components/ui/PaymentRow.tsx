@@ -1,6 +1,5 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { Badge } from "./badge"
 import { format } from "date-fns"
 import { Download } from "lucide-react"
@@ -24,7 +23,7 @@ const statusConfig = {
   refunded: { variant: "outline" as const, label: "Refunded" },
 }
 
-export function PaymentRow({ clientName, clientEmail, amount, date, status, plan, month, onMarkPaid, onDownload }: PaymentRowProps) {
+export function PaymentRow({ clientName, amount, date, status, plan, onMarkPaid, onDownload }: PaymentRowProps) {
   const config = statusConfig[status]
 
   return (
@@ -51,7 +50,7 @@ export function PaymentRow({ clientName, clientEmail, amount, date, status, plan
         {status === "pending" && onMarkPaid && (
           <button
             onClick={onMarkPaid}
-            className="rounded-full bg-purple px-3 py-1 text-xs font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-colors"
+            className="rounded-full bg-[#FFB800] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors"
           >
             Mark Paid
           </button>

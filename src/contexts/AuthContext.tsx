@@ -2,7 +2,7 @@
 
 import { createContext, useEffect, useState, ReactNode } from "react"
 import type { User } from "@supabase/supabase-js"
-import { onAuthChange, getUserRole, getUserProfile, signUp, signIn, signOut } from "@/lib/auth"
+import { onAuthChange, getUserProfile, signUp, signIn, signOut } from "@/lib/auth"
 import { AppUser } from "@/types"
 
 interface AuthContextValue {

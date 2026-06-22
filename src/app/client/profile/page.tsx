@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useClientData } from "@/hooks/useClient"
 import { PageSkeleton } from "@/components/ui/skeleton"
 import { motion } from "motion/react"
-import { User, Settings, LogOut, CreditCard, Calendar } from "lucide-react"
+import { Settings, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 
@@ -35,8 +35,8 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="size-20 rounded-full bg-purple/20 flex items-center justify-center mb-4">
-            <span className="font-heading text-3xl text-purple-light">{initials}</span>
+          <div className="size-20 rounded-full bg-[#FFB800]/20 flex items-center justify-center mb-4">
+            <span className="font-heading text-3xl text-[#FFD200]">{initials}</span>
           </div>
           <h1 className="font-heading text-xl text-white">{profile?.displayName || user?.email}</h1>
           <p className="text-sm text-zinc-500">{user?.email}</p>

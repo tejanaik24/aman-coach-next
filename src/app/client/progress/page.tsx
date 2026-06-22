@@ -13,6 +13,23 @@ import {
 } from "recharts"
 import { motion } from "motion/react"
 
+interface TooltipPayload {
+  value: number
+  payload: { fullDate: string }
+}
+
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow-lg">
+        <p className="text-xs text-zinc-500">{payload[0].payload.fullDate}</p>
+        <p className="font-heading text-lg text-white">{payload[0].value} kg</p>
+      </div>
+    )
+  }
+  return null
+}
+
 export default function ProgressPage() {
   const { checkins, loading } = useClientData()
   const [tab, setTab] = useState<"weight" | "photos">("weight")
@@ -45,18 +62,6 @@ export default function ProgressPage() {
     )
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow-lg">
-          <p className="text-xs text-zinc-500">{payload[0].payload.fullDate}</p>
-          <p className="font-heading text-lg text-white">{payload[0].value} kg</p>
-        </div>
-      )
-    }
-    return null
-  }
-
   const getChangeIcon = (current: number, previous?: number) => {
     if (!previous) return <Minus className="size-3 text-zinc-500" />
     if (current < previous) return <TrendingDown className="size-3 text-green-400" />
@@ -67,7 +72,7 @@ export default function ProgressPage() {
   return (
     <ClientLayout>
       <div className="flex items-center gap-3 mb-6">
-        <BarChart3 className="size-6 text-purple" />
+        <BarChart3 className="size-6 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">Progress</h1>
       </div>
 
@@ -78,7 +83,7 @@ export default function ProgressPage() {
             onClick={() => setTab(t)}
             className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${
               tab === t
-                ? "bg-purple text-white"
+                ? "bg-[#FFB800] text-white"
                 : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-600"
             }`}
           >
@@ -106,10 +111,10 @@ export default function ProgressPage() {
                     <Line
                       type="monotone"
                       dataKey="weight"
-                      stroke="#7C3AED"
+                      stroke="#FFB800"
                       strokeWidth={2.5}
-                      dot={{ fill: "#7C3AED", r: 4 }}
-                      activeDot={{ fill: "#7C3AED", r: 6 }}
+                      dot={{ fill: "#FFB800", r: 4 }}
+                      activeDot={{ fill: "#FFB800", r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

@@ -42,7 +42,8 @@ function useHoverSliderContext() {
 export const HoverSlider = React.forwardRef<
   HTMLElement,
   React.HTMLAttributes<HTMLElement>
->(({ children, className, ...props }, ref) => {
+>(({ className, children }, _ref) => {
+  void _ref
   const [activeSlide, setActiveSlide] = React.useState<number>(0)
   const changeSlide = React.useCallback(
     (index: number) => setActiveSlide(index),
@@ -59,12 +60,10 @@ HoverSlider.displayName = "HoverSlider"
 const WordStaggerHover = React.forwardRef<
   HTMLSpanElement,
   React.HTMLAttributes<HTMLSpanElement>
->(({ children, className, ...props }, ref) => {
+>(({ children }, _ref) => {
+  void _ref
   return (
-    <span
-      className={cn("relative inline-block origin-bottom overflow-hidden")}
-      {...props}
-    >
+    <span className={cn("relative inline-block origin-bottom overflow-hidden")}>
       {children}
     </span>
   )
@@ -74,7 +73,7 @@ WordStaggerHover.displayName = "WordStaggerHover"
 export const TextStaggerHover = React.forwardRef<
   HTMLElement,
   React.HTMLAttributes<HTMLElement> & TextStaggerHoverProps
->(({ text, index, children, className, ...props }, ref) => {
+>(({ text, index, className, ...props }, ref) => {
   const { activeSlide, changeSlide } = useHoverSliderContext()
   const { characters } = splitText(text)
   const isActive = activeSlide === index
@@ -153,7 +152,7 @@ HoverSliderImageWrap.displayName = "HoverSliderImageWrap"
 export const HoverSliderImage = React.forwardRef<
   HTMLImageElement,
   HTMLMotionProps<"img"> & HoverSliderImageProps
->(({ index, imageUrl, children, className, ...props }, ref) => {
+>(({ index, className, ...props }, ref) => {
   const { activeSlide } = useHoverSliderContext()
   return (
     <motion.img

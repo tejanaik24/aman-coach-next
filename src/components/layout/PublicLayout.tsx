@@ -27,14 +27,14 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             {user ? (
               <Link
                 href={dashboardHref}
-                className="rounded-full bg-purple px-5 py-2 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-purple-dark"
+                className="rounded-full bg-[#FFB800] px-5 py-2 text-sm font-bold uppercase tracking-wider text-black transition-all hover:bg-[#B28000]"
               >
                 Dashboard
               </Link>
             ) : (
               <Link
                 href="/auth/login"
-                className="rounded-full bg-purple px-5 py-2 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-purple-dark"
+                className="rounded-full bg-[#FFB800] px-5 py-2 text-sm font-bold uppercase tracking-wider text-black transition-all hover:bg-[#B28000]"
               >
                 Login
               </Link>
@@ -57,9 +57,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               <Link href="/transformations" onClick={() => setMenuOpen(false)} className="text-sm text-zinc-400 hover:text-white">Transformations</Link>
               <Link href="/contact" onClick={() => setMenuOpen(false)} className="text-sm text-zinc-400 hover:text-white">Contact</Link>
               {user ? (
-                <Link href={dashboardHref} onClick={() => setMenuOpen(false)} className="rounded-full bg-purple px-4 py-2 text-center text-sm font-bold uppercase tracking-wider text-white">Dashboard</Link>
+                <Link href={dashboardHref} onClick={() => setMenuOpen(false)} className="rounded-full bg-[#FFB800] px-4 py-2 text-center text-sm font-bold uppercase tracking-wider text-black">Dashboard</Link>
               ) : (
-                <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="rounded-full bg-purple px-4 py-2 text-center text-sm font-bold uppercase tracking-wider text-white">Login</Link>
+                <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="rounded-full bg-[#FFB800] px-4 py-2 text-center text-sm font-bold uppercase tracking-wider text-black">Login</Link>
               )}
             </div>
           </div>

@@ -13,10 +13,11 @@ export function useCoachData() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [loading, setLoading] = useState(true)
+  const [version, setVersion] = useState(0)
   const started = useRef(false)
 
   useEffect(() => {
-    if (started.current) return
+    if (started.current && version === 0) return
     started.current = true
 
     if (!user) {
@@ -28,6 +29,7 @@ export function useCoachData() {
     const cid: string = user.id
     async function load() {
       try {
+        setLoading(true)
         const [cl, ch, p, l] = await Promise.all([
           getCoachClients(cid),
           getCoachCheckins(cid),
@@ -78,7 +80,9 @@ export function useCoachData() {
     }
 
     load()
-  }, [user])
+  }, [user, version])
 
-  return { clients, checkins, payments, leads, analytics, loading }
+  const refresh = () => setVersion((v) => v + 1)
+
+  return { clients, checkins, payments, leads, analytics, loading, refresh }
 }

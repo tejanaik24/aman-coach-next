@@ -35,12 +35,12 @@ export default function DietPage() {
   return (
     <ClientLayout>
       <div className="flex items-center gap-3 mb-2">
-        <UtensilsCrossed className="size-6 text-purple" />
+        <UtensilsCrossed className="size-6 text-[#FFB800]" />
         <h1 className="font-heading text-2xl text-white">My Diet Plan</h1>
       </div>
       <p className="text-xs text-zinc-500 mb-1">{dietPlan.name}</p>
       {dietPlan.calories && (
-        <p className="text-sm text-purple-light font-medium mb-6">{dietPlan.calories} kcal daily target</p>
+        <p className="text-sm text-[#FFD200] font-medium mb-6">{dietPlan.calories} kcal daily target</p>
       )}
 
       <div className="space-y-3 mb-6">
@@ -111,7 +111,7 @@ export default function DietPage() {
         })}
       </div>
 
-      <button className="w-full rounded-full bg-purple py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-colors flex items-center justify-center gap-2">
+      <button className="w-full rounded-full bg-[#FFB800] py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-2">
         <Download className="size-4" />
         Download Full Plan
       </button>

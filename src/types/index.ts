@@ -19,6 +19,7 @@ export interface Client extends AppUser {
   gender?: "male" | "female" | "other"
   medicalConditions?: string
   startDate: Date
+  endDate?: Date
   plan?: "basic" | "premium" | "elite"
   status: "active" | "paused" | "inactive"
   lastCheckin?: Date
@@ -175,4 +176,86 @@ export interface Notification {
   read: boolean
   link?: string
   createdAt: Date
+}
+
+export interface MealLog {
+  id: string
+  userId: string
+  date: string
+  mealName: "breakfast" | "lunch" | "dinner" | "snack"
+  foods: FoodItem[]
+  totalCalories: number
+  totalProtein: number
+  totalCarbs: number
+  totalFats: number
+  createdAt: Date
+}
+
+export interface FoodDatabaseItem {
+  id: string
+  name: string
+  portion: string
+  calories: number
+  protein: number
+  carbs: number
+  fats: number
+  category: string
+  isCommon: boolean
+}
+
+export interface Habit {
+  id: string
+  userId: string
+  name: string
+  icon: string
+  category: "hydration" | "movement" | "mindfulness" | "nutrition" | "sleep" | "other"
+  color: string
+  sortOrder: number
+  createdAt: Date
+}
+
+export interface HabitLog {
+  id: string
+  habitId: string
+  userId: string
+  date: string
+  value: number
+  note?: string
+  createdAt: Date
+}
+
+export interface WearableMetric {
+  id: string
+  userId: string
+  date: string
+  source: "manual" | "fitbit" | "google_fit" | "apple_health"
+  steps?: number
+  heartRateAvg?: number
+  sleepHours?: number
+  caloriesBurned?: number
+  activeMinutes?: number
+  createdAt: Date
+}
+
+export interface CoachAvailabilitySlot {
+  id: string
+  coachId: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  isAvailable: boolean
+  createdAt: Date
+}
+
+export interface Appointment {
+  id: string
+  clientId: string
+  coachId: string
+  date: string
+  startTime: string
+  endTime: string
+  status: "scheduled" | "completed" | "cancelled"
+  notes?: string
+  createdAt: Date
+  updatedAt: Date
 }

@@ -18,7 +18,7 @@ export default function TransformationsPage() {
     <PublicLayout>
       <section className="px-4 py-20">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-light mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FFD200] mb-2">
             / transformations
           </p>
           <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl text-white leading-none mb-4">
@@ -43,7 +43,7 @@ export default function TransformationsPage() {
                     className="size-full"
                   />
                 </div>
-                <p className="font-heading text-xl text-purple-light">{t.name}</p>
+                <p className="font-heading text-xl text-[#FFD200]">{t.name}</p>
                 <p className="text-xs text-zinc-500 mt-1">{t.program}</p>
                 <p className="text-sm text-zinc-300 mt-2">{t.result}</p>
               </motion.div>
@@ -55,7 +55,7 @@ export default function TransformationsPage() {
             </p>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-full bg-purple px-8 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-purple-dark transition-all"
+              className="inline-flex items-center gap-2 rounded-full bg-[#FFB800] px-8 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-all"
             >
               Start Your Transformation <ArrowRight className="size-4" />
             </Link>

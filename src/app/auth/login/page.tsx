@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { login, role } = useAuth()
+  const { login } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,8 +38,8 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-black px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.12),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(124,58,237,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,184,0,0.12),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,184,0,0.05),transparent_50%)]" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                 placeholder="your@email.com"
               />
             </div>
@@ -72,7 +72,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 pr-10 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-purple focus:ring-1 focus:ring-purple/30"
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 pr-10 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-[#FFB800] focus:ring-1 focus:ring-[#FFB800]/30"
                   placeholder="••••••••"
                 />
                 <button
@@ -85,14 +85,14 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="flex justify-end">
-              <button type="button" className="text-xs text-purple-light hover:text-purple transition-colors">
+              <button type="button" className="text-xs text-[#FFD200] hover:text-[#FFB800] transition-colors">
                 Forgot password?
               </button>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-purple px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-purple-dark disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full rounded-full bg-[#FFB800] px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition-all hover:bg-[#B28000] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -113,7 +113,7 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-xs text-zinc-500">
           New here?{" "}
-          <Link href="/auth/signup" className="text-purple-light font-medium hover:text-purple transition-colors">
+          <Link href="/auth/signup" className="text-[#FFD200] font-medium hover:text-[#FFB800] transition-colors">
             Sign up
           </Link>
         </p>

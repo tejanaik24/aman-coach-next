@@ -4,86 +4,51 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-heading);
-  --font-body: var(--font-body);
-  --color-purple: #7C3AED;
-  --color-purple-light: #A78BFA;
-  --color-purple-dark: #5B21B6;
-  --color-black: #000000;
-  --color-white: #ffffff;
   --color-background: #000000;
   --color-foreground: #ffffff;
-  --color-muted: #1a1a1a;
-  --color-muted-foreground: #888888;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-input: rgba(255, 255, 255, 0.1);
-  --color-ring: #7C3AED;
-  --color-primary: #7C3AED;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #27272A;
-  --color-secondary-foreground: #ffffff;
-  --color-destructive: #EF4444;
-  --color-card: rgba(255, 255, 255, 0.03);
+  --color-accent: #E8501A;
+  --color-muted: #111111;
+  --color-muted-foreground: #999999;
+  --color-border: rgba(255, 184, 0, 0.25);
+  --color-glow: rgba(255, 184, 0, 0.15);
+  --color-card: rgba(255, 184, 0, 0.05);
   --color-card-foreground: #ffffff;
-  --color-popover: #1a1a1a;
-  --color-popover-foreground: #ffffff;
-  --radius: 0.625rem;
+  --color-primary: #FFB800;
+  --color-primary-foreground: #000000;
+  --font-heading: 'Bebas Neue', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --radius: 0.75rem;
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-background text-foreground; }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
-
-  html {
-    scroll-behavior: smooth;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #B28000; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #FFB800; }
 }
 
 @utility glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 184, 0, 0.05);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 184, 0, 0.25);
 }
 
 @utility skeleton-pulse {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
+  background: linear-gradient(90deg, #111 0%, #1a1a1a 50%, #111 100%);
   background-size: 200% 100%;
 }
 
 @keyframes skeleton-pulse {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

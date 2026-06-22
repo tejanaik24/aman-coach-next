@@ -6,14 +6,19 @@ import { ClientLayout } from "@/components/layout/ClientLayout"
 import { PlanProgressBar } from "@/components/ui/PlanProgressBar"
 import { useAuth } from "@/hooks/useAuth"
 import { useClientData } from "@/hooks/useClient"
-import { ClipboardList, UtensilsCrossed, Camera, MessageSquare, Bell } from "lucide-react"
-import { format } from "date-fns"
+import { getOnboardingForm } from "@/lib/store"
+import { ClipboardList, UtensilsCrossed, Camera, MessageSquare, Apple, CheckSquare, CalendarDays, ClipboardCheck, ChevronRight } from "lucide-react"
+import { format, differenceInDays } from "date-fns"
+import { useEffect, useState } from "react"
 
 const quickActions = [
-  { href: "/client/workout", label: "My Workout Plan", icon: ClipboardList, color: "from-purple/20 to-purple/5" },
+  { href: "/client/workout", label: "My Workout Plan", icon: ClipboardList, color: "from-[#FFB800]/20 to-[#FFB800]/5" },
   { href: "/client/diet", label: "My Diet Plan", icon: UtensilsCrossed, color: "from-blue-500/20 to-blue-500/5" },
-  { href: "/client/checkin", label: "Weekly Check-in", icon: Camera, color: "from-green-500/20 to-green-500/5" },
-  { href: "/client/messages", label: "Message Coach", icon: MessageSquare, color: "from-orange-500/20 to-orange-500/5" },
+  { href: "/client/nutrition", label: "Log Meals", icon: Apple, color: "from-green-500/20 to-green-500/5" },
+  { href: "/client/habits", label: "Daily Habits", icon: CheckSquare, color: "from-amber-500/20 to-amber-500/5" },
+  { href: "/client/schedule", label: "Book Session", icon: CalendarDays, color: "from-orange-500/20 to-orange-500/5" },
+  { href: "/client/checkin", label: "Weekly Check-in", icon: Camera, color: "from-[#FFB800]/20 to-[#FFB800]/5" },
+  { href: "/client/messages", label: "Message Coach", icon: MessageSquare, color: "from-pink-500/20 to-pink-500/5" },
 ]
 
 const containerVariants = {
@@ -30,12 +35,27 @@ const itemVariants = {
 }
 
 export default function ClientDashboardPage() {
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
   const { client, checkins, payments } = useClientData()
+  const [onboardingStatus, setOnboardingStatus] = useState<"pending" | "submitted" | null>(null)
+
+  useEffect(() => {
+    if (!user?.id) return
+    getOnboardingForm(user.id).then(form => {
+      if (!form) setOnboardingStatus("pending")
+      else if (form.status === "pending") setOnboardingStatus("pending")
+      else setOnboardingStatus("submitted")
+    }).catch(() => {})
+  }, [user?.id])
 
   const firstName = profile?.displayName?.split(" ")[0] || "there"
   const lastCheckin = checkins[0]
   const latestPayment = payments[0]
+
+  const planStart = client?.startDate ? new Date(client.startDate) : null
+  const planEnd = client?.endDate ? new Date(client.endDate) : null
+  const planDaysTotal = planStart && planEnd ? Math.max(1, differenceInDays(planEnd, planStart)) : 90
+  const planDaysDone = planStart ? Math.min(planDaysTotal, Math.max(0, differenceInDays(new Date(), planStart))) : 0
 
   const hours = new Date().getHours()
   const greeting = hours < 12 ? "Good morning" : hours < 18 ? "Good afternoon" : "Good evening"
@@ -53,7 +73,7 @@ export default function ClientDashboardPage() {
         </motion.div>
 
         <motion.div variants={itemVariants} className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-900/50 p-5 mb-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 size-40 rounded-full bg-purple/5 blur-3xl" />
+          <div className="absolute top-0 right-0 size-40 rounded-full bg-[#FFB800]/5 blur-3xl" />
           <div className="relative z-10">
             <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">
               Current Plan
@@ -64,9 +84,28 @@ export default function ClientDashboardPage() {
             <p className="text-xs text-zinc-500 mb-4">
               Started {client?.startDate ? format(new Date(client.startDate), "MMM d, yyyy") : "—"}
             </p>
-            <PlanProgressBar current={15} total={90} />
+            <PlanProgressBar current={planDaysDone} total={planDaysTotal} />
           </div>
         </motion.div>
+
+        {onboardingStatus === "pending" && (
+          <motion.div variants={itemVariants} className="mb-5">
+            <Link href="/client/onboarding">
+              <div className="rounded-2xl border border-[#FFB800]/40 bg-[#FFB800]/10 p-4 flex items-center justify-between hover:bg-[#FFB800]/15 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-[#FFB800]/20 flex items-center justify-center">
+                    <ClipboardCheck className="size-5 text-[#FFB800]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Complete Your Intake Form</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">Aman needs this to build your plan</p>
+                  </div>
+                </div>
+                <ChevronRight className="size-5 text-[#FFB800]" />
+              </div>
+            </Link>
+          </motion.div>
+        )}
 
         <motion.div variants={itemVariants} className="mb-6">
           <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Quick Actions</p>
@@ -78,10 +117,10 @@ export default function ClientDashboardPage() {
                   <motion.div
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    className={`rounded-2xl border border-zinc-800 bg-gradient-to-br ${action.color} p-4 h-full transition-colors hover:border-purple/30`}
+                    className={`rounded-2xl border border-zinc-800 bg-gradient-to-br ${action.color} p-4 h-full transition-colors hover:border-[#FFB800]/30`}
                   >
                     <div className="size-10 rounded-xl bg-zinc-800 flex items-center justify-center mb-3">
-                      <Icon className="size-5 text-purple-light" />
+                      <Icon className="size-5 text-[#FFD200]" />
                     </div>
                     <p className="text-sm font-medium text-white">{action.label}</p>
                   </motion.div>
@@ -109,7 +148,7 @@ export default function ClientDashboardPage() {
               {lastCheckin.energy && (
                 <div>
                   <p className="text-xs text-zinc-500">Energy</p>
-                  <p className="font-heading text-xl text-white">{lastCheckin.energy}/10</p>
+                  <p className="font-heading text-xl text-white">{lastCheckin.energy}/5</p>
                 </div>
               )}
             </div>
@@ -125,7 +164,7 @@ export default function ClientDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-zinc-400">Next payment</p>
-                <p className="font-heading text-xl text-purple-light">
+                <p className="font-heading text-xl text-[#FFD200]">
                   ₹{latestPayment.amount?.toLocaleString("en-IN") || "—"}
                 </p>
               </div>
