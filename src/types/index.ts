@@ -23,6 +23,26 @@ export interface Client extends AppUser {
   plan?: "basic" | "premium" | "elite"
   status: "active" | "paused" | "inactive"
   lastCheckin?: Date
+  coachNotes?: string
+}
+
+export interface CheckinFeedback {
+  workoutEnergy?: string
+  workoutDays?: number
+  workoutDeviation?: string
+  exerciseIssues?: string
+  cardioAchievement?: string
+  dietDeviation?: string
+  appetite?: string
+  digestion?: string
+  stoolFrequency?: string
+  dietChangeRequest?: string
+  foodAddRemove?: string
+  dailyEnergy?: string
+  sleepQuality?: string
+  waterIntake?: string
+  urineColor?: string
+  coachingFeeling?: string
 }
 
 export interface Checkin {
@@ -31,6 +51,8 @@ export interface Checkin {
   coachId: string
   date: Date
   weight?: number
+  abdomen?: number
+  hips?: number
   measurements?: {
     chest?: number
     waist?: number
@@ -46,6 +68,7 @@ export interface Checkin {
   adherence?: number
   notes?: string
   coachNotes?: string
+  feedback?: CheckinFeedback
   createdAt: Date
 }
 

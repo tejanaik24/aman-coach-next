@@ -60,3 +60,5 @@ export const saveOnboardingDraft = supabase.saveOnboardingDraft
 export const submitOnboardingForm = supabase.submitOnboardingForm
 export const getOnboardingForm = supabase.getOnboardingForm
 export const getCoachOnboardingForms = supabase.getCoachOnboardingForms
+
+export const saveClientNotes = supabase.saveClientNotes

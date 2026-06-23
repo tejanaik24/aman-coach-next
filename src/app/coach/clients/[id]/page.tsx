@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { PageSkeleton } from "@/components/ui/skeleton"
 import { useClientData } from "@/hooks/useClient"
 import { useAuth } from "@/hooks/useAuth"
-import { saveWorkoutPlan, saveDietPlan, getWorkoutPlan, getDietPlan, updatePaymentStatus } from "@/lib/store"
+import { saveWorkoutPlan, saveDietPlan, getWorkoutPlan, getDietPlan, updatePaymentStatus, saveClientNotes } from "@/lib/store"
 import { Checkin } from "@/types"
 import { motion } from "motion/react"
 import { MessageSquare, Upload, ArrowLeft, Send, Camera, CreditCard, Dumbbell, UtensilsCrossed, Plus, Trash2, TrendingUp, TrendingDown, Minus, ExternalLink } from "lucide-react"
@@ -67,6 +67,7 @@ export default function CoachClientDetailPage({
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const [notes, setNotes] = useState("")
   const [notesSaved, setNotesSaved] = useState(false)
+  const [savingNotes, setSavingNotes] = useState(false)
 
   const [existingWorkout, setExistingWorkout] = useState<boolean>(false)
   const [existingDiet, setExistingDiet] = useState<boolean>(false)
@@ -79,6 +80,12 @@ export default function CoachClientDetailPage({
   const [dietMeals, setDietMeals] = useState<MealForm[]>([])
   const [savingPlan, setSavingPlan] = useState(false)
   const [planView, setPlanView] = useState<"workout" | "diet">("workout")
+
+  useEffect(() => {
+    if (client?.coachNotes !== undefined) {
+      setNotes(client.coachNotes)
+    }
+  }, [client?.coachNotes])
 
   useEffect(() => {
     if (!id) return
@@ -139,9 +146,18 @@ export default function CoachClientDetailPage({
     { key: "notes", label: "Notes" },
   ]
 
-  const handleSaveNotes = () => {
-    setNotesSaved(true)
-    setTimeout(() => setNotesSaved(false), 2000)
+  const handleSaveNotes = async () => {
+    if (!id) return
+    setSavingNotes(true)
+    try {
+      await saveClientNotes(id, notes)
+      setNotesSaved(true)
+      setTimeout(() => setNotesSaved(false), 2000)
+    } catch {
+      toast.error("Failed to save notes")
+    } finally {
+      setSavingNotes(false)
+    }
   }
 
   const saveWorkout = async () => {
@@ -719,9 +735,10 @@ export default function CoachClientDetailPage({
             />
             <button
               onClick={handleSaveNotes}
-              className="mt-3 rounded-full bg-[#FFB800] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors"
+              disabled={savingNotes}
+              className="mt-3 rounded-full bg-[#FFB800] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] disabled:opacity-60 transition-colors"
             >
-              {notesSaved ? "Saved ✓" : "Save Notes"}
+              {savingNotes ? "Saving…" : notesSaved ? "Saved ✓" : "Save Notes"}
             </button>
           </div>
         </motion.div>

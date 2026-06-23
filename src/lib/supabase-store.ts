@@ -1,5 +1,5 @@
 import type {
-  Client, Checkin, Payment, Lead, Message, WorkoutPlan, DietPlan, Meal, Notification,
+  Client, Checkin, CheckinFeedback, Payment, Lead, Message, WorkoutPlan, DietPlan, Meal, Notification,
   MealLog, FoodDatabaseItem, Habit, HabitLog, WearableMetric, CoachAvailabilitySlot, Appointment,
 } from "@/types"
 import { getSupabaseClient } from "./supabase"
@@ -48,6 +48,7 @@ function mapUser(row: Record<string, unknown>): Client {
     plan: row.plan as "basic" | "premium" | "elite" | undefined,
     status: (row.status as "active" | "paused" | "inactive") || "active",
     lastCheckin: row.last_checkin ? new Date(row.last_checkin as string) : undefined,
+    coachNotes: row.coach_notes as string | undefined,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   }
@@ -85,13 +86,16 @@ export async function addCheckin(data: Partial<Checkin>): Promise<string> {
       coach_id: data.coachId,
       date: data.date?.toISOString() || new Date().toISOString(),
       weight: data.weight,
+      abdomen: data.abdomen,
+      hips: data.hips,
       energy: data.energy,
       sleep: data.sleep,
       hunger: data.hunger,
       mood: data.mood,
       adherence: data.adherence,
       notes: data.notes,
-      photos: data.photos || [],
+      photos: JSON.stringify(data.photos || []),
+      feedback: data.feedback ?? null,
     })
     .select("id")
     .single()
@@ -100,12 +104,18 @@ export async function addCheckin(data: Partial<Checkin>): Promise<string> {
 }
 
 function mapCheckin(row: Record<string, unknown>): Checkin {
+  let photos: string[] | undefined
+  if (row.photos) {
+    try { photos = JSON.parse(row.photos as string) } catch { photos = [] }
+  }
   return {
     id: row.id as string,
     clientId: row.client_id as string,
     coachId: row.coach_id as string,
     date: new Date(row.date as string),
     weight: row.weight as number | undefined,
+    abdomen: row.abdomen as number | undefined,
+    hips: row.hips as number | undefined,
     measurements: {
       chest: row.chest as number | undefined,
       waist: row.waist as number | undefined,
@@ -113,7 +123,7 @@ function mapCheckin(row: Record<string, unknown>): Checkin {
       arms: row.arms as number | undefined,
       thighs: row.thighs as number | undefined,
     },
-    photos: row.photos ? JSON.parse(row.photos as string) : undefined,
+    photos,
     energy: row.energy as number | undefined,
     sleep: row.sleep as number | undefined,
     hunger: row.hunger as number | undefined,
@@ -121,6 +131,7 @@ function mapCheckin(row: Record<string, unknown>): Checkin {
     adherence: row.adherence as number | undefined,
     notes: row.notes as string | undefined,
     coachNotes: row.coach_notes as string | undefined,
+    feedback: row.feedback as CheckinFeedback | undefined,
     createdAt: new Date(row.created_at as string),
   }
 }
@@ -195,6 +206,16 @@ function mapPayment(row: Record<string, unknown>): Payment {
     date: new Date(row.date as string),
     createdAt: new Date(row.created_at as string),
   }
+}
+
+// ── Client Notes ──────────────────────────────────────────────────────
+
+export async function saveClientNotes(clientId: string, notes: string): Promise<void> {
+  const { error } = await sb()
+    .from("users")
+    .update({ coach_notes: notes, updated_at: new Date().toISOString() })
+    .eq("id", clientId)
+  if (error) throw error
 }
 
 // ── Leads ─────────────────────────────────────────────────────────────

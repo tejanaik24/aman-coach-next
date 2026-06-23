@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
   coach_id    TEXT NOT NULL DEFAULT '',
   goal        TEXT, height NUMERIC, weight NUMERIC, age INTEGER,
   gender      TEXT CHECK (gender IN ('male','female','other')),
-  medical_conditions TEXT, start_date TIMESTAMPTZ,
+  medical_conditions TEXT, start_date TIMESTAMPTZ, end_date TIMESTAMPTZ,
   plan        TEXT CHECK (plan IN ('basic','premium','elite')),
   status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','inactive')),
-  last_checkin TIMESTAMPTZ,
+  last_checkin TIMESTAMPTZ, coach_notes TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -21,9 +21,28 @@ CREATE TABLE IF NOT EXISTS checkins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id TEXT NOT NULL, coach_id TEXT NOT NULL,
   date TIMESTAMPTZ NOT NULL DEFAULT now(),
-  weight NUMERIC, chest NUMERIC, waist NUMERIC, hips NUMERIC, arms NUMERIC, thighs NUMERIC,
-  photos TEXT, energy INTEGER, sleep INTEGER, hunger INTEGER, mood INTEGER, adherence INTEGER,
+  weight NUMERIC, abdomen NUMERIC,
+  chest NUMERIC, waist NUMERIC, hips NUMERIC, arms NUMERIC, thighs NUMERIC,
+  photos TEXT, feedback JSONB,
+  energy INTEGER, sleep INTEGER, hunger INTEGER, mood INTEGER, adherence INTEGER,
   notes TEXT, coach_notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- v3 migrations (run against existing DB)
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS end_date TIMESTAMPTZ;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS coach_notes TEXT;
+-- ALTER TABLE checkins ADD COLUMN IF NOT EXISTS abdomen NUMERIC;
+-- ALTER TABLE checkins ADD COLUMN IF NOT EXISTS feedback JSONB;
+
+CREATE TABLE IF NOT EXISTS onboarding_forms (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  form_type TEXT DEFAULT 'standard',
+  data JSONB,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  submitted_at TIMESTAMPTZ,
+  reviewed_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS payments (
