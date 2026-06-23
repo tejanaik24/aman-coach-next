@@ -1,23 +1,15 @@
 "use client"
 
-import { createContext, useEffect, useState, ReactNode } from "react"
-import type { User } from "@supabase/supabase-js"
-import { onAuthChange, getUserProfile, signUp, signIn, signOut } from "@/lib/auth"
-import { AppUser } from "@/types"
+import { createContext, useEffect, useState, type ReactNode } from "react"
+import type { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
+import type { Profile } from "@/types"
 
 interface AuthContextValue {
   user: User | null
-  profile: AppUser | null
-  role: "client" | "coach" | "admin" | null
+  profile: Profile | null
+  role: "coach" | "client" | null
   loading: boolean
-  login: (email: string, password: string) => Promise<{ user: User; role: string | null }>
-  register: (
-    email: string,
-    password: string,
-    name: string,
-    role: "client" | "coach"
-  ) => Promise<{ user: User; role: string | null }>
-  logout: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue>({
@@ -25,64 +17,47 @@ export const AuthContext = createContext<AuthContextValue>({
   profile: null,
   role: null,
   loading: true,
-  login: async () => { throw new Error("AuthContext not initialized") },
-  register: async () => { throw new Error("AuthContext not initialized") },
-  logout: async () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<AppUser | null>(null)
-  const [role, setRole] = useState<"client" | "coach" | "admin" | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsub = onAuthChange(async (supabaseUser) => {
-      setUser(supabaseUser)
-      if (supabaseUser) {
-        const p = await getUserProfile(supabaseUser.id)
-        setProfile(p)
-        setRole(p?.role || null)
-      } else {
-        setRole(null)
-        setProfile(null)
-      }
-      setLoading(false)
+    const supabase = createClient()
+
+    async function fetchProfile(u: User): Promise<void> {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", u.id)
+        .single()
+      setProfile(data as Profile | null)
+    }
+
+    void supabase.auth.getUser().then((result: { data: { user: User | null } }) => {
+      const u = result.data.user
+      setUser(u)
+      if (u) void fetchProfile(u).finally(() => setLoading(false))
+      else setLoading(false)
     })
-    return unsub
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        const u: User | null = session?.user ?? null
+        setUser(u)
+        if (u) void fetchProfile(u)
+        else { setProfile(null); setLoading(false) }
+      }
+    )
+
+    return () => subscription.unsubscribe()
   }, [])
-
-  const login = async (email: string, password: string) => {
-    const u = await signIn(email, password)
-    const p = await getUserProfile(u.id)
-    setProfile(p)
-    setRole(p?.role || null)
-    return { user: u, role: p?.role || null }
-  }
-
-  const register = async (
-    email: string,
-    password: string,
-    name: string,
-    r: "client" | "coach"
-  ) => {
-    const u = await signUp(email, password, name, r)
-    const p = await getUserProfile(u.id)
-    setProfile(p)
-    setRole(p?.role || null)
-    return { user: u, role: p?.role || null }
-  }
-
-  const logout = async () => {
-    await signOut()
-    setUser(null)
-    setProfile(null)
-    setRole(null)
-  }
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, role, loading, login, register, logout }}
+      value={{ user, profile, role: profile?.role ?? null, loading }}
     >
       {children}
     </AuthContext.Provider>

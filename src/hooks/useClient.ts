@@ -1,58 +1,63 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "./useAuth"
-import { getClientProfile, getCheckins, getPayments, getWorkoutPlan, getDietPlan } from "@/lib/store"
-import { Client, Checkin, Payment, WorkoutPlan, DietPlan } from "@/types"
+import type { Client, WorkoutPlan, NutritionPlan, Checkin } from "@/types"
 
-export function useClientData(clientId?: string) {
-  const { user } = useAuth()
-  const uid = clientId || user?.id
-  const [client, setClient] = useState<Client | null>(null)
-  const [checkins, setCheckins] = useState<Checkin[]>([])
-  const [payments, setPayments] = useState<Payment[]>([])
+export function useClient() {
+  const { user, loading: authLoading } = useAuth()
+  const [clientRecord, setClientRecord] = useState<Client | null>(null)
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null)
-  const [dietPlan, setDietPlan] = useState<DietPlan | null>(null)
+  const [nutritionPlan, setNutritionPlan] = useState<NutritionPlan | null>(null)
+  const [checkins, setCheckins] = useState<Checkin[]>([])
   const [loading, setLoading] = useState(true)
-  const [version, setVersion] = useState(0)
+
+  const load = useCallback(async () => {
+    if (!user) { setLoading(false); return }
+    const supabase = createClient()
+    setLoading(true)
+    try {
+      const { data: clientRow } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+      setClientRecord(clientRow)
+
+      if (clientRow) {
+        const [{ data: wp }, { data: np }, { data: ck }] = await Promise.all([
+          supabase
+            .from("workout_plans")
+            .select("*")
+            .eq("client_id", clientRow.id)
+            .eq("is_active", true)
+            .single(),
+          supabase
+            .from("nutrition_plans")
+            .select("*")
+            .eq("client_id", clientRow.id)
+            .eq("is_active", true)
+            .single(),
+          supabase
+            .from("checkins")
+            .select("*")
+            .eq("client_id", clientRow.id)
+            .order("submitted_at", { ascending: false })
+            .limit(10),
+        ])
+        setWorkoutPlan(wp)
+        setNutritionPlan(np)
+        setCheckins(ck ?? [])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
 
   useEffect(() => {
-    if (!uid) {
-      setLoading(false)
-      return
-    }
+    if (!authLoading) load()
+  }, [authLoading, load])
 
-    let cancelled = false
-    const cid: string = uid
-
-    async function load() {
-      try {
-        setLoading(true)
-        const [c, ch, p, w, d] = await Promise.all([
-          getClientProfile(cid),
-          getCheckins(cid),
-          getPayments(cid),
-          getWorkoutPlan(cid),
-          getDietPlan(cid),
-        ])
-        if (cancelled) return
-        setClient(c)
-        setCheckins(ch)
-        setPayments(p)
-        setWorkoutPlan(w)
-        setDietPlan(d)
-      } catch (err) {
-        console.error("useClientData error:", err)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    load()
-    return () => { cancelled = true }
-  }, [uid, version])
-
-  const refresh = () => setVersion((v) => v + 1)
-
-  return { client, checkins, payments, workoutPlan, dietPlan, loading, refresh }
+  return { clientRecord, workoutPlan, nutritionPlan, checkins, loading, refresh: load }
 }

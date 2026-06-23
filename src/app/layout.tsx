@@ -1,39 +1,41 @@
 import type { Metadata, Viewport } from "next"
-import { Bebas_Neue, Barlow } from "next/font/google"
-import { AuthProvider } from "@/contexts/AuthContext"
-import { StoreInitializer } from "@/components/StoreInitializer"
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt"
+import { Inter, Space_Grotesk } from "next/font/google"
 import { Toaster } from "react-hot-toast"
 import "./globals.css"
 
-const bebasNeue = Bebas_Neue({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  weight: "400",
-})
-
-const barlow = Barlow({
-  variable: "--font-body",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 })
 
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+})
+
 export const metadata: Metadata = {
-  title: "Aman Khurana Fitness | Transform Your Body, Transform Your Life",
-  description:
-    "Expert online fitness coaching by Aman Khurana. Contest prep, fat loss, muscle building, and antenatal & postnatal training programs.",
+  title: "AK Fitness Coach — Premium Coaching by Aman Khurana",
+  description: "Elite fitness coaching platform by Aman Khurana. Track workouts, nutrition, and progress.",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
-    apple: "/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "AK Coach",
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#C9A84C",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -42,35 +44,31 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${bebasNeue.variable} ${barlow.variable} dark h-full antialiased`}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="application-name" content="AK Fitness" />
+        <meta name="application-name" content="AK Fitness Coach" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-full bg-black text-white font-body overflow-x-hidden">
-        <AuthProvider>
-          <StoreInitializer />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: "#1a1a1a",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.1)",
-              },
-              success: { iconTheme: { primary: "#FFB800", secondary: "#000" } },
-              error: { iconTheme: { primary: "#EF4444", secondary: "#fff" } },
-            }}
-          />
+      <body className="min-h-screen bg-[#0A0A0A] text-white font-sans antialiased">
+        <div className="mx-auto max-w-[430px] min-h-screen bg-[#0A0A0A] relative">
           {children}
-          <PWAInstallPrompt />
-        </AuthProvider>
+        </div>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: "#161616",
+              color: "#fff",
+              border: "1px solid #222222",
+              borderRadius: "12px",
+            },
+            success: { iconTheme: { primary: "#C9A84C", secondary: "#0A0A0A" } },
+            error: { iconTheme: { primary: "#F87171", secondary: "#0A0A0A" } },
+          }}
+        />
       </body>
     </html>
   )

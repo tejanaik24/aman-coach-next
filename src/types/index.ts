@@ -1,284 +1,193 @@
-export interface AppUser {
-  uid: string
-  email: string
-  displayName: string
-  photoURL?: string
-  phone?: string
-  role: "client" | "coach" | "admin"
-  createdAt: Date
-  updatedAt: Date
-}
+export type AuthUser = Profile
 
-export interface Client extends AppUser {
-  role: "client"
-  coachId: string
-  goal?: string
-  height?: number
-  weight?: number
-  age?: number
-  gender?: "male" | "female" | "other"
-  medicalConditions?: string
-  startDate: Date
-  endDate?: Date
-  plan?: "basic" | "premium" | "elite"
-  status: "active" | "paused" | "inactive"
-  lastCheckin?: Date
-  coachNotes?: string
-}
-
-export interface CheckinFeedback {
-  workoutEnergy?: string
-  workoutDays?: number
-  workoutDeviation?: string
-  exerciseIssues?: string
-  cardioAchievement?: string
-  dietDeviation?: string
-  appetite?: string
-  digestion?: string
-  stoolFrequency?: string
-  dietChangeRequest?: string
-  foodAddRemove?: string
-  dailyEnergy?: string
-  sleepQuality?: string
-  waterIntake?: string
-  urineColor?: string
-  coachingFeeling?: string
-}
-
-export interface Checkin {
-  id: string
-  clientId: string
-  coachId: string
-  date: Date
-  weight?: number
-  abdomen?: number
-  hips?: number
-  measurements?: {
-    chest?: number
-    waist?: number
-    hips?: number
-    arms?: number
-    thighs?: number
-  }
-  photos?: string[]
-  energy?: number
-  sleep?: number
-  hunger?: number
-  mood?: number
-  adherence?: number
-  notes?: string
-  coachNotes?: string
-  feedback?: CheckinFeedback
-  createdAt: Date
-}
-
-export interface Payment {
-  id: string
-  clientId: string
-  coachId: string
-  amount: number
-  currency: string
-  method: "upi" | "cash" | "bank" | "other"
-  upiTransactionId?: string
-  status: "pending" | "completed" | "failed" | "refunded"
-  plan?: string
-  month?: string
-  invoiceId?: string
-  notes?: string
-  date: Date
-  createdAt: Date
-}
-
-export interface Lead {
+export interface Profile {
   id: string
   name: string
-  email: string
-  phone: string
-  goal?: string
-  source?: string
-  status: "new" | "contacted" | "qualified" | "converted" | "lost"
-  notes?: string
-  createdAt: Date
-  updatedAt: Date
+  phone: string | null
+  role: "coach" | "client"
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
 }
 
-export interface Message {
+export interface Client {
   id: string
-  senderId: string
-  receiverId: string
-  text: string
-  read: boolean
-  createdAt: Date
+  user_id: string | null
+  coach_id: string | null
+  goal: string | null
+  package_name: string | null
+  fee_amount: number
+  fee_currency: string
+  fee_due_day: number
+  start_date: string
+  status: "active" | "paused" | "inactive"
+  notes: string | null
+  created_at: string
+}
+
+export interface ClientWithProfile extends Client {
+  profile: Profile | null
 }
 
 export interface WorkoutPlan {
   id: string
-  clientId: string
-  coachId: string
+  client_id: string
+  coach_id: string
   name: string
-  description?: string
-  days: WorkoutDay[]
-  startDate?: Date
-  endDate?: Date
-  createdAt: Date
-  updatedAt: Date
+  weeks: number
+  is_active: boolean
+  is_template: boolean
+  created_at: string
 }
 
 export interface WorkoutDay {
-  day: string
-  exercises: Exercise[]
+  id: string
+  plan_id: string
+  day_number: number
+  day_name: string
+  focus: string | null
 }
 
 export interface Exercise {
+  id: string
+  day_id: string
   name: string
-  sets: number
-  reps: number
-  weight?: number
-  rest?: string
-  notes?: string
+  sets: number | null
+  reps: string | null
+  weight: string | null
+  rest_seconds: number | null
+  video_url: string | null
+  notes: string | null
+  order_index: number
 }
 
-export interface DietPlan {
+export interface NutritionPlan {
   id: string
-  clientId: string
-  coachId: string
-  name: string
-  description?: string
-  calories?: number
-  meals: Meal[]
-  startDate?: Date
-  endDate?: Date
-  createdAt: Date
-  updatedAt: Date
+  client_id: string
+  coach_id: string
+  total_calories: number | null
+  protein_g: number | null
+  carbs_g: number | null
+  fats_g: number | null
+  is_active: boolean
+  notes: string | null
+  created_at: string
 }
 
 export interface Meal {
-  name: string
-  time?: string
-  foods: FoodItem[]
+  id: string
+  plan_id: string
+  meal_name: string
+  meal_time: string | null
+  foods: Record<string, unknown>[]
+  total_calories: number | null
+  order_index: number
 }
 
-export interface FoodItem {
-  name: string
-  portion: string
-  calories?: number
-  protein?: number
-  carbs?: number
-  fats?: number
+export interface Checkin {
+  id: string
+  client_id: string
+  week_number: number | null
+  weight: number | null
+  body_fat: number | null
+  energy_level: number | null
+  sleep_quality: number | null
+  adherence_workout: number | null
+  adherence_nutrition: number | null
+  notes: string | null
+  coach_feedback: string | null
+  photos: string[]
+  submitted_at: string
+  reviewed_at: string | null
+  reviewed_by: string | null
 }
 
-export interface ProgressData {
-  date: Date
-  weight?: number
-  bodyFat?: number
-  chest?: number
-  waist?: number
-  hips?: number
-  arms?: number
-  thighs?: number
+export interface Fee {
+  id: string
+  client_id: string
+  amount: number
+  currency: string
+  due_date: string
+  paid_date: string | null
+  status: "pending" | "paid" | "overdue"
+  razorpay_order_id: string | null
+  razorpay_payment_id: string | null
+  reminder_sent_at: string | null
+  notes: string | null
+  created_at: string
 }
 
-export interface Analytics {
+export interface AutomationLog {
+  id: string
+  type: string
+  client_id: string | null
+  payload: Record<string, unknown> | null
+  status: "sent" | "failed" | "skipped"
+  error_message: string | null
+  sent_at: string
+}
+
+export interface CoachStats {
   totalClients: number
   activeClients: number
-  totalRevenue: number
+  pendingCheckins: number
+  feesDue: number
   monthlyRevenue: number
-  newLeads: number
-  conversionRate: number
-  checkinRate: number
-  revenueByMonth: { month: string; amount: number }[]
-  clientGrowth: { month: string; count: number }[]
 }
 
-export interface Notification {
-  id: string
-  userId: string
-  title: string
-  body: string
-  type: "checkin" | "payment" | "message" | "lead" | "plan" | "system"
-  read: boolean
-  link?: string
-  createdAt: Date
-}
-
-export interface MealLog {
-  id: string
-  userId: string
-  date: string
-  mealName: "breakfast" | "lunch" | "dinner" | "snack"
-  foods: FoodItem[]
-  totalCalories: number
-  totalProtein: number
-  totalCarbs: number
-  totalFats: number
-  createdAt: Date
-}
-
-export interface FoodDatabaseItem {
-  id: string
-  name: string
-  portion: string
-  calories: number
-  protein: number
-  carbs: number
-  fats: number
-  category: string
-  isCommon: boolean
-}
-
-export interface Habit {
-  id: string
-  userId: string
-  name: string
-  icon: string
-  category: "hydration" | "movement" | "mindfulness" | "nutrition" | "sleep" | "other"
-  color: string
-  sortOrder: number
-  createdAt: Date
-}
-
-export interface HabitLog {
-  id: string
-  habitId: string
-  userId: string
-  date: string
-  value: number
-  note?: string
-  createdAt: Date
-}
-
-export interface WearableMetric {
-  id: string
-  userId: string
-  date: string
-  source: "manual" | "fitbit" | "google_fit" | "apple_health"
-  steps?: number
-  heartRateAvg?: number
-  sleepHours?: number
-  caloriesBurned?: number
-  activeMinutes?: number
-  createdAt: Date
-}
-
-export interface CoachAvailabilitySlot {
-  id: string
-  coachId: string
-  dayOfWeek: number
-  startTime: string
-  endTime: string
-  isAvailable: boolean
-  createdAt: Date
-}
-
-export interface Appointment {
-  id: string
-  clientId: string
-  coachId: string
-  date: string
-  startTime: string
-  endTime: string
-  status: "scheduled" | "completed" | "cancelled"
-  notes?: string
-  createdAt: Date
-  updatedAt: Date
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile
+        Insert: Omit<Profile, "created_at" | "updated_at">
+        Update: Partial<Omit<Profile, "id">>
+      }
+      clients: {
+        Row: Client
+        Insert: Omit<Client, "id" | "created_at">
+        Update: Partial<Omit<Client, "id">>
+      }
+      workout_plans: {
+        Row: WorkoutPlan
+        Insert: Omit<WorkoutPlan, "id" | "created_at">
+        Update: Partial<Omit<WorkoutPlan, "id">>
+      }
+      workout_days: {
+        Row: WorkoutDay
+        Insert: Omit<WorkoutDay, "id">
+        Update: Partial<Omit<WorkoutDay, "id">>
+      }
+      exercises: {
+        Row: Exercise
+        Insert: Omit<Exercise, "id">
+        Update: Partial<Omit<Exercise, "id">>
+      }
+      nutrition_plans: {
+        Row: NutritionPlan
+        Insert: Omit<NutritionPlan, "id" | "created_at">
+        Update: Partial<Omit<NutritionPlan, "id">>
+      }
+      meals: {
+        Row: Meal
+        Insert: Omit<Meal, "id">
+        Update: Partial<Omit<Meal, "id">>
+      }
+      checkins: {
+        Row: Checkin
+        Insert: Omit<Checkin, "id" | "submitted_at">
+        Update: Partial<Omit<Checkin, "id">>
+      }
+      fees: {
+        Row: Fee
+        Insert: Omit<Fee, "id" | "created_at">
+        Update: Partial<Omit<Fee, "id">>
+      }
+      automation_logs: {
+        Row: AutomationLog
+        Insert: Omit<AutomationLog, "id" | "sent_at">
+        Update: Partial<Omit<AutomationLog, "id">>
+      }
+    }
+  }
 }

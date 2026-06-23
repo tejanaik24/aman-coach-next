@@ -1,61 +1,65 @@
-const CACHE_NAME = "ak-fitness-v2"
+const CACHE_NAME = "ak-fitness-v3"
 
-const urlsToCache = [
-  "/",
-  "/auth/login",
-  "/auth/signup",
-  "/client/dashboard",
-  "/client/workout",
-  "/client/diet",
+const STATIC_ASSETS = [
+  "/manifest.webmanifest",
 ]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   )
+  self.skipWaiting()
 })
 
 self.addEventListener("fetch", (event) => {
   const { request } = event
   const url = new URL(request.url)
 
-  // API routes - Network First
+  // Only handle same-origin requests
+  if (url.origin !== self.location.origin) return
+
+  // API routes — network only, never cache
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
-          return response
-        })
-        .catch(() => caches.match(request).then((r) => r || new Response(JSON.stringify({ offline: true }), {
+      fetch(request).catch(() =>
+        new Response(JSON.stringify({ offline: true }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        })))
+        })
+      )
     )
     return
   }
 
-  // Static assets and pages - Cache First
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== "basic") {
+  // Static assets (JS, CSS, images, fonts) — cache first
+  if (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.match(/\.(png|jpg|jpeg|svg|ico|woff2?|ttf)$/)
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          }
           return response
-        }
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
-        return response
-      }).catch(() => {
-        // Offline fallback
-        if (request.mode === "navigate") {
-          return caches.match("/")
-        }
-        return new Response("Offline", { status: 503 })
+        })
       })
-    })
-  )
+    )
+    return
+  }
+
+  // HTML pages — network first, fall back to cache only when offline
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match(request).then((r) => r || caches.match("/"))
+      )
+    )
+    return
+  }
 })
 
 self.addEventListener("activate", (event) => {
