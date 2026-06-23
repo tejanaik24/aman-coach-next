@@ -6,10 +6,10 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { PageSkeleton } from "@/components/ui/skeleton"
 import { useClientData } from "@/hooks/useClient"
 import { useAuth } from "@/hooks/useAuth"
-import { saveWorkoutPlan, saveDietPlan, getWorkoutPlan, getDietPlan } from "@/lib/store"
+import { saveWorkoutPlan, saveDietPlan, getWorkoutPlan, getDietPlan, updatePaymentStatus } from "@/lib/store"
 import { Checkin } from "@/types"
 import { motion } from "motion/react"
-import { MessageSquare, Upload, ArrowLeft, Send, Camera, CreditCard, Dumbbell, UtensilsCrossed, Plus, Trash2, TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { MessageSquare, Upload, ArrowLeft, Send, Camera, CreditCard, Dumbbell, UtensilsCrossed, Plus, Trash2, TrendingUp, TrendingDown, Minus, ExternalLink } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
@@ -62,7 +62,7 @@ export default function CoachClientDetailPage({
 }) {
   const { id } = use(params)
   const { user } = useAuth()
-  const { client, checkins, payments, loading } = useClientData(id)
+  const { client, checkins, payments, loading, refresh } = useClientData(id)
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const [notes, setNotes] = useState("")
@@ -165,6 +165,7 @@ export default function CoachClientDetailPage({
       })
       toast.success(existingWorkout ? "Workout updated" : "Workout created")
       setExistingWorkout(true)
+      refresh()
     } catch {
       toast.error("Failed to save workout plan")
     } finally {
@@ -197,6 +198,7 @@ export default function CoachClientDetailPage({
       })
       toast.success(existingDiet ? "Diet updated" : "Diet created")
       setExistingDiet(true)
+      refresh()
     } catch {
       toast.error("Failed to save diet plan")
     } finally {
@@ -306,15 +308,33 @@ export default function CoachClientDetailPage({
           )}
 
           <div className="flex gap-2">
-            <button className="flex-1 rounded-full bg-green-600 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5">
-              <Send className="size-3.5" />
+            <button
+              onClick={() => {
+                const phone = client.phone
+                if (phone) {
+                  window.open(`https://wa.me/${phone.replace(/[^0-9]/g, "")}`, "_blank")
+                } else {
+                  toast.error("No phone number available")
+                }
+              }}
+              className="flex-1 rounded-full bg-green-600 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <ExternalLink className="size-3.5" />
               WhatsApp
             </button>
-            <button className="flex-1 rounded-full bg-[#FFB800] py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-1.5">
+            <button
+              onClick={() => { setActiveTab("plans"); setPlanView("workout") }}
+              className="flex-1 rounded-full bg-[#FFB800] py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-1.5"
+            >
               <Upload className="size-3.5" />
               Upload Plan
             </button>
-            <button className="flex-1 rounded-full bg-zinc-800 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-1.5">
+            <button
+              onClick={() => {
+                toast.success("Messaging coming soon")
+              }}
+              className="flex-1 rounded-full bg-zinc-800 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-1.5"
+            >
               <MessageSquare className="size-3.5" />
               Message
             </button>
@@ -374,7 +394,18 @@ export default function CoachClientDetailPage({
                       {p.status}
                     </span>
                     {p.status !== "completed" && (
-                      <button className="rounded-full bg-[#FFB800] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await updatePaymentStatus(p.id, "completed")
+                             toast.success("Marked as paid")
+                             refresh()
+                          } catch {
+                            toast.error("Failed to update payment")
+                          }
+                        }}
+                        className="rounded-full bg-[#FFB800] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors"
+                      >
                         Mark Paid
                       </button>
                     )}

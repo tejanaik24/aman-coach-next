@@ -34,7 +34,7 @@ export default function CoachAdminPage() {
 
   const sendManualReminder = async () => {
     try {
-      const r = await fetch("/api/automation/send-manual-reminder", { method: "POST" })
+      const r = await fetch("/api/automation/send-manual-reminder", { method: "POST", headers: { "x-automation-secret": "akfitness_automation_secret_2026" } })
       const data = await r.json()
       if (data.success) {
         toast.success("Reminder sent!")

@@ -149,6 +149,14 @@ export async function getCoachPayments(coachId: string, max = 50): Promise<Payme
   return data.map(mapPayment)
 }
 
+export async function updatePaymentStatus(id: string, status: Payment["status"]): Promise<void> {
+  const { error } = await sb()
+    .from("payments")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id)
+  if (error) throw error
+}
+
 export async function addPayment(data: Partial<Payment>): Promise<string> {
   const { data: inserted, error } = await sb()
     .from("payments")

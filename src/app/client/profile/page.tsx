@@ -5,14 +5,22 @@ import { useAuth } from "@/hooks/useAuth"
 import { useClientData } from "@/hooks/useClient"
 import { PageSkeleton } from "@/components/ui/skeleton"
 import { motion } from "motion/react"
-import { Settings, LogOut } from "lucide-react"
+import { useState } from "react"
+import { Settings, LogOut, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+
+import toast from "react-hot-toast"
+import { changePassword } from "@/lib/auth"
 
 export default function ProfilePage() {
   const { user, profile, logout } = useAuth()
   const { client, payments, loading } = useClientData()
   const router = useRouter()
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [changingPassword, setChangingPassword] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -93,8 +101,11 @@ export default function ProfilePage() {
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 mb-4">
           <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Settings</p>
           <div className="space-y-2">
-            <button className="w-full flex items-center gap-3 rounded-xl bg-zinc-800/50 px-3 py-2.5 text-sm text-zinc-300 hover:text-white transition-colors text-left">
-              <Settings className="size-4 text-zinc-500" />
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full flex items-center gap-3 rounded-xl bg-zinc-800/50 px-3 py-2.5 text-sm text-zinc-300 hover:text-white transition-colors text-left"
+            >
+              <Lock className="size-4 text-zinc-500" />
               Change Password
             </button>
             <button
@@ -106,6 +117,76 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
+
+        {showPasswordModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={() => setShowPasswordModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
+            >
+              <p className="text-sm font-bold uppercase tracking-wider text-white mb-4">Change Password</p>
+              <div className="space-y-3 mb-4">
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800]"
+                  placeholder="New password"
+                />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#FFB800]"
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="flex-1 rounded-full bg-zinc-800 py-2.5 text-xs font-bold uppercase tracking-wider text-zinc-300 hover:bg-zinc-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!newPassword.trim() || newPassword.length < 6) {
+                      toast.error("Password must be at least 6 characters")
+                      return
+                    }
+                    if (newPassword !== confirmPassword) {
+                      toast.error("Passwords don't match")
+                      return
+                    }
+                    setChangingPassword(true)
+                    try {
+                      await changePassword(newPassword)
+                      toast.success("Password changed successfully")
+                      setShowPasswordModal(false)
+                      setNewPassword("")
+                      setConfirmPassword("")
+                    } catch {
+                      toast.error("Failed to change password")
+                    } finally {
+                      setChangingPassword(false)
+                    }
+                  }}
+                  disabled={!newPassword.trim() || changingPassword}
+                  className="flex-1 rounded-full bg-[#FFB800] py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#B28000] disabled:opacity-50 transition-colors"
+                >
+                  {changingPassword ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </ClientLayout>
   )

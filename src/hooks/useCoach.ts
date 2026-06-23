@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "./useAuth"
 import { getCoachClients, getCoachCheckins, getCoachPayments, getLeads } from "@/lib/store"
 import { Client, Checkin, Payment, Lead, Analytics } from "@/types"
@@ -14,19 +14,16 @@ export function useCoachData() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [version, setVersion] = useState(0)
-  const started = useRef(false)
 
   useEffect(() => {
-    if (started.current && version === 0) return
-    started.current = true
-
     if (!user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false)
       return
     }
 
+    let cancelled = false
     const cid: string = user.id
+
     async function load() {
       try {
         setLoading(true)
@@ -36,6 +33,7 @@ export function useCoachData() {
           getCoachPayments(cid),
           getLeads(),
         ])
+        if (cancelled) return
         setClients(cl)
         setCheckins(ch)
         setPayments(p)
@@ -61,6 +59,7 @@ export function useCoachData() {
               ).length / (activeClients.length || 1)
             : 0
 
+        if (cancelled) return
         setAnalytics({
           totalClients: cl.length,
           activeClients: activeClients.length,
@@ -75,11 +74,12 @@ export function useCoachData() {
       } catch (err) {
         console.error("useCoachData error:", err)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     load()
+    return () => { cancelled = true }
   }, [user, version])
 
   const refresh = () => setVersion((v) => v + 1)

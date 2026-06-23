@@ -109,7 +109,26 @@ export default function WorkoutPage() {
         })}
       </div>
 
-      <button className="w-full rounded-full bg-[#FFB800] py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-2">
+      <button
+        onClick={() => {
+          let text = `${workoutPlan.name}\n\n`
+          for (const d of workoutPlan.days ?? []) {
+            text += `${d.day}\n`
+            for (const ex of d.exercises ?? []) {
+              text += `  ${ex.name}: ${ex.sets} × ${ex.reps}${ex.weight ? ` @ ${ex.weight}kg` : ""}\n`
+            }
+            text += "\n"
+          }
+          const blob = new Blob([text], { type: "text/plain" })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement("a")
+          a.href = url
+          a.download = "workout-plan.txt"
+          a.click()
+          URL.revokeObjectURL(url)
+        }}
+        className="w-full rounded-full bg-[#FFB800] py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-2"
+      >
         <Download className="size-4" />
         Download Full Plan
       </button>

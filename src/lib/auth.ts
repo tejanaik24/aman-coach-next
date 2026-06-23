@@ -34,6 +34,11 @@ export async function signUp(
   return data.user
 }
 
+export async function changePassword(newPassword: string) {
+  const { error } = await sb().auth.updateUser({ password: newPassword })
+  if (error) throw error
+}
+
 export async function signIn(email: string, password: string) {
   const { data, error } = await sb().auth.signInWithPassword({ email, password })
   if (error) throw error

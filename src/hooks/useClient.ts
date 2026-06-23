@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "./useAuth"
 import { getClientProfile, getCheckins, getPayments, getWorkoutPlan, getDietPlan } from "@/lib/store"
 import { Client, Checkin, Payment, WorkoutPlan, DietPlan } from "@/types"
@@ -14,21 +14,20 @@ export function useClientData(clientId?: string) {
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null)
   const [dietPlan, setDietPlan] = useState<DietPlan | null>(null)
   const [loading, setLoading] = useState(true)
-  const started = useRef(false)
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
-    if (started.current) return
-    started.current = true
-
     if (!uid) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false)
       return
     }
 
+    let cancelled = false
     const cid: string = uid
+
     async function load() {
       try {
+        setLoading(true)
         const [c, ch, p, w, d] = await Promise.all([
           getClientProfile(cid),
           getCheckins(cid),
@@ -36,6 +35,7 @@ export function useClientData(clientId?: string) {
           getWorkoutPlan(cid),
           getDietPlan(cid),
         ])
+        if (cancelled) return
         setClient(c)
         setCheckins(ch)
         setPayments(p)
@@ -44,12 +44,15 @@ export function useClientData(clientId?: string) {
       } catch (err) {
         console.error("useClientData error:", err)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     load()
-  }, [uid])
+    return () => { cancelled = true }
+  }, [uid, version])
 
-  return { client, checkins, payments, workoutPlan, dietPlan, loading }
+  const refresh = () => setVersion((v) => v + 1)
+
+  return { client, checkins, payments, workoutPlan, dietPlan, loading, refresh }
 }

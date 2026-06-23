@@ -9,7 +9,7 @@ import { updateLeadStatus } from "@/lib/store"
 import { Lead } from "@/types"
 import toast from "react-hot-toast"
 import { motion } from "motion/react"
-import { Search, Users2, Plus, Send, List, Columns3 } from "lucide-react"
+import { Search, Users2, Plus, Send, List, Columns3, ExternalLink } from "lucide-react"
 import { format } from "date-fns"
 
 const pipelineStages = [
@@ -21,7 +21,7 @@ const pipelineStages = [
 ]
 
 export default function CoachLeadsPage() {
-  const { leads, loading } = useCoachData()
+  const { leads, loading, refresh } = useCoachData()
   const [search, setSearch] = useState("")
   const [view, setView] = useState<"list" | "kanban">("list")
 
@@ -36,6 +36,7 @@ export default function CoachLeadsPage() {
     try {
       await updateLeadStatus(id, status)
       toast.success(`Lead moved to ${status}`)
+      refresh()
     } catch {
       toast.error("Failed to update lead")
     }
@@ -105,7 +106,17 @@ export default function CoachLeadsPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="rounded-full bg-green-600/20 p-2 text-green-400 hover:bg-green-600/30 transition-colors">
+                    <button
+                      onClick={() => {
+                        if (l.phone) {
+                          window.open(`https://wa.me/${l.phone.replace(/[^0-9]/g, "")}`, "_blank")
+                          handleStatus(l.id, "contacted")
+                        } else {
+                          toast.error("No phone number")
+                        }
+                      }}
+                      className="rounded-full bg-green-600/20 p-2 text-green-400 hover:bg-green-600/30 transition-colors"
+                    >
                       <Send className="size-3.5" />
                     </button>
                     <select
@@ -159,7 +170,17 @@ export default function CoachLeadsPage() {
                           >
                             Move → {pipelineStages[Math.min(pipelineStages.indexOf(pipelineStages.find(s => s.key === l.status)!) + 1, pipelineStages.length - 1)].label}
                           </button>
-                          <button className="rounded-full bg-green-600/20 p-1.5 text-green-400">
+                          <button
+                            onClick={() => {
+                              if (l.phone) {
+                                window.open(`https://wa.me/${l.phone.replace(/[^0-9]/g, "")}`, "_blank")
+                                handleStatus(l.id, "contacted")
+                              } else {
+                                toast.error("No phone number")
+                              }
+                            }}
+                            className="rounded-full bg-green-600/20 p-1.5 text-green-400"
+                          >
                             <Send className="size-3" />
                           </button>
                         </div>

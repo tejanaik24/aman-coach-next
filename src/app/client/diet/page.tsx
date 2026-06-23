@@ -111,7 +111,28 @@ export default function DietPage() {
         })}
       </div>
 
-      <button className="w-full rounded-full bg-[#FFB800] py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-2">
+      <button
+        onClick={() => {
+          let text = `${dietPlan.name}\n`
+          if (dietPlan.calories) text += `${dietPlan.calories} kcal daily target\n\n`
+          else text += "\n"
+          for (const meal of dietPlan.meals ?? []) {
+            text += `${meal.name}${meal.time ? ` (${meal.time})` : ""}\n`
+            for (const food of meal.foods ?? []) {
+              text += `  ${food.name} — ${food.portion}${food.calories ? ` (${food.calories} cal)` : ""}\n`
+            }
+            text += "\n"
+          }
+          const blob = new Blob([text], { type: "text/plain" })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement("a")
+          a.href = url
+          a.download = "diet-plan.txt"
+          a.click()
+          URL.revokeObjectURL(url)
+        }}
+        className="w-full rounded-full bg-[#FFB800] py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#B28000] transition-colors flex items-center justify-center gap-2"
+      >
         <Download className="size-4" />
         Download Full Plan
       </button>

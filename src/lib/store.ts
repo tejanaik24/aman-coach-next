@@ -16,6 +16,7 @@ export const getCoachCheckins = supabase.getCoachCheckins
 export const addCheckin = supabase.addCheckin
 export const getPayments = supabase.getPayments
 export const getCoachPayments = supabase.getCoachPayments
+export const updatePaymentStatus = supabase.updatePaymentStatus
 export const addPayment = supabase.addPayment
 export const getLeads = supabase.getLeads
 export const addLead = supabase.addLead
