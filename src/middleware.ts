@@ -1,36 +1,22 @@
-import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+// Runs on Edge Runtime — zero network calls, zero async, instant
+export function middleware(request: NextRequest) {
+  const projectRef = "muuegtbyaehlrfqjluqz"
+  const cookieName = `sb-${projectRef}-auth-token`
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
+  const hasSession =
+    request.cookies.has(cookieName) ||
+    request.cookies.has(`${cookieName}.0`) ||
+    request.cookies.has(`${cookieName}.1`)
 
-  // Use getSession() — reads from cookie, no network call, never times out on Edge
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) {
+  if (!hasSession) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/login"
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {
