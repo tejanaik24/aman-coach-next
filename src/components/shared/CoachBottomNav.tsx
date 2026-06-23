@@ -2,13 +2,13 @@
 
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "motion/react"
-import { LayoutDashboard, Users, ClipboardList, IndianRupee } from "lucide-react"
+import { LayoutDashboard, Users, Dumbbell, IndianRupee } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const tabs = [
   { href: "/coach/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/coach/clients", label: "Clients", icon: Users },
-  { href: "/coach/plans", label: "Plans", icon: ClipboardList },
+  { href: "/coach/plans", label: "Plans", icon: Dumbbell },
   { href: "/coach/fees", label: "Fees", icon: IndianRupee },
 ]
 
@@ -26,13 +26,29 @@ export default function CoachBottomNav() {
               key={href}
               onClick={() => router.push(href)}
               whileTap={{ scale: 0.9 }}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
-                isActive ? "text-[#C9A84C]" : "text-[#555555]"
-              )}
+              className="flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors relative"
             >
-              <Icon className="size-5" />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon
+                className={cn(
+                  "size-5 transition-colors",
+                  isActive ? "text-[#C9A84C]" : "text-[#555555]"
+                )}
+              />
+              <span
+                className={cn(
+                  "text-[10px] font-medium transition-colors",
+                  isActive ? "text-[#C9A84C]" : "text-[#555555]"
+                )}
+              >
+                {label}
+              </span>
+              {/* Active dot indicator */}
+              <div
+                className={cn(
+                  "w-1 h-1 rounded-full transition-colors",
+                  isActive ? "bg-[#C9A84C]" : "bg-transparent"
+                )}
+              />
             </motion.button>
           )
         })}
