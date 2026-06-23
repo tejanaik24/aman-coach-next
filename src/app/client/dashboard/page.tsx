@@ -52,8 +52,9 @@ export default function ClientDashboardPage() {
   const lastCheckin = checkins[0]
   const latestPayment = payments[0]
 
-  const planStart = client?.startDate ? new Date(client.startDate) : null
-  const planEnd = client?.endDate ? new Date(client.endDate) : null
+  const isValidDate = (d: unknown): d is Date => d instanceof Date && !isNaN(d.getTime())
+  const planStart = client?.startDate && isValidDate(client.startDate) ? client.startDate : null
+  const planEnd = client?.endDate && isValidDate(client.endDate) ? client.endDate : null
   const planDaysTotal = planStart && planEnd ? Math.max(1, differenceInDays(planEnd, planStart)) : 90
   const planDaysDone = planStart ? Math.min(planDaysTotal, Math.max(0, differenceInDays(new Date(), planStart))) : 0
 
@@ -82,7 +83,7 @@ export default function ClientDashboardPage() {
               {client?.plan ? `${client.plan.charAt(0).toUpperCase() + client.plan.slice(1)} Plan` : "No active plan"}
             </p>
             <p className="text-xs text-zinc-500 mb-4">
-              Started {client?.startDate ? format(new Date(client.startDate), "MMM d, yyyy") : "—"}
+              Started {planStart ? format(planStart, "MMM d, yyyy") : "—"}
             </p>
             <PlanProgressBar current={planDaysDone} total={planDaysTotal} />
           </div>
@@ -135,7 +136,7 @@ export default function ClientDashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Last Check-in</p>
               <span className="text-xs text-zinc-500">
-                {format(new Date(lastCheckin.date), "MMM d")}
+                {isValidDate(lastCheckin.date) ? format(lastCheckin.date, "MMM d") : "—"}
               </span>
             </div>
             <div className="flex gap-6">

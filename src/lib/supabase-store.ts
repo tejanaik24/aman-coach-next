@@ -43,7 +43,7 @@ function mapUser(row: Record<string, unknown>): Client {
     age: row.age as number | undefined,
     gender: row.gender as "male" | "female" | "other" | undefined,
     medicalConditions: row.medical_conditions as string | undefined,
-    startDate: new Date(row.start_date as string || row.created_at as string),
+    startDate: row.start_date ? new Date(row.start_date as string) : row.created_at ? new Date(row.created_at as string) : new Date(),
     endDate: row.end_date ? new Date(row.end_date as string) : undefined,
     plan: row.plan as "basic" | "premium" | "elite" | undefined,
     status: (row.status as "active" | "paused" | "inactive") || "active",

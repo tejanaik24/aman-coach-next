@@ -21,10 +21,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Only check auth (JWT-based, no DB round-trip) — role redirects handled per-page
-  const { data: { user } } = await supabase.auth.getUser()
+  // Use getSession() — reads from cookie, no network call, never times out on Edge
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) {
+  if (!session) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/login"
     return NextResponse.redirect(url)
