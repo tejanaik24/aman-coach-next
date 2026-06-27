@@ -65,48 +65,6 @@ export default function ClientsPage() {
       mkClient("c5", "Vikram Singh", "9876001122", "inactive", "Weight Loss", "Standard 1 Month", "2025-10-01"),
     ])
     setIsLoading(false)
-    return
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: rawRows } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("coach_id", user.id)
-      .order("created_at", { ascending: false })
-
-    const clientRows = (rawRows ?? []) as Client[]
-
-    if (!clientRows.length) {
-      setClients([])
-      setIsLoading(false)
-      return
-    }
-
-    const userIds = clientRows.map((c) => c.user_id).filter(Boolean) as string[]
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, name, phone, avatar_url, role, created_at, updated_at")
-      .in("id", userIds)
-
-    const typedProfiles = (profiles ?? []) as Profile[]
-    const profileMap = new Map(typedProfiles.map((p) => [p.id, p]))
-
-    const enriched: ClientWithProfile[] = clientRows
-      .map((c) => ({
-        ...c,
-        profile: c.user_id ? (profileMap.get(c.user_id) ?? null) : null,
-      }))
-      .sort((a, b) => {
-        const order = { active: 0, paused: 1, inactive: 2 }
-        return (order[a.status] ?? 3) - (order[b.status] ?? 3)
-      })
-
-    setClients(enriched)
-    setIsLoading(false)
   }, [])
 
   useEffect(() => {
