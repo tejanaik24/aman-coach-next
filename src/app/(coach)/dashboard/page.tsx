@@ -156,7 +156,7 @@ export default function CoachDashboardPage() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-semibold">Recent Check-ins</h2>
           <button
-            onClick={() => router.push("/coach/clients")}
+            onClick={() => router.push("/clients")}
             className="text-[#C9A84C] text-sm font-medium"
           >
             See all
@@ -183,7 +183,7 @@ export default function CoachDashboardPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => router.push(`/coach/clients/${c.client_id}`)}
+                  onClick={() => router.push(`/clients/${c.client_id}`)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#1A1A1A] transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-[#C9A84C]/10 flex items-center justify-center flex-shrink-0">
@@ -226,7 +226,7 @@ export default function CoachDashboardPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
-                onClick={() => router.push(`/coach/clients/${c.id}`)}
+                onClick={() => router.push(`/clients/${c.id}`)}
                 className="w-full bg-[#161616] border border-[#222222] rounded-2xl p-4 flex items-center gap-3 text-left hover:bg-[#1A1A1A] transition-colors"
               >
                 <AlertCircle className="size-4 text-yellow-500 flex-shrink-0" />

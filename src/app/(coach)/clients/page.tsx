@@ -181,7 +181,7 @@ export default function ClientsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => router.push(`/coach/clients/${c.id}`)}
+                onClick={() => router.push(`/clients/${c.id}`)}
                 className="w-full bg-[#161616] border border-[#222222] rounded-2xl p-4 flex items-center gap-3 text-left hover:bg-[#1A1A1A] transition-colors"
               >
                 <div className="w-11 h-11 rounded-full bg-[#C9A84C] flex items-center justify-center flex-shrink-0">

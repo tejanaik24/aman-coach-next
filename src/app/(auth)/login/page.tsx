@@ -26,14 +26,14 @@ export default function LoginPage() {
           <p className="text-[#A0A0A0] text-sm text-center mb-2">Preview Mode — Choose a view</p>
 
           <button
-            onClick={() => router.push("/coach/dashboard")}
+            onClick={() => router.push("/dashboard")}
             className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center justify-center gap-2"
           >
             Preview as Coach <ChevronRight className="size-5" />
           </button>
 
           <button
-            onClick={() => router.push("/client/home")}
+            onClick={() => router.push("/home")}
             className="w-full h-14 rounded-2xl border border-[#C9A84C] text-[#C9A84C] font-bold text-base flex items-center justify-center gap-2"
           >
             Preview as Client <ChevronRight className="size-5" />

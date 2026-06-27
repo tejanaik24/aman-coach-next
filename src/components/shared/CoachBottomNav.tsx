@@ -6,10 +6,10 @@ import { LayoutDashboard, Users, Dumbbell, IndianRupee } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const tabs = [
-  { href: "/coach/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/coach/clients", label: "Clients", icon: Users },
-  { href: "/coach/plans", label: "Plans", icon: Dumbbell },
-  { href: "/coach/fees", label: "Fees", icon: IndianRupee },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/clients", label: "Clients", icon: Users },
+  { href: "/plans", label: "Plans", icon: Dumbbell },
+  { href: "/fees", label: "Fees", icon: IndianRupee },
 ]
 
 export default function CoachBottomNav() {

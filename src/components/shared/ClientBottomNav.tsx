@@ -6,11 +6,11 @@ import { Home, Dumbbell, Apple, ClipboardCheck, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const tabs = [
-  { href: "/client/home", label: "Home", icon: Home },
-  { href: "/client/workout", label: "Workout", icon: Dumbbell },
-  { href: "/client/nutrition", label: "Nutrition", icon: Apple },
-  { href: "/client/checkin", label: "Check-in", icon: ClipboardCheck },
-  { href: "/client/progress", label: "Progress", icon: TrendingUp },
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/workout", label: "Workout", icon: Dumbbell },
+  { href: "/nutrition", label: "Nutrition", icon: Apple },
+  { href: "/checkin", label: "Check-in", icon: ClipboardCheck },
+  { href: "/progress", label: "Progress", icon: TrendingUp },
 ]
 
 export default function ClientBottomNav() {

@@ -275,7 +275,7 @@ export default function ClientDetailPage() {
         {!isLoading && (
           <div className="grid grid-cols-3 gap-3">
             {[
-              { icon: Dumbbell, label: "Assign Plan", action: () => router.push("/coach/plans") },
+              { icon: Dumbbell, label: "Assign Plan", action: () => router.push("/plans") },
               {
                 icon: ClipboardList,
                 label: "Check-in",
@@ -478,7 +478,7 @@ export default function ClientDetailPage() {
 
                 <motion.button
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => router.push("/coach/plans")}
+                  onClick={() => router.push("/plans")}
                   className="w-full h-12 rounded-2xl bg-[#1A1A1A] border border-[#333333] text-[#A0A0A0] text-sm font-medium hover:border-[#C9A84C] hover:text-[#C9A84C] transition-colors"
                 >
                   Assign New Plan
