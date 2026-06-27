@@ -82,6 +82,16 @@ export default function CoachDashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async () => {
+    // PREVIEW MODE: inject mock data
+    setStats({ activeClients: 12, pendingCheckins: 4, feesDue: 3, monthRevenue: 48000 })
+    setRecentCheckins([
+      { id: "1", client_id: "c1", week_number: 8, submitted_at: new Date().toISOString(), adherence_workout: 9, adherence_nutrition: 7, reviewed_at: null, clientName: "Priya Sharma" } as RecentCheckin,
+      { id: "2", client_id: "c2", week_number: 5, submitted_at: new Date(Date.now() - 86400000).toISOString(), adherence_workout: 6, adherence_nutrition: 5, reviewed_at: null, clientName: "Rahul Mehra" } as RecentCheckin,
+      { id: "3", client_id: "c3", week_number: 12, submitted_at: new Date(Date.now() - 172800000).toISOString(), adherence_workout: 10, adherence_nutrition: 9, reviewed_at: null, clientName: "Ananya Kapoor" } as RecentCheckin,
+    ])
+    setAttentionClients([])
+    setIsLoading(false)
+    return
     const supabase = createClient()
     const {
       data: { user },
