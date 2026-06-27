@@ -52,12 +52,17 @@ export default function ClientsPage() {
   const fetchClients = useCallback(async () => {
     setIsLoading(true)
     // PREVIEW MODE: inject mock data
+    const mkClient = (id: string, name: string, phone: string, status: "active"|"paused"|"inactive", goal: string, pkg: string, start: string) => ({
+      id, coach_id: "coach1", user_id: id, status, goal, package_name: pkg, start_date: start,
+      fee_amount: 5000, fee_currency: "INR", fee_due_day: 1, notes: null, created_at: "", updated_at: "",
+      profile: { id, name, phone, avatar_url: null, role: "client" as const, created_at: "", updated_at: "" },
+    } as unknown as ClientWithProfile)
     setClients([
-      { id: "c1", coach_id: "coach1", user_id: "u1", status: "active", goal: "Fat Loss", package_name: "Premium 3 Month", start_date: "2026-01-15", created_at: "", updated_at: "", profile: { id: "u1", name: "Priya Sharma", phone: "9876543210", avatar_url: null, role: "client", created_at: "", updated_at: "" } } as ClientWithProfile,
-      { id: "c2", coach_id: "coach1", user_id: "u2", status: "active", goal: "Muscle Building", package_name: "Standard 1 Month", start_date: "2026-03-01", created_at: "", updated_at: "", profile: { id: "u2", name: "Rahul Mehra", phone: "9123456789", avatar_url: null, role: "client", created_at: "", updated_at: "" } } as ClientWithProfile,
-      { id: "c3", coach_id: "coach1", user_id: "u3", status: "active", goal: "Contest Prep", package_name: "Elite 6 Month", start_date: "2025-12-01", created_at: "", updated_at: "", profile: { id: "u3", name: "Ananya Kapoor", phone: "9988776655", avatar_url: null, role: "client", created_at: "", updated_at: "" } } as ClientWithProfile,
-      { id: "c4", coach_id: "coach1", user_id: "u4", status: "paused", goal: "Antenatal Training", package_name: "Standard 1 Month", start_date: "2026-02-10", created_at: "", updated_at: "", profile: { id: "u4", name: "Sneha Iyer", phone: "9001234567", avatar_url: null, role: "client", created_at: "", updated_at: "" } } as ClientWithProfile,
-      { id: "c5", coach_id: "coach1", user_id: "u5", status: "inactive", goal: "Weight Loss", package_name: "Standard 1 Month", start_date: "2025-10-01", created_at: "", updated_at: "", profile: { id: "u5", name: "Vikram Singh", phone: "9876001122", avatar_url: null, role: "client", created_at: "", updated_at: "" } } as ClientWithProfile,
+      mkClient("c1", "Priya Sharma", "9876543210", "active", "Fat Loss", "Premium 3 Month", "2026-01-15"),
+      mkClient("c2", "Rahul Mehra", "9123456789", "active", "Muscle Building", "Standard 1 Month", "2026-03-01"),
+      mkClient("c3", "Ananya Kapoor", "9988776655", "active", "Contest Prep", "Elite 6 Month", "2025-12-01"),
+      mkClient("c4", "Sneha Iyer", "9001234567", "paused", "Antenatal Training", "Standard 1 Month", "2026-02-10"),
+      mkClient("c5", "Vikram Singh", "9876001122", "inactive", "Weight Loss", "Standard 1 Month", "2025-10-01"),
     ])
     setIsLoading(false)
     return
