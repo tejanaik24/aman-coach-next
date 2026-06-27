@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, type ReactNode } from "react"
 import type { User } from "@supabase/supabase-js"
 import type { Profile } from "@/types"
 
@@ -30,14 +30,9 @@ const MOCK_PROFILE: Profile = {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setLoading(false)
-  }, [])
-
+  // PREVIEW MODE: loading is always false — no Supabase calls, mock data ready immediately
   return (
-    <AuthContext.Provider value={{ user: { id: "preview-coach" } as User, profile: MOCK_PROFILE, role: "coach", loading }}>
+    <AuthContext.Provider value={{ user: { id: "preview-coach" } as User, profile: MOCK_PROFILE, role: "coach", loading: false }}>
       {children}
     </AuthContext.Provider>
   )

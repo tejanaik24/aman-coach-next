@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, Space_Grotesk } from "next/font/google"
 import { Toaster } from "react-hot-toast"
+import { AuthProvider } from "@/contexts/AuthContext"
 import "./globals.css"
 
 const inter = Inter({
@@ -53,6 +54,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-[#0A0A0A] text-white font-sans antialiased">
+        <AuthProvider>
         <div className="mx-auto max-w-[430px] min-h-screen bg-[#0A0A0A] relative">
           {children}
         </div>
@@ -69,6 +71,7 @@ export default function RootLayout({
             error: { iconTheme: { primary: "#F87171", secondary: "#0A0A0A" } },
           }}
         />
+        </AuthProvider>
       </body>
     </html>
   )
