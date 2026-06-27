@@ -91,10 +91,6 @@ export default function CoachDashboardPage() {
     ])
     setAttentionClients([])
     setIsLoading(false)
-      .slice(0, 5)
-
-    setAttentionClients(attention)
-    setIsLoading(false)
   }, [])
 
   useEffect(() => {
