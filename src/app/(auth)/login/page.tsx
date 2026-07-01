@@ -28,7 +28,7 @@ export default function LoginPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const role = user?.user_metadata?.role ?? "client"
-    router.replace(role === "coach" ? "/coach/dashboard" : "/home")
+    router.replace(role === "coach" ? "/dashboard" : "/home")
   }
 
   // ── Phone OTP ─────────────────────────────────────────────

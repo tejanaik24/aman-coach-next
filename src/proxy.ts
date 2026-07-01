@@ -1,17 +1,16 @@
 import { updateSession } from "@/lib/supabase/middleware"
 import { NextResponse, type NextRequest } from "next/server"
 
-const COACH_PATHS = ["/coach"]
+// Real Next.js routes — (coach) and (client) route groups don't add to URL
+const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees"]
 const CLIENT_PATHS = ["/home", "/workout", "/nutrition", "/checkin", "/progress"]
 
 export default async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
   const { pathname } = request.nextUrl
 
-  const isCoachPath = COACH_PATHS.some((p) => pathname.startsWith(p))
-  const isClientPath = CLIENT_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  )
+  const isCoachPath = COACH_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
+  const isClientPath = CLIENT_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
   const isLoginPath = pathname === "/login"
   const isHomePath = pathname === "/"
 
@@ -26,14 +25,14 @@ export default async function proxy(request: NextRequest) {
   if (user && (isLoginPath || isHomePath)) {
     const role = user.user_metadata?.role ?? "client"
     const url = request.nextUrl.clone()
-    url.pathname = role === "coach" ? "/coach/dashboard" : "/home"
+    url.pathname = role === "coach" ? "/dashboard" : "/home"
     return NextResponse.redirect(url)
   }
 
   // Coach trying to access client routes
   if (user && isClientPath && user.user_metadata?.role === "coach") {
     const url = request.nextUrl.clone()
-    url.pathname = "/coach/dashboard"
+    url.pathname = "/dashboard"
     return NextResponse.redirect(url)
   }
 
@@ -49,7 +48,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static assets, images, public website files (css/js served from public)
     "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|sw.js|css|js|index\\.html|about\\.html|services\\.html|transformations\\.html|ebooks\\.html|contact\\.html|nav\\.html|footer\\.html).*)",
   ],
 }
