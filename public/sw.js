@@ -1,7 +1,7 @@
 const CACHE_NAME = "ak-fitness-v3"
 
 const STATIC_ASSETS = [
-  "/manifest.webmanifest",
+  "/manifest.json",
 ]
 
 self.addEventListener("install", (event) => {

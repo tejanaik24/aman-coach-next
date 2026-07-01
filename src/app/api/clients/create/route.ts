@@ -38,9 +38,25 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { name, phone, goal, packageName, feeAmount, feeDueDay, startDate, notes } = body
 
-  // Basic validation
+  // Server-side validation
   if (!name || !phone || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  }
+
+  if (!/^\+\d{10,15}$/.test(phone)) {
+    return NextResponse.json({ error: "Invalid phone number format. Must be +91XXXXXXXXXX" }, { status: 400 })
+  }
+
+  const parsedFeeAmount = Number(feeAmount)
+  const parsedFeeDueDay = Number(feeDueDay)
+  if (isNaN(parsedFeeAmount) || parsedFeeAmount <= 0) {
+    return NextResponse.json({ error: "Fee amount must be a positive number" }, { status: 400 })
+  }
+  if (!Number.isInteger(parsedFeeDueDay) || parsedFeeDueDay < 1 || parsedFeeDueDay > 28) {
+    return NextResponse.json({ error: "Fee due day must be between 1 and 28" }, { status: 400 })
+  }
+  if (isNaN(Date.parse(startDate))) {
+    return NextResponse.json({ error: "Invalid start date" }, { status: 400 })
   }
 
   // Admin client (service role) for creating auth users
@@ -102,15 +118,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: clientError.message }, { status: 500 })
   }
 
-  // Create first fee record
-  const dueDate = calculateFirstDueDate(Number(feeDueDay), startDate)
-  await supabase.from("fees").insert({
+  // Create first fee record — rollback client + auth user if this fails
+  const dueDate = calculateFirstDueDate(parsedFeeDueDay, startDate)
+  const { error: feeError } = await supabase.from("fees").insert({
     client_id: clientData.id,
-    amount: feeAmount,
+    amount: parsedFeeAmount,
     currency: "INR",
     due_date: dueDate,
     status: "pending",
   })
+
+  if (feeError) {
+    await supabase.from("clients").delete().eq("id", clientData.id)
+    await admin.auth.admin.deleteUser(newUserId)
+    return NextResponse.json({ error: "Failed to create fee record" }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true, clientId: clientData.id }, { status: 201 })
 }

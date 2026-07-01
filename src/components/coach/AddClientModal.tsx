@@ -40,8 +40,6 @@ const GOALS = [
   "Antenatal/Postnatal",
 ]
 
-const today = new Date().toISOString().split("T")[0]
-
 const inputClass =
   "w-full bg-[#1A1A1A] border border-[#333333] rounded-2xl h-14 px-4 text-white outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#555555]"
 
@@ -56,7 +54,7 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
     packageName: "",
     feeAmount: "",
     feeDueDay: "1",
-    startDate: today,
+    startDate: new Date().toISOString().split("T")[0],
     notes: "",
   })
   const [errors, setErrors] = useState<FormErrors>({})
@@ -119,7 +117,7 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
         packageName: "",
         feeAmount: "",
         feeDueDay: "1",
-        startDate: today,
+        startDate: new Date().toISOString().split("T")[0],
         notes: "",
       })
       setErrors({})

@@ -45,23 +45,23 @@ https://aman-coach-next.vercel.app
 - Saved all API keys and process to this file
 
 ## Credentials
-- **Coach login:** aman@akfitness.in / AmanCoach@2024
+- **All secrets:** see `.env.local` — never commit secrets to this file
 
 ## Supabase
 - **Project ref:** muuegtbyaehlrfqjluqz
 - **Project name:** aman coach
 - **URL:** https://muuegtbyaehlrfqjluqz.supabase.co
-- **Anon key:** eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dWVndGJ5YWVobHJmcWpsdXF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDcyMDcsImV4cCI6MjA5NjQ4MzIwN30.pGDD68mdl_OK2yrdRKq03S_gmoS5KZ6FBRxqHiDbQYo
-- **Service role key:** eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dWVndGJ5YWVobHJmcWpsdXF6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkwNzIwNywiZXhwIjoyMDk2NDgzMjA3fQ.QlD5IfUDeqqJHnmrF1Vhi3NUxn7V5h6AKQyKml2Hv6g
+- **Anon key:** see `.env.local` → NEXT_PUBLIC_SUPABASE_ANON_KEY
+- **Service role key:** see `.env.local` → SUPABASE_SERVICE_ROLE_KEY
 
 ## Vercel (Production)
 - **Project:** tejasolryder24-4493s-projects/aman-coach-next
-- **AUTOMATION_SECRET:** akfitness_automation_secret_2026
-- **RESEND_API_KEY:** re_T1zzrTqm_5KYsydGWttAsKWqmLE7NVTQP
+- **AUTOMATION_SECRET:** see `.env.local` → AUTOMATION_SECRET
+- **RESEND_API_KEY:** see `.env.local` → RESEND_API_KEY
 - **APP_URL:** https://aman-coach-next.vercel.app
 
 ## Resend
-- **API key:** re_T1zzrTqm_5KYsydGWttAsKWqmLE7NVTQP
+- **API key:** see `.env.local` → RESEND_API_KEY
 - **FROM (current):** AK Fitness <onboarding@resend.dev>
 - **Needed:** Verify domain `akfitness.in` in Resend (add DNS records), then change FROM to `AK Fitness <noreply@akfitness.in>` in `src/lib/email.ts`
 
@@ -72,7 +72,7 @@ https://aman-coach-next.vercel.app
 - `sendPlanExpiryEmail` — plan about to expire
 
 ## Automation Endpoints
-All protected by `x-automation-secret: akfitness_automation_secret_2026` header:
+All protected by `x-automation-secret` header (value in `.env.local` → AUTOMATION_SECRET):
 - `POST /api/automation/send-email` — send any email type
 - `POST /api/automation/weekly-checkin` — list active clients for check-in prompts
 - `POST /api/automation/expiring-plans` — get expiring plans

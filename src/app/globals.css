@@ -38,6 +38,9 @@
     color: var(--color-text-primary);
     font-family: 'Inter', sans-serif;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-space-grotesk), sans-serif;
+  }
   ::-webkit-scrollbar {
     width: 4px;
   }

@@ -155,12 +155,13 @@ export default function CoachDashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white font-semibold">Recent Check-ins</h2>
-          <button
-            onClick={() => router.push("/clients")}
-            className="text-[#C9A84C] text-sm font-medium"
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push("/coach/clients")}
+            className="text-[#C9A84C] text-sm font-medium active:opacity-70"
           >
             See all
-          </button>
+          </motion.button>
         </div>
         <div className="bg-[#161616] border border-[#222222] rounded-2xl divide-y divide-[#1E1E1E]">
           {isLoading ? (

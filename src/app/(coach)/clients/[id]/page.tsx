@@ -43,7 +43,7 @@ function feeStatusBadge(status: string): string {
 }
 
 function ScoreBar({ label, value }: { label: string; value: number | null }) {
-  if (!value) return null
+  if (value === null || value === undefined) return null
   const pct = (value / 10) * 100
   const color = value >= 8 ? "#22c55e" : value >= 5 ? "#f59e0b" : "#ef4444"
   return (
