@@ -12,7 +12,6 @@ export default async function proxy(request: NextRequest) {
   const isCoachPath = COACH_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
   const isClientPath = CLIENT_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
   const isLoginPath = pathname === "/login"
-  const isHomePath = pathname === "/"
 
   // Unauthenticated → redirect to login
   if (!user && (isCoachPath || isClientPath)) {
@@ -21,8 +20,8 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Authenticated on home or login → redirect to role dashboard
-  if (user && (isLoginPath || isHomePath)) {
+  // Authenticated on login page → redirect to role dashboard
+  if (user && isLoginPath) {
     const role = user.user_metadata?.role ?? "client"
     const url = request.nextUrl.clone()
     url.pathname = role === "coach" ? "/dashboard" : "/home"

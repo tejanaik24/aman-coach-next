@@ -16,12 +16,25 @@
     </nav>
     <div class="nav-buttons-mobile">
       <a href="https://app.amankhuranafitness.com/?branch_id=UzN4eE9JUEUzaUltOERvTTJKVVNGUT09" class="btn btn-primary" target="_blank" rel="noopener">BOOK NOW</a>
-      <a href="/login" class="btn btn-outline">CLIENT LOGIN</a>
+      <a href="/login" class="btn btn-outline" id="loginBtnMobile">CLIENT LOGIN</a>
     </div>
     <div class="nav-buttons" id="navButtons">
       <a href="https://app.amankhuranafitness.com/?branch_id=UzN4eE9JUEUzaUltOERvTTJKVVNGUT09" class="btn btn-primary btn-nav" target="_blank" rel="noopener">BOOK NOW</a>
-      <a href="/login" class="btn btn-outline btn-nav">CLIENT LOGIN</a>
+      <a href="/login" class="btn btn-outline btn-nav" id="loginBtn">CLIENT LOGIN</a>
     </div>
+    <script>
+      (function() {
+        var hasCookie = document.cookie.split(';').some(function(c) {
+          return c.trim().startsWith('sb-muuegtbyaehlrfqjluqz-auth-token');
+        });
+        if (hasCookie) {
+          var b1 = document.getElementById('loginBtn');
+          var b2 = document.getElementById('loginBtnMobile');
+          if (b1) { b1.textContent = 'MY DASHBOARD'; b1.href = '/dashboard'; }
+          if (b2) { b2.textContent = 'DASHBOARD'; b2.href = '/dashboard'; }
+        }
+      })();
+    </script>
     <button class="hamburger" id="hamburger" aria-label="Toggle menu">
       <span></span>
       <span></span>
