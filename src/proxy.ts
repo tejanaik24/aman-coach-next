@@ -49,6 +49,7 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|sw.js).*)",
+    // Skip static assets, images, public website files (css/js served from public)
+    "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|sw.js|css|js|index\\.html|about\\.html|services\\.html|transformations\\.html|ebooks\\.html|contact\\.html|nav\\.html|footer\\.html).*)",
   ],
 }
