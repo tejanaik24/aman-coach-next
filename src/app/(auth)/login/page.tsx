@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
 import { ChevronRight, ArrowLeft, Phone, Mail } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils"
 type Method = "choose" | "phone" | "phone-otp" | "email"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [method, setMethod] = useState<Method>("choose")
   const [phone, setPhone] = useState("")
   const [otp, setOtp] = useState("")
@@ -20,6 +22,13 @@ export default function LoginPage() {
   function reset(m: Method) {
     setError("")
     setMethod(m)
+  }
+
+  async function redirectAfterLogin() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const role = user?.user_metadata?.role ?? "client"
+    router.replace(role === "coach" ? "/coach/dashboard" : "/home")
   }
 
   // ── Phone OTP ─────────────────────────────────────────────
@@ -48,6 +57,7 @@ export default function LoginPage() {
         phone: `+91${digits}`, token: otp, type: "sms",
       })
       if (err) setError(err.message)
+      else await redirectAfterLogin()
     } catch { setError("Verification failed. Try again.") }
     finally { setLoading(false) }
   }
@@ -61,7 +71,7 @@ export default function LoginPage() {
     try {
       const { error: err } = await createClient().auth.signInWithPassword({ email: email.trim(), password })
       if (err) setError(err.message)
-      // On success → AuthContext fires → proxy.ts redirects by role
+      else await redirectAfterLogin()
     } catch { setError("Login failed. Try again.") }
     finally { setLoading(false) }
   }
