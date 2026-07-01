@@ -1,14 +1,77 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { ChevronRight } from "lucide-react"
+import { useState, type FormEvent } from "react"
+import { motion, AnimatePresence } from "motion/react"
+import { ChevronRight, ArrowLeft } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { cn } from "@/lib/utils"
+
+type Step = "phone" | "otp"
 
 export default function LoginPage() {
-  const router = useRouter()
+  const [step, setStep] = useState<Step>("phone")
+  const [phone, setPhone] = useState("")
+  const [otp, setOtp] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSendOtp(e: FormEvent) {
+    e.preventDefault()
+    setError("")
+    const digits = phone.replace(/\D/g, "")
+    if (digits.length !== 10) {
+      setError("Enter a valid 10-digit number")
+      return
+    }
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const { error: err } = await supabase.auth.signInWithOtp({
+        phone: `+91${digits}`,
+      })
+      if (err) {
+        setError(err.message)
+      } else {
+        setStep("otp")
+      }
+    } catch {
+      setError("Something went wrong. Try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleVerifyOtp(e: FormEvent) {
+    e.preventDefault()
+    setError("")
+    if (otp.length < 4) {
+      setError("Enter the full OTP")
+      return
+    }
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const digits = phone.replace(/\D/g, "")
+      const { error: err } = await supabase.auth.verifyOtp({
+        phone: `+91${digits}`,
+        token: otp,
+        type: "sms",
+      })
+      if (err) {
+        setError(err.message)
+      }
+      // On success, AuthContext onAuthStateChange fires → proxy.ts redirects by role
+    } catch {
+      setError("Verification failed. Try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-between px-5 py-10">
       <div className="flex-1 flex flex-col justify-center">
+        {/* Logo */}
         <div className="text-center mb-10">
           <div className="w-[72px] h-[72px] rounded-2xl bg-[#C9A84C] flex items-center justify-center mx-auto mb-5">
             <span className="text-black text-2xl font-bold" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>
@@ -22,22 +85,131 @@ export default function LoginPage() {
           <div className="w-12 h-px bg-[#C9A84C] mx-auto mt-3" />
         </div>
 
-        <div className="bg-[#111111] rounded-3xl border border-[#222222] p-6 space-y-4">
-          <p className="text-[#A0A0A0] text-sm text-center mb-2">Preview Mode — Choose a view</p>
+        {/* Card */}
+        <div className="bg-[#111111] rounded-3xl border border-[#222222] p-6">
+          <AnimatePresence mode="wait">
+            {step === "phone" ? (
+              <motion.form
+                key="phone"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleSendOtp}
+                className="space-y-5"
+              >
+                <div>
+                  <p className="text-white font-semibold text-lg mb-1" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>
+                    Welcome back
+                  </p>
+                  <p className="text-[#A0A0A0] text-sm">Enter your registered mobile number</p>
+                </div>
 
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center justify-center gap-2"
-          >
-            Preview as Coach <ChevronRight className="size-5" />
-          </button>
+                <div>
+                  <div className={cn(
+                    "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 transition-colors",
+                    error ? "border-red-500" : "border-[#333333] focus-within:border-[#C9A84C]"
+                  )}>
+                    <span className="text-[#C9A84C] font-semibold text-sm">+91</span>
+                    <div className="w-px h-5 bg-[#333333] mx-3 flex-shrink-0" />
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                        setError("")
+                      }}
+                      placeholder="9876543210"
+                      className="flex-1 bg-transparent text-white outline-none placeholder:text-[#555555] text-base"
+                      autoFocus
+                    />
+                  </div>
+                  {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
+                </div>
 
-          <button
-            onClick={() => router.push("/home")}
-            className="w-full h-14 rounded-2xl border border-[#C9A84C] text-[#C9A84C] font-bold text-base flex items-center justify-center gap-2"
-          >
-            Preview as Client <ChevronRight className="size-5" />
-          </button>
+                <motion.button
+                  type="submit"
+                  disabled={loading || phone.replace(/\D/g, "").length !== 10}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <>Send OTP <ChevronRight className="size-5" /></>
+                  )}
+                </motion.button>
+              </motion.form>
+            ) : (
+              <motion.form
+                key="otp"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleVerifyOtp}
+                className="space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setStep("phone"); setOtp(""); setError("") }}
+                    className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center text-[#A0A0A0] hover:text-white transition-colors flex-shrink-0"
+                  >
+                    <ArrowLeft className="size-4" />
+                  </button>
+                  <div>
+                    <p className="text-white font-semibold text-lg" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>
+                      Verify OTP
+                    </p>
+                    <p className="text-[#A0A0A0] text-xs">Sent to +91 {phone}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={otp}
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      setError("")
+                    }}
+                    placeholder="Enter OTP"
+                    className={cn(
+                      "w-full bg-[#1A1A1A] border rounded-2xl h-14 px-4 text-white text-center text-xl tracking-[0.5em] outline-none transition-colors placeholder:text-[#555555] placeholder:tracking-normal placeholder:text-sm",
+                      error ? "border-red-500" : "border-[#333333] focus:border-[#C9A84C]"
+                    )}
+                    autoFocus
+                  />
+                  {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
+                </div>
+
+                <motion.button
+                  type="submit"
+                  disabled={loading || otp.length < 4}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <>Verify & Login <ChevronRight className="size-5" /></>
+                  )}
+                </motion.button>
+
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loading}
+                  className="w-full text-[#A0A0A0] text-sm text-center hover:text-white transition-colors"
+                >
+                  Resend OTP
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
