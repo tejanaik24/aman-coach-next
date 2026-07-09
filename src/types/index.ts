@@ -191,3 +191,27 @@ export type Database = {
     }
   }
 }
+
+export interface CoachAvailabilitySlot {
+  id: string
+  coachId: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  isAvailable: boolean
+  createdAt: Date
+}
+
+export interface Appointment {
+  id: string
+  clientId: string
+  coachId: string
+  date: string
+  startTime: string
+  endTime: string
+  status: "scheduled" | "completed" | "cancelled"
+  notes?: string
+  createdAt: Date
+  updatedAt: Date
+}
+

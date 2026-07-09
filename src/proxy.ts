@@ -2,8 +2,8 @@ import { updateSession } from "@/lib/supabase/middleware"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Real Next.js routes — (coach) and (client) route groups don't add to URL
-const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees"]
-const CLIENT_PATHS = ["/home", "/workout", "/nutrition", "/checkin", "/progress"]
+const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule"]
+const CLIENT_PATHS = ["/home", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding"]
 
 export default async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
