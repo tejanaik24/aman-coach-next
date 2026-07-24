@@ -6,35 +6,22 @@
 @theme inline {
   --color-bg-primary: #0A0A0A;
   --color-bg-surface: #111111;
+  --color-bg-card: #111111;
   --color-bg-elevated: #1A1A1A;
-  --color-bg-card: #161616;
-  --color-accent-gold: #C9A84C;
-  --color-accent-gold-light: #E8C97A;
-  --color-accent-gold-muted: #8B6F2E;
+  --color-accent-gold: #FFB800;
   --color-text-primary: #FFFFFF;
-  --color-text-secondary: #A0A0A0;
-  --color-text-muted: #555555;
-  --color-border-subtle: #222222;
-  --color-border-gold: rgba(201, 168, 76, 0.3);
+  --color-text-muted: #888888;
+  --color-border-subtle: #1A1A1A;
+  --color-border-gold: rgba(255, 184, 0, 0.3);
   --color-success: #4ADE80;
   --color-warning: #FBBF24;
   --color-danger: #F87171;
+  --font-heading: var(--font-space-grotesk), sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-
-  /* Kinetic Elite tokens (new light/lime screens, additive — old dark tokens above still used by unconverted pages) */
-  --color-cream-light: #f9fbe8;
-  --color-cream: #F7F8F3;
-  --color-lime-electric: #C4F542;
-  --color-lime-tint: rgba(196, 245, 66, 0.15);
-  --color-charcoal-deep: #1A1A1A;
-  --color-charcoal-muted: #444935;
-  --color-warmRed-tint: rgba(255, 107, 107, 0.12);
-  --color-warmRed-text: #9E2A2B;
-
-  --font-montserrat: var(--font-montserrat), sans-serif;
 
   --radius-card-desktop: 32px;
   --radius-card-mobile: 24px;

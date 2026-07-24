@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useState, useRef, useLayoutEffect, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "motion/react"
+import Image from "next/image"
+import { gsap } from "gsap"
 import { createClient } from "@/lib/supabase/client"
+import { EASE, DURATION, STAGGER } from "@/lib/animations"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,6 +13,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const heroPhotoRef = useRef<HTMLDivElement>(null)
+  const goldTextRef = useRef<HTMLDivElement>(null)
+  const formCardRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const ctx = gsap.context(() => {
+      // Ken Burns slow zoom on hero photo
+      gsap.fromTo(
+        heroPhotoRef.current,
+        { scale: 1.15 },
+        { scale: 1, duration: DURATION.kenBurns, ease: "none" }
+      )
+
+      const tl = gsap.timeline({ defaults: { ease: EASE.smooth } })
+      tl.fromTo(
+        goldTextRef.current?.querySelectorAll(".reveal-line") ?? [],
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: DURATION.base, stagger: STAGGER.base }
+      ).fromTo(
+        formCardRef.current,
+        { yPercent: 8, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: DURATION.slow, ease: EASE.smooth },
+        "-=0.4"
+      ).fromTo(
+        formCardRef.current?.querySelectorAll(".field-stagger") ?? [],
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: DURATION.fast, stagger: STAGGER.tight },
+        "-=0.6"
+      )
+    })
+    return () => ctx.revert()
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -44,78 +79,104 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col justify-between p-6 bg-cream min-h-full">
-      {/* Top Graphic Header */}
-      <div className="flex flex-col items-center mt-12 space-y-2">
-        <div className="w-16 h-16 rounded-full bg-charcoal-deep flex items-center justify-center font-montserrat text-lime-electric font-black text-3xl tracking-tight animate-fade-in-up">
-          AK
+    <div className="relative flex flex-col h-dvh bg-bg-primary overflow-hidden">
+      {/* Full-bleed hero photo */}
+      <div className="absolute inset-0 h-[42%] overflow-hidden">
+        <div ref={heroPhotoRef} className="relative w-full h-full">
+          <Image
+            src="/images/aman/aman-01.jpeg"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+          />
         </div>
-        <h1 className="font-montserrat font-black text-2xl uppercase tracking-wider text-charcoal-deep animate-fade-in-up">
-          AK Fitness
-        </h1>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-charcoal-muted bg-lime-tint px-3 py-1.5 rounded-full border border-lime-electric/30 animate-fade-in-up">
-          Kinetic Elite System
-        </span>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-bg-primary" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-transparent to-transparent" />
       </div>
 
-      {/* Main Login Card */}
-      <div className="bg-white rounded-card-mobile p-6 shadow-premium space-y-6 animate-card-slide-up">
-        <div className="space-y-1">
-          <h2 className="font-montserrat font-extrabold text-lg text-charcoal-deep">Welcome Back</h2>
-          <p className="text-xs text-charcoal-muted font-medium">Log in to check progress, diet, and training.</p>
+      {/* Gold reveal headline over hero */}
+      <div ref={goldTextRef} className="relative z-10 px-6 pt-14 shrink-0">
+        <div className="overflow-hidden">
+          <p className="reveal-line text-[11px] font-semibold uppercase tracking-[0.25em] text-accent-gold">
+            AK Fitness Coach
+          </p>
         </div>
-
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">Email Address</label>
-            <input
-              type="email"
-              placeholder="e.g. client@akfitness.com"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError("") }}
-              className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input px-4 py-3 text-xs font-semibold text-charcoal-deep shadow-inner transition-all outline-none"
-              autoFocus
-              required
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError("") }}
-              className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input px-4 py-3 text-xs font-semibold text-charcoal-deep shadow-inner transition-all outline-none"
-              required
-            />
-            {error && (
-              <p className="text-[10px] font-semibold text-warmRed-text bg-warmRed-tint px-3 py-2 rounded-input mt-1">
-                {error}
-              </p>
-            )}
-          </div>
-
-          <div className="pt-2">
-            <motion.button
-              type="submit"
-              disabled={loading || !email.trim() || !password}
-              whileTap={{ scale: 0.97 }}
-              className="w-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest py-4 px-6 rounded-full shadow-bento hover:bg-lime-electric/95 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center"
-            >
-              {loading
-                ? <div className="w-4 h-4 border-2 border-charcoal-deep/30 border-t-charcoal-deep rounded-full animate-spin" />
-                : "Sign In"}
-            </motion.button>
-          </div>
-        </form>
+        <div className="overflow-hidden mt-2">
+          <h1 className="reveal-line font-heading font-bold text-3xl text-text-primary leading-tight">
+            Welcome Back,
+          </h1>
+        </div>
+        <div className="overflow-hidden">
+          <h1 className="reveal-line font-heading font-bold text-3xl text-accent-gold leading-tight">
+            Champion.
+          </h1>
+        </div>
       </div>
 
-      {/* Footer terms */}
-      <div className="text-center pb-6">
-        <p className="text-[10px] text-charcoal-muted font-medium animate-fade-in-up">
-          Premium Fitness Coaching PWA. Designed for results.
-        </p>
+      {/* Form card — fills remaining viewport height, flush to bottom */}
+      <div className="relative z-10 flex-1 px-4 min-h-0">
+        <div
+          ref={formCardRef}
+          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255,184,0,0.06)]"
+          style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="field-stagger space-y-1">
+            <p className="text-xs text-text-muted">Log in to check progress, diet, and training.</p>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="field-stagger flex flex-col gap-1.5">
+              <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="e.g. client@akfitness.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError("") }}
+                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                autoFocus
+                required
+              />
+            </div>
+
+            <div className="field-stagger flex flex-col gap-1.5">
+              <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                Password
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError("") }}
+                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                required
+              />
+              {error && (
+                <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg mt-1">
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <div className="field-stagger pt-1">
+              <button
+                type="submit"
+                disabled={loading || !email.trim() || !password}
+                className="w-full bg-accent-gold text-bg-primary font-heading font-bold text-sm py-4 rounded-full transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
+              >
+                {loading
+                  ? <div className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+                  : "Sign In"}
+              </button>
+            </div>
+          </form>
+
+          <p className="field-stagger text-center text-[10px] text-text-muted">
+            Premium Fitness Coaching PWA. Designed for results.
+          </p>
+        </div>
       </div>
     </div>
   )

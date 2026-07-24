@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Space_Grotesk, Montserrat } from "next/font/google"
+import { Inter, Space_Grotesk } from "next/font/google"
 import { Toaster } from "react-hot-toast"
 import { AuthProvider } from "@/contexts/AuthContext"
 import "./globals.css"
@@ -14,12 +14,6 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-})
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
 })
 
 export const metadata: Metadata = {
@@ -38,7 +32,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#C9A84C",
+  themeColor: "#FFB800",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -51,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${montserrat.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="AK Fitness Coach" />
@@ -59,21 +53,21 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-screen bg-cream text-charcoal-deep font-sans antialiased">
+      <body className="min-h-screen bg-bg-primary text-text-primary font-sans antialiased">
         <AuthProvider>
-        <div className="mx-auto max-w-[430px] min-h-screen bg-cream relative">
+        <div className="mx-auto max-w-[430px] min-h-screen bg-bg-primary relative">
           {children}
         </div>
         <Toaster
           position="top-center"
           toastOptions={{
             style: {
-              background: "#161616",
+              background: "#111111",
               color: "#fff",
-              border: "1px solid #222222",
+              border: "1px solid #1A1A1A",
               borderRadius: "12px",
             },
-            success: { iconTheme: { primary: "#C9A84C", secondary: "#0A0A0A" } },
+            success: { iconTheme: { primary: "#FFB800", secondary: "#0A0A0A" } },
             error: { iconTheme: { primary: "#F87171", secondary: "#0A0A0A" } },
           }}
         />
