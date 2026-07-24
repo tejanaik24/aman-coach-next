@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { name, email, phone, goal, packageName, feeAmount, feeDueDay, startDate, notes } = body
+  const { name, email, phone, goal, packageName, endDate, clientType, feeAmount, feeDueDay, startDate, notes } = body
 
   // Server-side validation
   if (!name || !email || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
@@ -57,6 +57,9 @@ export async function POST(request: Request) {
   }
   if (isNaN(Date.parse(startDate))) {
     return NextResponse.json({ error: "Invalid start date" }, { status: 400 })
+  }
+  if (clientType !== "standard" && clientType !== "antenatal") {
+    return NextResponse.json({ error: "Invalid client type" }, { status: 400 })
   }
 
   // Admin client (service role) for creating auth users
@@ -105,6 +108,8 @@ export async function POST(request: Request) {
       coach_id: user.id,
       goal,
       package_name: packageName,
+      end_date: endDate ?? null,
+      client_type: clientType,
       fee_amount: feeAmount,
       fee_currency: "INR",
       fee_due_day: feeDueDay,

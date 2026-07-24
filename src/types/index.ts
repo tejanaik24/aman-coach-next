@@ -20,6 +20,8 @@ export interface Client {
   fee_currency: string
   fee_due_day: number
   start_date: string
+  end_date: string | null
+  client_type: "standard" | "antenatal"
   status: "active" | "paused" | "inactive"
   notes: string | null
   created_at: string
