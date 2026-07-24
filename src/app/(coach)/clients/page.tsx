@@ -8,6 +8,7 @@ import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
 import toast from "react-hot-toast"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import type { ClientWithProfile } from "@/types"
 
 type FilterTab = "all" | "active" | "paused" | "inactive"
@@ -17,12 +18,12 @@ function getInitials(name: string): string {
 }
 
 function statusBadge(status: string): string {
-  if (status === "active") return "bg-lime-tint text-charcoal-deep border border-lime-electric/30"
-  return "bg-neutral-200 text-charcoal-deep"
+  if (status === "active") return "bg-accent-gold/15 text-accent-gold border border-accent-gold/30"
+  return "bg-bg-elevated text-text-muted border border-border-subtle"
 }
 
 function CardSkeleton() {
-  return <div className="bg-white rounded-card-mobile shadow-bento h-24 animate-pulse" />
+  return <div className="bg-bg-card rounded-2xl h-24 skeleton-pulse" />
 }
 
 export default function ClientsPage() {
@@ -32,6 +33,8 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("")
   const [filterTab, setFilterTab] = useState<FilterTab>("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const listRef = useStaggerReveal<HTMLDivElement>([isLoading, search, filterTab])
 
   const fetchClients = useCallback(async () => {
     setIsLoading(true)
@@ -71,14 +74,14 @@ export default function ClientsPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-5 bg-cream min-h-full pb-4">
+    <div className="px-5 pt-2 flex flex-col gap-5 bg-bg-primary min-h-full pb-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <h2 className="font-montserrat font-black text-xl text-charcoal-deep uppercase tracking-tight">
+        <h2 className="font-heading font-bold text-xl text-text-primary tracking-tight">
           Clients Directory
         </h2>
         {!isLoading && (
-          <span className="text-[10px] font-bold text-charcoal-deep bg-lime-electric px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold text-bg-primary bg-accent-gold px-2 py-0.5 rounded-full">
             {clients.length}
           </span>
         )}
@@ -91,9 +94,9 @@ export default function ClientsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search clients..."
-          className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-full py-3 pl-11 pr-5 text-xs font-semibold shadow-inner outline-none transition-all"
+          className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-full py-3 pl-11 pr-5 text-xs font-semibold text-text-primary placeholder:text-text-muted outline-none transition-colors"
         />
-        <Search className="w-4 h-4 text-charcoal-muted absolute left-4 top-1/2 -translate-y-1/2 stroke-[2.5]" />
+        <Search className="w-4 h-4 text-text-muted absolute left-4 top-1/2 -translate-y-1/2 stroke-[2.5]" />
       </div>
 
       {/* Status filter chips */}
@@ -104,8 +107,8 @@ export default function ClientsPage() {
             <button
               key={t.key}
               onClick={() => setFilterTab(t.key)}
-              className={`px-4.5 py-2.5 rounded-full text-xs font-bold font-montserrat uppercase tracking-wide transition-all ${
-                isSelected ? "bg-charcoal-deep text-lime-electric shadow-sm" : "bg-white text-charcoal-deep border border-charcoal-deep/5 shadow-sm"
+              className={`px-4.5 py-2.5 rounded-full text-xs font-bold font-heading uppercase tracking-wide transition-colors cursor-pointer ${
+                isSelected ? "bg-accent-gold text-bg-primary" : "bg-bg-elevated text-text-muted border border-border-subtle"
               }`}
             >
               {t.label}
@@ -120,13 +123,13 @@ export default function ClientsPage() {
           {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-card-mobile shadow-bento py-14 flex flex-col items-center gap-4">
-          <Users className="size-12 text-charcoal-muted/30" />
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl py-14 flex flex-col items-center gap-4">
+          <Users className="size-12 text-text-muted/40" />
           <div className="text-center">
-            <p className="text-charcoal-deep font-montserrat font-bold">
+            <p className="text-text-primary font-heading font-bold">
               {search || filterTab !== "all" ? "No clients found" : "No clients yet"}
             </p>
-            <p className="text-sm text-charcoal-muted mt-1">
+            <p className="text-sm text-text-muted mt-1">
               {search || filterTab !== "all" ? "Try adjusting your search or filter" : "Add your first client to get started"}
             </p>
           </div>
@@ -134,7 +137,7 @@ export default function ClientsPage() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => setIsModalOpen(true)}
-              className="h-12 px-6 rounded-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-bento"
+              className="h-12 px-6 rounded-full bg-accent-gold text-bg-primary font-heading font-bold text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer"
             >
               <Plus className="size-4" />
               Add Client
@@ -142,7 +145,7 @@ export default function ClientsPage() {
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5 pb-20">
+        <div ref={listRef} className="flex flex-col gap-3.5 pb-20">
           {filtered.map((c) => {
             const name = c.profile?.name ?? "Unknown"
             const initials = getInitials(name)
@@ -152,22 +155,22 @@ export default function ClientsPage() {
                 key={c.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push(`/clients/${c.id}`)}
-                className="bg-white rounded-card-mobile p-4 shadow-bento flex items-center justify-between cursor-pointer border border-transparent hover:border-lime-electric/25 transition-all duration-300"
+                className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-accent-gold/40 transition-colors duration-300"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={name} className="w-12 h-12 rounded-full object-cover border border-lime-electric shadow-sm flex-shrink-0" />
+                    <img src={avatarUrl} alt={name} className="w-12 h-12 rounded-full object-cover border border-accent-gold flex-shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-charcoal-deep flex items-center justify-center border border-lime-electric shadow-sm flex-shrink-0">
-                      <span className="text-lime-electric text-xs font-montserrat font-bold">{initials}</span>
+                    <div className="w-12 h-12 rounded-full bg-bg-elevated flex items-center justify-center border border-accent-gold flex-shrink-0">
+                      <span className="text-accent-gold text-xs font-heading font-bold">{initials}</span>
                     </div>
                   )}
                   <div className="flex flex-col min-w-0">
-                    <h4 className="font-montserrat font-bold text-xs text-charcoal-deep leading-tight truncate">{name}</h4>
-                    <span className="text-[9px] text-charcoal-muted font-bold mt-0.5 truncate">
+                    <h4 className="font-heading font-bold text-xs text-text-primary leading-tight truncate">{name}</h4>
+                    <span className="text-[9px] text-text-muted font-bold mt-0.5 truncate">
                       {c.package_name ?? "No package"} · {c.goal ?? "No goal set"}
                     </span>
-                    <span className="text-[9px] text-charcoal-muted font-medium mt-1">
+                    <span className="text-[9px] text-text-muted font-medium mt-1">
                       Since {format(new Date(c.start_date), "MMM yyyy")}
                     </span>
                   </div>
@@ -176,7 +179,7 @@ export default function ClientsPage() {
                   <span className={`text-[8px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${statusBadge(c.status)}`}>
                     {c.status}
                   </span>
-                  <ChevronRight className="w-4 h-4 text-charcoal-muted" />
+                  <ChevronRight className="w-4 h-4 text-text-muted" />
                 </div>
               </motion.div>
             )
@@ -188,7 +191,7 @@ export default function ClientsPage() {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-24 right-5 w-14 h-14 rounded-full bg-lime-electric text-charcoal-deep flex items-center justify-center shadow-lg border border-white/20 z-40"
+        className="fixed bottom-24 right-5 w-14 h-14 rounded-full bg-accent-gold text-bg-primary flex items-center justify-center shadow-[0_0_24px_rgba(255,184,0,0.35)] cursor-pointer z-40"
         aria-label="Add client"
       >
         <Plus className="size-6" />

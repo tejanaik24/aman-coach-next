@@ -77,7 +77,7 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-charcoal-deep/60 z-50"
+            className="fixed inset-0 bg-black/70 z-50"
             onClick={close}
           />
           <motion.div
@@ -85,15 +85,15 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 350 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-cream rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-bg-surface border-t border-border-subtle rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
           >
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-12 h-1 rounded-full bg-charcoal-deep/20" />
+              <div className="w-12 h-1 rounded-full bg-text-muted/30" />
             </div>
 
             <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
-              <h2 className="font-montserrat font-black text-lg text-charcoal-deep">Profile</h2>
-              <button onClick={close} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-charcoal-muted shadow-sm">
+              <h2 className="font-heading font-bold text-lg text-text-primary">Profile</h2>
+              <button onClick={close} className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted cursor-pointer">
                 <X className="size-4" />
               </button>
             </div>
@@ -103,18 +103,18 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-lime-electric" />
+                    <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-accent-gold" />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric">
-                      <span className="text-lime-electric font-montserrat font-black text-2xl">{initials}</span>
+                    <div className="w-20 h-20 rounded-full bg-bg-elevated flex items-center justify-center border-2 border-accent-gold">
+                      <span className="text-accent-gold font-heading font-bold text-2xl">{initials}</span>
                     </div>
                   )}
                   <button
                     onClick={() => toast("Photo upload coming soon")}
-                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-lime-electric border-2 border-cream flex items-center justify-center shadow-bento"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-accent-gold border-2 border-bg-surface flex items-center justify-center cursor-pointer"
                     aria-label="Change photo"
                   >
-                    <Camera className="size-3.5 text-charcoal-deep" />
+                    <Camera className="size-3.5 text-bg-primary" />
                   </button>
                 </div>
 
@@ -125,25 +125,25 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                       value={draftName}
                       onChange={(e) => setDraftName(e.target.value)}
                       autoFocus
-                      className="flex-1 bg-white border-2 border-lime-electric rounded-input px-3 py-2 text-sm font-montserrat font-bold text-charcoal-deep text-center outline-none"
+                      className="flex-1 bg-bg-elevated border-2 border-accent-gold rounded-xl px-3 py-2 text-sm font-heading font-bold text-text-primary text-center outline-none"
                     />
                     <button
                       onClick={handleSaveName}
                       disabled={isSaving}
-                      className="w-9 h-9 rounded-full bg-lime-electric flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+                      className="w-9 h-9 rounded-full bg-accent-gold flex items-center justify-center flex-shrink-0 disabled:opacity-50 cursor-pointer"
                     >
-                      <Check className="size-4 text-charcoal-deep" />
+                      <Check className="size-4 text-bg-primary" />
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setIsEditingName(true)} className="text-center">
-                    <p className="font-montserrat font-black text-lg text-charcoal-deep">{name}</p>
-                    <p className="text-[10px] text-charcoal-muted font-semibold uppercase tracking-wide mt-0.5">Tap to edit name</p>
+                  <button onClick={() => setIsEditingName(true)} className="text-center cursor-pointer">
+                    <p className="font-heading font-bold text-lg text-text-primary">{name}</p>
+                    <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wide mt-0.5">Tap to edit name</p>
                   </button>
                 )}
 
-                {email && <p className="text-xs text-charcoal-muted">{email}</p>}
-                <span className="text-[9px] font-bold text-charcoal-deep bg-lime-tint px-2.5 py-1 rounded-full uppercase tracking-wider">
+                {email && <p className="text-xs text-text-muted">{email}</p>}
+                <span className="text-[9px] font-bold text-accent-gold bg-accent-gold/10 border border-accent-gold/30 px-2.5 py-1 rounded-full uppercase tracking-wider">
                   {role === "coach" ? "Coach Account" : "Client Account"}
                 </span>
               </div>
@@ -152,35 +152,35 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
               <div className="space-y-2">
                 <button
                   onClick={() => toast("Notification settings coming soon")}
-                  className="w-full bg-white rounded-2xl shadow-bento p-4 flex items-center gap-3 text-left"
+                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer"
                 >
-                  <div className="w-9 h-9 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
-                    <Bell className="size-4 text-charcoal-deep" />
+                  <div className="w-9 h-9 rounded-full bg-bg-primary flex items-center justify-center flex-shrink-0">
+                    <Bell className="size-4 text-accent-gold" />
                   </div>
-                  <span className="text-xs font-bold text-charcoal-deep flex-1">Notification Settings</span>
+                  <span className="text-xs font-bold text-text-primary flex-1">Notification Settings</span>
                 </button>
 
                 <a
                   href={`https://wa.me/${AMAN_WHATSAPP}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-white rounded-2xl shadow-bento p-4 flex items-center gap-3 text-left"
+                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer"
                 >
-                  <div className="w-9 h-9 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="size-4 text-charcoal-deep" />
+                  <div className="w-9 h-9 rounded-full bg-bg-primary flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="size-4 text-accent-gold" />
                   </div>
-                  <span className="text-xs font-bold text-charcoal-deep flex-1">Contact Support</span>
+                  <span className="text-xs font-bold text-text-primary flex-1">Contact Support</span>
                 </a>
 
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}
-                  className="w-full bg-charcoal-deep rounded-2xl shadow-bento p-4 flex items-center gap-3 text-left disabled:opacity-60"
+                  className="w-full bg-bg-elevated border border-accent-gold/30 rounded-2xl p-4 flex items-center gap-3 text-left disabled:opacity-60 cursor-pointer"
                 >
-                  <div className="w-9 h-9 rounded-full bg-lime-electric flex items-center justify-center flex-shrink-0">
-                    <LogOut className="size-4 text-charcoal-deep" />
+                  <div className="w-9 h-9 rounded-full bg-accent-gold flex items-center justify-center flex-shrink-0">
+                    <LogOut className="size-4 text-bg-primary" />
                   </div>
-                  <span className="text-xs font-bold text-lime-electric flex-1">
+                  <span className="text-xs font-bold text-accent-gold flex-1">
                     {isSigningOut ? "Signing out..." : "Sign Out"}
                   </span>
                 </button>

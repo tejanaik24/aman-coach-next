@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { motion, animate } from "motion/react"
+import { motion } from "motion/react"
 import { Plus, Inbox } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
 import ProfileMenu from "@/components/shared/ProfileMenu"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
+import { useCountUp } from "@/hooks/useCountUp"
 import type { Checkin, ClientWithProfile } from "@/types"
 
 interface Stats {
@@ -39,34 +41,37 @@ function initials(name: string): string {
   return name.slice(0, 2).toUpperCase()
 }
 
-function Counter({ to }: { to: number }) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    const controls = animate(0, to, {
-      duration: 1.2,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (value) => setCount(Math.round(value)),
-    })
-    return () => controls.stop()
-  }, [to])
-
-  return <>{count}</>
-}
-
 function StatSkeleton() {
-  return (
-    <div className="bg-white p-4.5 rounded-card-mobile shadow-bento h-[105px] animate-pulse" />
-  )
+  return <div className="bg-bg-card rounded-2xl h-[105px] skeleton-pulse" />
 }
 
 function Avatar({ name, url, size = "w-10 h-10" }: { name: string; url: string | null; size?: string }) {
   if (url) {
-    return <img src={url} alt={name} className={`${size} rounded-full object-cover border-2 border-lime-electric`} />
+    return <img src={url} alt={name} className={`${size} rounded-full object-cover border-2 border-accent-gold`} />
   }
   return (
-    <div className={`${size} rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric flex-shrink-0`}>
-      <span className="text-lime-electric text-xs font-montserrat font-bold">{initials(name)}</span>
+    <div className={`${size} rounded-full bg-bg-elevated flex items-center justify-center border-2 border-accent-gold flex-shrink-0`}>
+      <span className="text-accent-gold text-xs font-heading font-bold">{initials(name)}</span>
+    </div>
+  )
+}
+
+function StatCard({ value, label, accent = false }: { value: number; label: string; accent?: boolean }) {
+  const numeric = useCountUp(value)
+  return (
+    <div
+      className={`reveal-item p-4.5 rounded-2xl border h-[105px] flex flex-col justify-between backdrop-blur-xl ${
+        accent
+          ? "bg-accent-gold/10 border-accent-gold/40 shadow-[0_0_24px_rgba(255,184,0,0.15)]"
+          : "bg-bg-card/80 border-border-subtle"
+      }`}
+    >
+      <span className={`font-heading font-bold text-3xl ${accent ? "text-accent-gold" : "text-text-primary"}`}>
+        {numeric}
+      </span>
+      <span className={`text-[11px] font-bold tracking-tight leading-tight ${accent ? "text-accent-gold/80" : "text-text-muted"}`}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -83,6 +88,8 @@ export default function CoachDashboardPage() {
   const [coachName, setCoachName] = useState("Aman")
   const [coachEmail, setCoachEmail] = useState<string | null>(null)
   const [coachAvatar, setCoachAvatar] = useState<string | null>(null)
+
+  const statsGridRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
   useEffect(() => {
     setTodayStr(format(new Date(), "EEEE, d MMM"))
@@ -179,26 +186,32 @@ export default function CoachDashboardPage() {
   const revenueLabel = (v: number) => (v >= 1000 ? `₹${(v / 1000).toFixed(1)}k` : `₹${v}`)
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-6 relative pb-8 bg-cream min-h-full">
+    <div className="relative px-5 pt-2 flex flex-col gap-6 pb-8 bg-bg-primary min-h-full overflow-hidden">
+      {/* Ambient hero backdrop */}
+      <div className="absolute inset-x-0 top-0 h-64 -z-10 overflow-hidden">
+        <img src="/images/aman/aman-02.jpeg" alt="" className="w-full h-full object-cover opacity-25 blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/60 via-bg-primary/85 to-bg-primary" />
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-2">
         <div>
-          <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-widest">
+          <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
             {todayStr}
           </span>
-          <h2 className="font-montserrat font-black text-2xl text-charcoal-deep leading-tight mt-0.5">
+          <h2 className="font-heading font-bold text-2xl text-text-primary leading-tight mt-0.5">
             {getGreeting()}, {coachName.split(" ")[0]}
           </h2>
         </div>
         <button type="button" onClick={() => setIsProfileOpen(true)} aria-label="Open profile" className="relative cursor-pointer">
           {coachAvatar ? (
-            <img src={coachAvatar} alt={coachName} className="w-12 h-12 rounded-full object-cover border-2 border-lime-electric shadow-md" />
+            <img src={coachAvatar} alt={coachName} className="w-12 h-12 rounded-full object-cover border-2 border-accent-gold" />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric shadow-md">
-              <span className="text-lime-electric text-sm font-montserrat font-bold">{coachName.slice(0, 2).toUpperCase()}</span>
+            <div className="w-12 h-12 rounded-full bg-bg-elevated flex items-center justify-center border-2 border-accent-gold">
+              <span className="text-accent-gold text-sm font-heading font-bold">{coachName.slice(0, 2).toUpperCase()}</span>
             </div>
           )}
-          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-lime-electric rounded-full border-2 border-white" />
+          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-accent-gold rounded-full border-2 border-bg-primary" />
         </button>
       </div>
 
@@ -213,46 +226,22 @@ export default function CoachDashboardPage() {
       />
 
       {/* Bento Stats Grid */}
-      <div className="grid grid-cols-2 gap-3.5 select-none">
+      <div ref={statsGridRef} className="grid grid-cols-2 gap-3.5 select-none">
         {isLoading || !stats ? (
           Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
         ) : (
           <>
-            <div className="bg-white p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px]">
-              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
-                <Counter to={stats.activeClients} />
-              </span>
-              <span className="text-[11px] font-bold text-charcoal-muted tracking-tight leading-tight">
-                Active Clients
-              </span>
-            </div>
-
-            <div className="bg-white p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px]">
-              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
-                <Counter to={stats.pendingCheckins} />
-              </span>
-              <span className="text-[11px] font-bold text-charcoal-muted tracking-tight leading-tight">
-                Pending Check-ins
-              </span>
-            </div>
-
-            <div className="bg-white p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px]">
-              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
-                <Counter to={stats.feesDue} />
-              </span>
-              <span className="text-[11px] font-bold text-charcoal-muted tracking-tight leading-tight">
-                Fees Due
-              </span>
-            </div>
-
+            <StatCard value={stats.activeClients} label="Active Clients" />
+            <StatCard value={stats.pendingCheckins} label="Pending Check-ins" />
+            <StatCard value={stats.feesDue} label="Fees Due" />
             <div
-              className="bg-lime-electric p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px] cursor-pointer"
+              className="reveal-item p-4.5 rounded-2xl bg-accent-gold/10 border border-accent-gold/40 shadow-[0_0_24px_rgba(255,184,0,0.15)] backdrop-blur-xl flex flex-col justify-between h-[105px] cursor-pointer"
               onClick={() => router.push("/fees")}
             >
-              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
+              <span className="font-heading font-bold text-3xl text-accent-gold">
                 {revenueLabel(stats.monthRevenue)}
               </span>
-              <span className="text-[11px] font-bold text-charcoal-deep tracking-tight leading-tight">
+              <span className="text-[11px] font-bold text-accent-gold/80 tracking-tight leading-tight">
                 This Month
               </span>
             </div>
@@ -264,10 +253,10 @@ export default function CoachDashboardPage() {
       {!isLoading && attentionClients.length > 0 && (
         <div>
           <div className="flex justify-between items-center mb-3 px-1">
-            <h3 className="font-montserrat font-bold text-xs text-charcoal-deep uppercase tracking-widest">
+            <h3 className="font-heading font-bold text-xs text-text-primary uppercase tracking-widest">
               Needs Attention
             </h3>
-            <span className="text-[10px] font-bold text-charcoal-muted uppercase">
+            <span className="text-[10px] font-bold text-text-muted uppercase">
               {attentionClients.length} Client{attentionClients.length === 1 ? "" : "s"}
             </span>
           </div>
@@ -280,7 +269,7 @@ export default function CoachDashboardPage() {
                 <div
                   key={c.id}
                   onClick={() => router.push(`/clients/${c.id}`)}
-                  className="snap-start shrink-0 w-[145px] relative rounded-card-mobile overflow-hidden h-[180px] shadow-bento cursor-pointer group"
+                  className="snap-start shrink-0 w-[145px] relative rounded-2xl overflow-hidden h-[180px] border border-border-subtle cursor-pointer group"
                 >
                   {avatarUrl ? (
                     <img
@@ -289,18 +278,18 @@ export default function CoachDashboardPage() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full bg-charcoal-deep flex items-center justify-center">
-                      <span className="text-lime-electric font-montserrat font-black text-3xl">{initials(name)}</span>
+                    <div className="w-full h-full bg-bg-elevated flex items-center justify-center">
+                      <span className="text-accent-gold font-heading font-bold text-3xl">{initials(name)}</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal-deep/90 via-charcoal-deep/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
-                  <div className="absolute top-2.5 left-2.5 bg-lime-electric px-2.5 py-1 rounded-full text-[9px] font-bold text-charcoal-deep tracking-wide uppercase shadow">
+                  <div className="absolute top-2.5 left-2.5 bg-accent-gold px-2.5 py-1 rounded-full text-[9px] font-bold text-bg-primary tracking-wide uppercase">
                     {c.issue}
                   </div>
 
                   <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <p className="font-montserrat font-bold text-xs leading-tight">{name}</p>
+                    <p className="font-heading font-bold text-xs leading-tight">{name}</p>
                     {c.goal && <p className="text-[9px] text-white/70 font-medium mt-0.5">{c.goal}</p>}
                   </div>
                 </div>
@@ -312,16 +301,16 @@ export default function CoachDashboardPage() {
 
       {/* Recent Check-ins */}
       <div className="flex flex-col gap-3">
-        <h3 className="font-montserrat font-bold text-xs text-charcoal-deep uppercase tracking-widest mb-1 px-1">
+        <h3 className="font-heading font-bold text-xs text-text-primary uppercase tracking-widest mb-1 px-1">
           Recent Check-ins
         </h3>
 
         {isLoading ? (
-          <div className="bg-white rounded-card-mobile p-4 shadow-bento h-16 animate-pulse" />
+          <div className="bg-bg-card rounded-2xl h-16 skeleton-pulse" />
         ) : recentCheckins.length === 0 ? (
-          <div className="bg-white rounded-card-mobile p-8 shadow-bento flex flex-col items-center gap-2">
-            <Inbox className="size-8 text-charcoal-muted/40" />
-            <p className="text-charcoal-muted text-xs font-medium">No check-ins yet</p>
+          <div className="bg-bg-card/80 border border-border-subtle rounded-2xl p-8 flex flex-col items-center gap-2 backdrop-blur-xl">
+            <Inbox className="size-8 text-text-muted/50" />
+            <p className="text-text-muted text-xs font-medium">No check-ins yet</p>
           </div>
         ) : (
           recentCheckins.map((c) => {
@@ -331,22 +320,22 @@ export default function CoachDashboardPage() {
               <div
                 key={c.id}
                 onClick={() => router.push(`/clients/${c.client_id}`)}
-                className="bg-white rounded-card-mobile p-4 shadow-bento flex items-center justify-between hover:scale-[1.01] transition-transform duration-200 cursor-pointer"
+                className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between hover:border-accent-gold/40 transition-colors duration-200 cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={c.clientName} url={c.clientAvatar} />
                   <div className="min-w-0">
-                    <h4 className="font-montserrat font-bold text-xs text-charcoal-deep truncate">{c.clientName}</h4>
-                    <p className="text-[10px] text-charcoal-muted font-medium mt-0.5">
+                    <h4 className="font-heading font-bold text-xs text-text-primary truncate">{c.clientName}</h4>
+                    <p className="text-[10px] text-text-muted font-medium mt-0.5">
                       Week {c.week_number ?? "?"} · {score !== null ? `${Math.round(score * 10)}% Adherence` : format(new Date(c.submitted_at), "d MMM")}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   {progressPhoto && (
-                    <img src={progressPhoto} alt="Progress" className="w-9 h-9 rounded-lg object-cover shadow-sm" />
+                    <img src={progressPhoto} alt="Progress" className="w-9 h-9 rounded-lg object-cover" />
                   )}
-                  <span className="w-2.5 h-2.5 rounded-full bg-lime-electric ring-4 ring-lime-tint" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent-gold ring-4 ring-accent-gold/15" />
                 </div>
               </div>
             )
@@ -359,7 +348,7 @@ export default function CoachDashboardPage() {
         onClick={() => setIsModalOpen(true)}
         whileTap={{ scale: 0.85 }}
         aria-label="Add client"
-        className="fixed bottom-24 right-5 w-14 h-14 bg-lime-electric text-charcoal-deep rounded-full flex items-center justify-center shadow-lg border border-white/20 cursor-pointer z-40"
+        className="fixed bottom-24 right-5 w-14 h-14 bg-accent-gold text-bg-primary rounded-full flex items-center justify-center shadow-[0_0_24px_rgba(255,184,0,0.35)] cursor-pointer z-40"
       >
         <Plus className="w-6 h-6 stroke-[3]" />
       </motion.button>

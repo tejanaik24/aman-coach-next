@@ -6,6 +6,8 @@ import { IndianRupee, Bell } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
+import { useCountUp } from "@/hooks/useCountUp"
 import type { Fee, Client, Profile } from "@/types"
 
 interface FeeWithClient extends Fee {
@@ -18,19 +20,34 @@ function getInitials(name: string): string {
 }
 
 function statusBadge(status: string): string {
-  if (status === "paid") return "bg-lime-tint border border-lime-electric/30 text-charcoal-deep"
-  if (status === "overdue") return "bg-red-50 border border-red-100 text-red-700"
-  return "bg-cream text-charcoal-deep"
+  if (status === "paid") return "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold"
+  if (status === "overdue") return "bg-danger/10 border border-danger/30 text-danger"
+  return "bg-bg-elevated text-text-muted"
 }
 
 function FeeSkeleton() {
-  return <div className="bg-white rounded-card-mobile shadow-bento h-20 animate-pulse" />
+  return <div className="bg-bg-card rounded-2xl h-20 skeleton-pulse" />
+}
+
+function RevenueStat({ label, value, tone }: { label: string; value: number; tone: "gold" | "danger" | "muted" }) {
+  const count = useCountUp(value)
+  const toneClass = tone === "gold" ? "text-accent-gold" : tone === "danger" ? "text-danger" : "text-text-primary"
+  const labelClass = tone === "danger" ? "text-danger" : "text-text-muted"
+  return (
+    <div className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl p-3.5 rounded-2xl flex flex-col justify-between h-[85px]">
+      <span className={`text-[9px] font-bold uppercase ${labelClass}`}>{label}</span>
+      <span className={`font-heading font-bold text-lg ${toneClass}`}>₹{count.toLocaleString("en-IN")}</span>
+    </div>
+  )
 }
 
 export default function FeesPage() {
   const supabase = createClient()
   const [fees, setFees] = useState<FeeWithClient[]>([])
   const [isLoading, setIsLoading] = useState(true)
+
+  const statsRef = useStaggerReveal<HTMLDivElement>([isLoading])
+  const listRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -97,16 +114,16 @@ export default function FeesPage() {
   const remindableCount = fees.filter((f) => f.status === "pending" || f.status === "overdue").length
 
   return (
-    <div className="px-5 pt-2 space-y-5 pb-8 bg-cream min-h-full">
+    <div className="px-5 pt-2 space-y-5 pb-8 bg-bg-primary min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-montserrat font-black text-xl text-charcoal-deep uppercase tracking-tight">
+        <h2 className="font-heading font-bold text-xl text-text-primary tracking-tight">
           Fees Ledger
         </h2>
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => toast(remindableCount > 0 ? "WhatsApp reminders coming soon" : "No pending fees to remind")}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-lime-electric text-charcoal-deep text-[10px] font-montserrat font-black uppercase tracking-wide shadow-bento"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-accent-gold text-bg-primary text-[10px] font-heading font-bold uppercase tracking-wide cursor-pointer"
         >
           <Bell className="size-3" />
           Remind All
@@ -119,54 +136,45 @@ export default function FeesPage() {
           {Array.from({ length: 3 }).map((_, i) => <FeeSkeleton key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-2.5 select-none">
-          <div className="bg-white p-3.5 rounded-2xl shadow-bento flex flex-col justify-between h-[85px]">
-            <span className="text-[9px] font-bold text-charcoal-muted uppercase">Revenue</span>
-            <span className="font-montserrat font-black text-lg text-charcoal-deep">₹{revenue.toLocaleString("en-IN")}</span>
-          </div>
-          <div className="bg-white p-3.5 rounded-2xl shadow-bento flex flex-col justify-between h-[85px]">
-            <span className="text-[9px] font-bold text-red-500 uppercase">Overdue</span>
-            <span className="font-montserrat font-black text-lg text-red-600">₹{overdue.toLocaleString("en-IN")}</span>
-          </div>
-          <div className="bg-white p-3.5 rounded-2xl shadow-bento flex flex-col justify-between h-[85px]">
-            <span className="text-[9px] font-bold text-charcoal-muted uppercase">Pending</span>
-            <span className="font-montserrat font-black text-lg text-charcoal-deep">₹{pending.toLocaleString("en-IN")}</span>
-          </div>
+        <div ref={statsRef} className="grid grid-cols-3 gap-2.5 select-none">
+          <RevenueStat label="Revenue" value={revenue} tone="gold" />
+          <RevenueStat label="Overdue" value={overdue} tone="danger" />
+          <RevenueStat label="Pending" value={pending} tone="muted" />
         </div>
       )}
 
-      <p className="text-[10px] font-bold text-charcoal-muted uppercase tracking-wider -mb-2">Ledger</p>
+      <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider -mb-2">Ledger</p>
 
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => <FeeSkeleton key={i} />)}
         </div>
       ) : fees.length === 0 ? (
-        <div className="bg-white rounded-card-mobile shadow-bento py-16 flex flex-col items-center gap-4">
-          <IndianRupee className="size-12 text-charcoal-muted/30" />
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl py-16 flex flex-col items-center gap-4">
+          <IndianRupee className="size-12 text-text-muted/40" />
           <div className="text-center">
-            <p className="text-charcoal-deep font-montserrat font-bold">No fees recorded</p>
-            <p className="text-sm text-charcoal-muted mt-1">Fees are created when you add a client</p>
+            <p className="text-text-primary font-heading font-bold">No fees recorded</p>
+            <p className="text-sm text-text-muted mt-1">Fees are created when you add a client</p>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div ref={listRef} className="space-y-3">
           {fees.map((f) => {
             const initials = getInitials(f.clientName)
             return (
-              <div key={f.id} className="bg-white rounded-card-mobile shadow-bento p-4">
+              <div key={f.id} className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     {f.clientAvatar ? (
                       <img src={f.clientAvatar} alt={f.clientName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-charcoal-deep flex items-center justify-center flex-shrink-0">
-                        <span className="text-lime-electric text-xs font-montserrat font-bold">{initials}</span>
+                      <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-accent-gold/30">
+                        <span className="text-accent-gold text-xs font-heading font-bold">{initials}</span>
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-charcoal-deep font-montserrat font-bold text-xs truncate">{f.clientName}</p>
-                      <p className="text-charcoal-muted text-[10px] mt-0.5">
+                      <p className="text-text-primary font-heading font-bold text-xs truncate">{f.clientName}</p>
+                      <p className="text-text-muted text-[10px] mt-0.5">
                         Due: {format(new Date(f.due_date), "d MMM")} · ₹{Number(f.amount).toLocaleString("en-IN")}
                       </p>
                     </div>
@@ -179,14 +187,14 @@ export default function FeesPage() {
                     <motion.button
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleMarkPaid(f.id)}
-                      className="flex-1 h-9 rounded-full bg-lime-electric text-charcoal-deep text-[10px] font-montserrat font-black uppercase tracking-wide"
+                      className="flex-1 h-9 rounded-full bg-accent-gold text-bg-primary text-[10px] font-heading font-bold uppercase tracking-wide cursor-pointer"
                     >
                       Mark Paid
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.97 }}
                       onClick={() => toast("WhatsApp reminder coming soon")}
-                      className="flex-1 h-9 rounded-full bg-charcoal-deep text-white text-[10px] font-montserrat font-black uppercase tracking-wide flex items-center justify-center gap-1"
+                      className="flex-1 h-9 rounded-full bg-bg-elevated border border-border-subtle text-text-primary text-[10px] font-heading font-bold uppercase tracking-wide flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <Bell className="size-3" />
                       Remind

@@ -7,15 +7,16 @@ import { differenceInWeeks, format } from "date-fns"
 import toast from "react-hot-toast"
 import jsPDF from "jspdf"
 import { createClient } from "@/lib/supabase/client"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import type { Client, WorkoutPlan, WorkoutDay, Exercise } from "@/types"
 
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={`bg-white rounded-card-mobile animate-pulse ${className ?? ""}`} />
+  return <div className={`bg-bg-card rounded-2xl skeleton-pulse ${className ?? ""}`} />
 }
 
 function WorkoutSkeleton() {
   return (
-    <div className="px-5 pt-2 space-y-5 bg-cream min-h-full">
+    <div className="px-5 pt-2 space-y-5 bg-bg-primary min-h-full">
       <SkeletonBlock className="h-7 w-48" />
       <SkeletonBlock className="h-4 w-32" />
       <div className="flex gap-2 overflow-hidden">
@@ -45,6 +46,8 @@ export default function WorkoutPage() {
   const [selectedDay, setSelectedDay] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [hasNoPlan, setHasNoPlan] = useState(false)
+
+  const listRef = useStaggerReveal<HTMLDivElement>([selectedDay, isLoading])
 
   useEffect(() => {
     async function fetchData() {
@@ -109,13 +112,13 @@ export default function WorkoutPage() {
 
   if (hasNoPlan || !plan) {
     return (
-      <div className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-cream">
-        <div className="size-16 rounded-full bg-lime-tint flex items-center justify-center">
-          <Dumbbell className="size-8 text-charcoal-deep" />
+      <div className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-bg-primary">
+        <div className="size-16 rounded-full bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center">
+          <Dumbbell className="size-8 text-accent-gold" />
         </div>
         <div className="text-center space-y-1">
-          <p className="text-charcoal-deep font-montserrat font-bold text-lg">No workout plan assigned</p>
-          <p className="text-sm text-charcoal-muted">Your coach will assign a plan soon</p>
+          <p className="text-text-primary font-heading font-bold text-lg">No workout plan assigned</p>
+          <p className="text-sm text-text-muted">Your coach will assign a plan soon</p>
         </div>
       </div>
     )
@@ -129,16 +132,22 @@ export default function WorkoutPage() {
   const activeDay = days[selectedDay]
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-6 bg-cream min-h-full pb-4">
+    <div className="relative px-5 pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-4 overflow-hidden">
+      {/* Ambient hero backdrop */}
+      <div className="absolute inset-x-0 top-0 h-56 -z-10 overflow-hidden">
+        <img src="/images/aman/aman-04.jpeg" alt="" className="w-full h-full object-cover opacity-20 blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/50 via-bg-primary/85 to-bg-primary" />
+      </div>
+
       {/* Header */}
-      <div className="flex flex-col">
-        <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-widest">
+      <div className="flex flex-col pt-2">
+        <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
           Active Plan
         </span>
-        <h2 className="font-montserrat font-black text-xl text-charcoal-deep leading-tight mt-0.5">
+        <h2 className="font-heading font-bold text-xl text-text-primary leading-tight mt-0.5">
           {plan.name}
         </h2>
-        <p className="text-[10px] text-charcoal-muted font-semibold mt-1 bg-white/40 px-2.5 py-1 rounded-md w-max shadow-inner border border-charcoal-deep/5">
+        <p className="text-[10px] text-accent-gold font-semibold mt-1 bg-accent-gold/10 border border-accent-gold/30 px-2.5 py-1 rounded-md w-max">
           Week {displayWeek} of {plan.weeks}
         </p>
       </div>
@@ -152,8 +161,8 @@ export default function WorkoutPage() {
               <button
                 key={day.id}
                 onClick={() => setSelectedDay(i)}
-                className={`relative px-5 py-3 rounded-full text-xs font-montserrat font-black tracking-wide uppercase snap-start whitespace-nowrap transition-all duration-300 ${
-                  isSelected ? "bg-charcoal-deep text-lime-electric shadow-md" : "bg-white text-charcoal-deep border border-charcoal-deep/5 shadow-sm"
+                className={`relative px-5 py-3 rounded-full text-xs font-heading font-bold tracking-wide uppercase snap-start whitespace-nowrap transition-colors duration-300 cursor-pointer ${
+                  isSelected ? "bg-accent-gold text-bg-primary" : "bg-bg-elevated text-text-muted border border-border-subtle"
                 }`}
               >
                 Day {day.day_number}
@@ -167,13 +176,13 @@ export default function WorkoutPage() {
       {activeDay && (
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <Dumbbell className="w-4 h-4 text-lime-electric fill-charcoal-deep" />
-            <h3 className="text-xs font-bold text-charcoal-deep uppercase tracking-wider">
+            <Dumbbell className="w-4 h-4 text-accent-gold" />
+            <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
               {activeDay.day_name}
               {activeDay.focus ? ` · ${activeDay.focus}` : ""}
             </h3>
           </div>
-          <span className="text-[10px] text-charcoal-muted font-bold">
+          <span className="text-[10px] text-text-muted font-bold">
             {activeDay.exercises.length} Movement{activeDay.exercises.length === 1 ? "" : "s"}
           </span>
         </div>
@@ -181,45 +190,45 @@ export default function WorkoutPage() {
 
       {/* Exercises */}
       {activeDay && activeDay.exercises.length === 0 ? (
-        <div className="bg-white rounded-card-mobile shadow-bento p-8 flex flex-col items-center gap-3">
-          <Moon className="size-8 text-charcoal-muted/40" />
-          <p className="text-charcoal-deep font-medium">Rest day</p>
-          <p className="text-sm text-charcoal-muted text-center">
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-8 flex flex-col items-center gap-3">
+          <Moon className="size-8 text-text-muted/50" />
+          <p className="text-text-primary font-medium">Rest day</p>
+          <p className="text-sm text-text-muted text-center">
             Take it easy today. Recovery is part of the plan.
           </p>
         </div>
       ) : (
-        <div key={selectedDay} className="flex flex-col gap-4 animate-fade-in-up">
+        <div ref={listRef} key={selectedDay} className="flex flex-col gap-4">
           {(activeDay?.exercises ?? []).map((exercise) => (
             <motion.div
               key={exercise.id}
               whileTap={{ scale: 0.98 }}
-              className="bg-white rounded-card-mobile p-4 shadow-bento flex items-center justify-between cursor-pointer border border-transparent hover:border-lime-electric/20 transition-all duration-300 animate-card-slide-up"
+              className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-accent-gold/40 transition-colors duration-300"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-12 h-12 rounded-xl bg-lime-tint flex items-center justify-center flex-shrink-0">
-                  <Dumbbell className="w-5 h-5 text-charcoal-deep" />
+                <div className="w-12 h-12 rounded-xl bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center flex-shrink-0">
+                  <Dumbbell className="w-5 h-5 text-accent-gold" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <h4 className="text-xs font-bold text-charcoal-deep font-montserrat leading-tight truncate">
+                  <h4 className="text-xs font-bold text-text-primary font-heading leading-tight truncate">
                     {exercise.name}
                   </h4>
-                  <p className="text-[10px] text-charcoal-muted font-medium mt-0.5">
+                  <p className="text-[10px] text-text-muted font-medium mt-0.5">
                     {exercise.sets !== null && exercise.reps !== null ? `${exercise.sets} × ${exercise.reps}` : ""}
                     {exercise.weight ? ` · ${exercise.weight}` : ""}
                   </p>
                   {exercise.notes && (
-                    <p className="text-[9px] text-charcoal-muted/70 italic mt-0.5 truncate">{exercise.notes}</p>
+                    <p className="text-[9px] text-text-muted/70 italic mt-0.5 truncate">{exercise.notes}</p>
                   )}
                 </div>
               </div>
               {exercise.rest_seconds !== null && (
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[9px] text-charcoal-muted font-bold font-montserrat uppercase flex items-center gap-1">
+                  <span className="text-[9px] text-text-muted font-bold font-heading uppercase flex items-center gap-1">
                     <Clock className="w-2.5 h-2.5" />
                     Rest
                   </span>
-                  <span className="text-xs font-montserrat font-black text-charcoal-deep bg-cream px-2 py-1 rounded">
+                  <span className="text-xs font-heading font-bold text-text-primary bg-bg-elevated px-2 py-1 rounded">
                     {exercise.rest_seconds}s
                   </span>
                 </div>
@@ -230,9 +239,9 @@ export default function WorkoutPage() {
       )}
 
       {days.length === 0 && (
-        <div className="bg-white rounded-card-mobile shadow-bento p-8 flex flex-col items-center gap-3">
-          <Dumbbell className="size-8 text-charcoal-muted/40" />
-          <p className="text-charcoal-muted text-sm">No days configured yet</p>
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-8 flex flex-col items-center gap-3">
+          <Dumbbell className="size-8 text-text-muted/50" />
+          <p className="text-text-muted text-sm">No days configured yet</p>
         </div>
       )}
 
@@ -280,7 +289,7 @@ export default function WorkoutPage() {
             toast.success("PDF downloaded")
           } catch { toast.error("Failed to generate PDF") }
         }}
-        className="w-full border-2 border-charcoal-deep/15 hover:border-charcoal-deep text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-full transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 cursor-pointer bg-white"
+        className="w-full border border-accent-gold/40 hover:border-accent-gold text-accent-gold font-heading font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-full transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 cursor-pointer bg-bg-card/80 backdrop-blur-xl"
       >
         <Download className="w-4 h-4 stroke-[2.5]" />
         Download Workout PDF

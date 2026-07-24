@@ -21,7 +21,7 @@ function getInitials(name: string): string {
 }
 
 function CheckinCardSkeleton() {
-  return <div className="bg-white rounded-card-mobile shadow-bento h-24 animate-pulse" />
+  return <div className="bg-bg-card rounded-2xl h-24 skeleton-pulse" />
 }
 
 export default function CheckinsPage() {
@@ -99,27 +99,27 @@ export default function CheckinsPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 space-y-5 pb-8 bg-cream min-h-full">
+    <div className="px-5 pt-2 space-y-5 pb-8 bg-bg-primary min-h-full">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <h2 className="font-montserrat font-black text-xl text-charcoal-deep uppercase tracking-tight">
+        <h2 className="font-heading font-bold text-xl text-text-primary tracking-tight">
           Check-in Queue
         </h2>
         {!isLoading && pending.length > 0 && (
-          <span className="text-[10px] font-bold text-charcoal-deep bg-lime-electric px-2 py-0.5 rounded-full">{pending.length}</span>
+          <span className="text-[10px] font-bold text-bg-primary bg-accent-gold px-2 py-0.5 rounded-full">{pending.length}</span>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white p-1 rounded-full shadow-sm select-none">
+      <div className="flex bg-bg-elevated p-1 rounded-full border border-border-subtle select-none">
         {tabs.map((t) => {
           const isSelected = tab === t.key
           return (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 h-9 rounded-full text-xs font-montserrat font-black uppercase tracking-wide transition-colors ${
-                isSelected ? "bg-charcoal-deep text-lime-electric" : "text-charcoal-muted"
+              className={`flex-1 h-9 rounded-full text-xs font-heading font-bold uppercase tracking-wide transition-colors cursor-pointer ${
+                isSelected ? "bg-accent-gold text-bg-primary" : "text-text-muted"
               }`}
             >
               {t.label}
@@ -134,13 +134,13 @@ export default function CheckinsPage() {
           {Array.from({ length: 3 }).map((_, i) => <CheckinCardSkeleton key={i} />)}
         </div>
       ) : activeList.length === 0 ? (
-        <div className="bg-white rounded-card-mobile shadow-bento py-16 flex flex-col items-center gap-4">
-          <ClipboardCheck className="size-12 text-charcoal-muted/30" />
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl py-16 flex flex-col items-center gap-4">
+          <ClipboardCheck className="size-12 text-text-muted/40" />
           <div className="text-center">
-            <p className="text-charcoal-deep font-montserrat font-bold">
+            <p className="text-text-primary font-heading font-bold">
               {tab === "pending" ? "All caught up!" : "No reviewed check-ins"}
             </p>
-            <p className="text-sm text-charcoal-muted mt-1">
+            <p className="text-sm text-text-muted mt-1">
               {tab === "pending" ? "No pending check-ins" : "Reviewed check-ins will appear here"}
             </p>
           </div>
@@ -159,39 +159,39 @@ export default function CheckinsPage() {
                   key={checkin.id}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => router.push(`/clients/${checkin.clientId}`)}
-                  className={`bg-white rounded-card-mobile shadow-bento p-4 flex items-start gap-3 cursor-pointer ${isReviewed ? "opacity-70" : ""}`}
+                  className={`bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex items-start gap-3 cursor-pointer ${isReviewed ? "opacity-70" : ""}`}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-charcoal-deep flex items-center justify-center">
-                      <span className="text-lime-electric text-xs font-montserrat font-bold">{initials}</span>
+                    <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center border border-accent-gold/30">
+                      <span className="text-accent-gold text-xs font-heading font-bold">{initials}</span>
                     </div>
-                    {!isReviewed && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-lime-electric border-2 border-white" />}
+                    {!isReviewed && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-gold border-2 border-bg-card" />}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-charcoal-deep font-montserrat font-bold text-xs truncate">{checkin.clientName}</p>
-                        <p className="text-charcoal-muted text-[10px] mt-0.5">
+                        <p className="text-text-primary font-heading font-bold text-xs truncate">{checkin.clientName}</p>
+                        <p className="text-text-muted text-[10px] mt-0.5">
                           Week {checkin.week_number ?? "?"} · {format(new Date(checkin.submitted_at), "d MMM yyyy")}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {isReviewed ? (
-                          <span className="text-[9px] text-charcoal-muted font-bold">Reviewed {format(new Date(checkin.reviewed_at!), "d MMM")}</span>
+                          <span className="text-[9px] text-text-muted font-bold">Reviewed {format(new Date(checkin.reviewed_at!), "d MMM")}</span>
                         ) : (
-                          <span className="text-[9px] text-charcoal-deep bg-lime-electric px-2 py-0.5 rounded-full font-bold uppercase">Review</span>
+                          <span className="text-[9px] text-bg-primary bg-accent-gold px-2 py-0.5 rounded-full font-bold uppercase">Review</span>
                         )}
-                        <ChevronRight className="size-3.5 text-charcoal-muted" />
+                        <ChevronRight className="size-3.5 text-text-muted" />
                       </div>
                     </div>
 
                     {avgScore !== null && (
                       <div className="mt-2 flex items-center gap-1.5">
-                        <div className="h-1.5 flex-1 bg-cream rounded-full overflow-hidden max-w-[100px]">
-                          <div className="h-full rounded-full bg-lime-electric" style={{ width: `${(avgScore / 10) * 100}%` }} />
+                        <div className="h-1.5 flex-1 bg-bg-elevated rounded-full overflow-hidden max-w-[100px]">
+                          <div className="h-full rounded-full bg-accent-gold" style={{ width: `${(avgScore / 10) * 100}%` }} />
                         </div>
-                        <span className="text-[9px] font-bold text-charcoal-muted">{Math.round(avgScore)}/10</span>
+                        <span className="text-[9px] font-bold text-text-muted">{Math.round(avgScore)}/10</span>
                       </div>
                     )}
                   </div>

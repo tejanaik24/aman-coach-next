@@ -7,6 +7,7 @@ import { format } from "date-fns"
 import toast from "react-hot-toast"
 import jsPDF from "jspdf"
 import { createClient } from "@/lib/supabase/client"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import type { Client, NutritionPlan, Meal } from "@/types"
 
 function mealIcon(mealName: string) {
@@ -23,16 +24,16 @@ function foodField(food: Record<string, unknown>, key: string): string {
 
 function DietSkeleton() {
   return (
-    <div className="px-5 pt-2 space-y-5 bg-cream min-h-full">
-      <div className="h-7 w-40 bg-white rounded-card-mobile animate-pulse" />
+    <div className="px-5 pt-2 space-y-5 bg-bg-primary min-h-full">
+      <div className="h-7 w-40 bg-bg-card rounded-2xl skeleton-pulse" />
       <div className="grid grid-cols-4 gap-2.5">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[85px] bg-white rounded-2xl shadow-bento animate-pulse" />
+          <div key={i} className="h-[85px] bg-bg-card rounded-2xl skeleton-pulse" />
         ))}
       </div>
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 bg-white rounded-card-mobile shadow-bento animate-pulse" />
+          <div key={i} className="h-24 bg-bg-card rounded-2xl skeleton-pulse" />
         ))}
       </div>
     </div>
@@ -45,6 +46,9 @@ export default function ClientDietPage() {
   const [meals, setMeals] = useState<Meal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasNoPlan, setHasNoPlan] = useState(false)
+
+  const macroRef = useStaggerReveal<HTMLDivElement>([isLoading])
+  const mealsRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
   useEffect(() => {
     async function fetchData() {
@@ -125,13 +129,13 @@ export default function ClientDietPage() {
 
   if (hasNoPlan || !plan) {
     return (
-      <div className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-cream">
-        <div className="size-16 rounded-full bg-lime-tint flex items-center justify-center">
-          <Apple className="size-8 text-charcoal-deep" />
+      <div className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-bg-primary">
+        <div className="size-16 rounded-full bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center">
+          <Apple className="size-8 text-accent-gold" />
         </div>
         <div className="text-center space-y-1">
-          <p className="text-charcoal-deep font-montserrat font-bold text-lg">No diet plan assigned</p>
-          <p className="text-sm text-charcoal-muted">Your coach will set your nutrition targets soon</p>
+          <p className="text-text-primary font-heading font-bold text-lg">No diet plan assigned</p>
+          <p className="text-sm text-text-muted">Your coach will set your nutrition targets soon</p>
         </div>
       </div>
     )
@@ -145,32 +149,34 @@ export default function ClientDietPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-6 bg-cream min-h-full pb-4">
+    <div className="px-5 pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-4">
       {/* Header */}
       <div className="flex flex-col">
-        <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-widest">
+        <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
           Active Nutrition
         </span>
-        <h2 className="font-montserrat font-black text-xl text-charcoal-deep leading-tight mt-0.5">
+        <h2 className="font-heading font-bold text-xl text-text-primary leading-tight mt-0.5">
           {plan.notes || "Diet Plan"}
         </h2>
       </div>
 
       {/* Macro Bento Grid */}
-      <div className="grid grid-cols-4 gap-2.5 select-none">
+      <div ref={macroRef} className="grid grid-cols-4 gap-2.5 select-none">
         {macros.map((macro) => (
           <div
             key={macro.label}
-            className={`p-3 rounded-2xl shadow-bento flex flex-col justify-between h-[85px] ${
-              macro.highlight ? "bg-lime-electric text-charcoal-deep" : "bg-white text-charcoal-deep"
+            className={`reveal-item p-3 rounded-2xl backdrop-blur-xl border flex flex-col justify-between h-[85px] ${
+              macro.highlight
+                ? "bg-accent-gold/10 border-accent-gold/40 shadow-[0_0_24px_rgba(255,184,0,0.15)]"
+                : "bg-bg-card/80 border-border-subtle"
             }`}
           >
-            <span className={`text-[9px] font-bold uppercase tracking-wider ${macro.highlight ? "text-charcoal-deep" : "text-charcoal-muted"}`}>
+            <span className={`text-[9px] font-bold uppercase tracking-wider ${macro.highlight ? "text-accent-gold" : "text-text-muted"}`}>
               {macro.label}
             </span>
             <div className="flex flex-col mt-1">
-              <span className="font-montserrat font-black text-lg leading-none">{macro.value}</span>
-              <span className="text-[9px] font-bold uppercase mt-0.5 opacity-60">{macro.unit}</span>
+              <span className={`font-heading font-bold text-lg leading-none ${macro.highlight ? "text-accent-gold" : "text-text-primary"}`}>{macro.value}</span>
+              <span className="text-[9px] font-bold uppercase mt-0.5 text-text-muted">{macro.unit}</span>
             </div>
           </div>
         ))}
@@ -178,54 +184,56 @@ export default function ClientDietPage() {
 
       {/* Meals List */}
       <div className="flex flex-col gap-4">
-        <h3 className="font-montserrat font-bold text-xs text-charcoal-deep uppercase tracking-widest mb-1">
+        <h3 className="font-heading font-bold text-xs text-text-primary uppercase tracking-widest mb-1">
           Meal Plan
         </h3>
 
         {meals.length === 0 ? (
-          <div className="bg-white rounded-card-mobile shadow-bento p-8 flex flex-col items-center gap-2">
-            <Apple className="size-8 text-charcoal-muted/40" />
-            <p className="text-charcoal-muted text-xs font-medium">No meals configured yet</p>
+          <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-8 flex flex-col items-center gap-2">
+            <Apple className="size-8 text-text-muted/50" />
+            <p className="text-text-muted text-xs font-medium">No meals configured yet</p>
           </div>
         ) : (
-          meals.map((meal) => {
-            const MealIcon = mealIcon(meal.meal_name)
-            return (
-              <motion.div
-                key={meal.id}
-                whileTap={{ scale: 0.98 }}
-                className="bg-white rounded-card-mobile p-4 shadow-bento flex gap-3 cursor-pointer border border-transparent hover:border-lime-electric/20 transition-all duration-300"
-              >
-                <div className="w-16 h-16 rounded-xl bg-lime-tint flex items-center justify-center shrink-0">
-                  <MealIcon className="w-6 h-6 text-charcoal-deep" />
-                </div>
-                <div className="flex-1 flex flex-col justify-between min-w-0">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0">
-                      <h4 className="font-montserrat font-bold text-xs text-charcoal-deep capitalize truncate">
-                        {meal.meal_name}
-                      </h4>
-                      {meal.foods.length > 0 && (
-                        <p className="text-[10px] text-charcoal-muted font-bold mt-0.5 leading-tight truncate">
-                          {meal.foods.map((f) => foodField(f, "name")).filter(Boolean).join(", ")}
-                        </p>
+          <div ref={mealsRef} className="flex flex-col gap-4">
+            {meals.map((meal) => {
+              const MealIcon = mealIcon(meal.meal_name)
+              return (
+                <motion.div
+                  key={meal.id}
+                  whileTap={{ scale: 0.98 }}
+                  className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex gap-3 cursor-pointer hover:border-accent-gold/40 transition-colors duration-300"
+                >
+                  <div className="w-16 h-16 rounded-xl bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center shrink-0">
+                    <MealIcon className="w-6 h-6 text-accent-gold" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <h4 className="font-heading font-bold text-xs text-text-primary capitalize truncate">
+                          {meal.meal_name}
+                        </h4>
+                        {meal.foods.length > 0 && (
+                          <p className="text-[10px] text-text-muted font-bold mt-0.5 leading-tight truncate">
+                            {meal.foods.map((f) => foodField(f, "name")).filter(Boolean).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                      {meal.meal_time && (
+                        <span className="text-[9px] font-bold text-text-muted shrink-0 bg-bg-elevated px-2 py-0.5 rounded">
+                          {meal.meal_time}
+                        </span>
                       )}
                     </div>
-                    {meal.meal_time && (
-                      <span className="text-[9px] font-bold text-charcoal-muted shrink-0 bg-cream px-2 py-0.5 rounded">
-                        {meal.meal_time}
+                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-border-subtle">
+                      <span className="text-xs font-bold text-text-primary font-heading">
+                        {meal.total_calories ?? "—"} kcal
                       </span>
-                    )}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-cream">
-                    <span className="text-xs font-bold text-charcoal-deep font-montserrat">
-                      {meal.total_calories ?? "—"} kcal
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })
+                </motion.div>
+              )
+            })}
+          </div>
         )}
       </div>
 
@@ -233,7 +241,7 @@ export default function ClientDietPage() {
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={handleDownloadPDF}
-        className="w-full border-2 border-charcoal-deep/15 hover:border-charcoal-deep text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-full transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 cursor-pointer bg-white"
+        className="w-full border border-accent-gold/40 hover:border-accent-gold text-accent-gold font-heading font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-full transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 cursor-pointer bg-bg-card/80 backdrop-blur-xl"
       >
         <Download className="w-4 h-4 stroke-[2.5]" />
         Download Diet PDF

@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { motion, animate } from "motion/react"
+import { motion } from "motion/react"
 import { ChevronRight, CheckCircle2, Dumbbell } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import ProfileMenu from "@/components/shared/ProfileMenu"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
+import { useCountUp } from "@/hooks/useCountUp"
 import type { Client, WorkoutPlan, NutritionPlan, Checkin, Profile } from "@/types"
 
 function getGreeting(): string {
@@ -21,20 +23,11 @@ function getInitials(name: string): string {
 }
 
 function Counter({ to }: { to: number }) {
-  const [count, setCount] = useState(0)
-  useEffect(() => {
-    const controls = animate(0, to, {
-      duration: 1.2,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (value) => setCount(Math.round(value)),
-    })
-    return () => controls.stop()
-  }, [to])
-  return <>{count}</>
+  return <>{useCountUp(to)}</>
 }
 
 function CardSkeleton({ height = "h-[105px]" }: { height?: string }) {
-  return <div className={`bg-white rounded-card-mobile shadow-bento ${height} animate-pulse`} />
+  return <div className={`bg-bg-card rounded-2xl ${height} skeleton-pulse`} />
 }
 
 export default function ClientHomePage() {
@@ -50,6 +43,8 @@ export default function ClientHomePage() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [coachName, setCoachName] = useState<string | null>(null)
+
+  const gridRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
   useEffect(() => {
     async function fetchData() {
@@ -105,23 +100,23 @@ export default function ClientHomePage() {
   const ringOffset = ringCircumference - (ringCircumference * adherencePct) / 100
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-6 bg-cream min-h-full">
+    <div className="px-5 pt-2 flex flex-col gap-6 bg-bg-primary min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-widest">
+          <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
             {getGreeting()}, {name.split(" ")[0]}
           </span>
-          <h2 className="font-montserrat font-black text-xl text-charcoal-deep leading-tight mt-0.5">
+          <h2 className="font-heading font-bold text-xl text-text-primary leading-tight mt-0.5">
             {coachName ? `Coach ${coachName.split(" ")[0]}` : "Coach"}
           </h2>
         </div>
         <button type="button" onClick={() => setIsProfileOpen(true)} aria-label="Open profile" className="cursor-pointer">
           {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={name} className="w-12 h-12 rounded-full object-cover border-2 border-lime-electric shadow-md" />
+            <img src={profile.avatar_url} alt={name} className="w-12 h-12 rounded-full object-cover border-2 border-accent-gold" />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric shadow-md">
-              <span className="text-lime-electric text-sm font-montserrat font-bold">{initials}</span>
+            <div className="w-12 h-12 rounded-full bg-bg-elevated flex items-center justify-center border-2 border-accent-gold">
+              <span className="text-accent-gold text-sm font-heading font-bold">{initials}</span>
             </div>
           )}
         </button>
@@ -141,7 +136,7 @@ export default function ClientHomePage() {
       <motion.button
         onClick={() => router.push("/checkin")}
         whileTap={{ scale: 0.97 }}
-        className="w-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-wider py-4 px-6 rounded-full shadow-bento flex items-center justify-center gap-2 cursor-pointer hover:bg-lime-electric/95 transition-colors"
+        className="w-full bg-accent-gold text-bg-primary font-heading font-bold text-xs uppercase tracking-wider py-4 px-6 rounded-full shadow-[0_0_24px_rgba(255,184,0,0.3)] flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-[0.98]"
       >
         Submit Check-in
         <ChevronRight className="w-4 h-4" />
@@ -153,19 +148,19 @@ export default function ClientHomePage() {
           <CardSkeleton height="h-[180px]" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div ref={gridRef} className="grid grid-cols-2 gap-4">
           {/* Latest check-in progress ring */}
-          <div className="bg-white p-5 rounded-card-mobile shadow-bento flex flex-col items-center justify-between h-[180px]">
-            <span className="text-[10px] font-bold text-charcoal-muted text-center uppercase tracking-wider">
+          <div className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl p-5 rounded-2xl flex flex-col items-center justify-between h-[180px]">
+            <span className="text-[10px] font-bold text-text-muted text-center uppercase tracking-wider">
               {latestCheckin ? `Week ${latestCheckin.week_number ?? "?"} Progress` : "Progress"}
             </span>
 
             <div className="relative w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90">
-                <circle cx="48" cy="48" r="40" stroke="#E6E8DE" strokeWidth="8" fill="none" />
+                <circle cx="48" cy="48" r="40" stroke="#1A1A1A" strokeWidth="8" fill="none" />
                 <motion.circle
                   cx="48" cy="48" r="40"
-                  stroke="#C4F542" strokeWidth="8" fill="none" strokeLinecap="round"
+                  stroke="#FFB800" strokeWidth="8" fill="none" strokeLinecap="round"
                   initial={{ strokeDasharray: ringCircumference, strokeDashoffset: ringCircumference }}
                   animate={{ strokeDashoffset: ringOffset }}
                   transition={{ type: "spring", duration: 1.5, bounce: 0.15 }}
@@ -174,33 +169,35 @@ export default function ClientHomePage() {
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt={name} className="absolute w-[68px] h-[68px] rounded-full object-cover" />
               ) : (
-                <div className="absolute w-[68px] h-[68px] rounded-full bg-charcoal-deep flex items-center justify-center">
-                  <span className="text-lime-electric font-montserrat font-black text-lg">{initials}</span>
+                <div className="absolute w-[68px] h-[68px] rounded-full bg-bg-elevated flex items-center justify-center">
+                  <span className="text-accent-gold font-heading font-bold text-lg">{initials}</span>
                 </div>
               )}
             </div>
 
-            <span className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-text-primary uppercase tracking-wider">
               {latestCheckin ? <><Counter to={adherencePct} />% Adherence</> : "No check-in yet"}
             </span>
           </div>
 
-          {/* Active workout plan */}
+          {/* Active workout plan — Aman photo hero */}
           <div
-            className="relative rounded-card-mobile overflow-hidden h-[180px] shadow-bento cursor-pointer bg-charcoal-deep flex flex-col justify-end p-4"
+            className="reveal-item relative rounded-2xl overflow-hidden h-[180px] border border-border-subtle cursor-pointer flex flex-col justify-end p-4"
             onClick={() => router.push("/workout")}
           >
-            <Dumbbell className="absolute top-4 right-4 w-8 h-8 text-lime-electric/30" />
-            <span className="text-[9px] font-bold text-lime-electric uppercase tracking-widest mb-1.5">
+            <img src="/images/aman/aman-03.jpeg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10" />
+            <Dumbbell className="absolute top-4 right-4 w-8 h-8 text-accent-gold/60" />
+            <span className="relative text-[9px] font-bold text-accent-gold uppercase tracking-widest mb-1.5">
               Active Plan
             </span>
             {workoutPlan ? (
               <>
-                <h3 className="font-montserrat font-black text-sm text-white leading-tight">{workoutPlan.name}</h3>
-                <p className="text-[10px] text-white/70 font-medium mt-0.5">{workoutPlan.weeks} week program</p>
+                <h3 className="relative font-heading font-bold text-sm text-white leading-tight">{workoutPlan.name}</h3>
+                <p className="relative text-[10px] text-white/70 font-medium mt-0.5">{workoutPlan.weeks} week program</p>
               </>
             ) : (
-              <p className="text-[10px] text-white/70 font-medium">No plan assigned yet</p>
+              <p className="relative text-[10px] text-white/70 font-medium">No plan assigned yet</p>
             )}
           </div>
         </div>
@@ -210,24 +207,24 @@ export default function ClientHomePage() {
       {isLoading ? (
         <CardSkeleton />
       ) : (
-        <div className="bg-white rounded-card-mobile p-5 shadow-bento flex items-center justify-between">
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-5 flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold text-charcoal-muted uppercase tracking-wider">Last Check-in</span>
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Last Check-in</span>
             {latestCheckin ? (
               <>
-                <h4 className="font-montserrat font-black text-3xl text-charcoal-deep mt-1">
+                <h4 className="font-heading font-bold text-3xl text-text-primary mt-1">
                   <Counter to={adherencePct} />%
                 </h4>
-                <p className="text-[10px] text-charcoal-muted font-medium mt-0.5">
+                <p className="text-[10px] text-text-muted font-medium mt-0.5">
                   Week {latestCheckin.week_number ?? "?"} · {format(new Date(latestCheckin.submitted_at), "d MMM")}
                 </p>
               </>
             ) : (
-              <p className="text-xs text-charcoal-muted font-medium mt-1">No check-ins submitted yet</p>
+              <p className="text-xs text-text-muted font-medium mt-1">No check-ins submitted yet</p>
             )}
           </div>
-          <div className="w-14 h-14 bg-cream rounded-full flex items-center justify-center text-charcoal-deep shadow-inner border border-charcoal-deep/5">
-            <CheckCircle2 className={`w-7 h-7 stroke-[1.5] ${latestCheckin?.reviewed_at ? "text-lime-electric" : "text-charcoal-muted/40"}`} />
+          <div className="w-14 h-14 bg-bg-elevated rounded-full flex items-center justify-center border border-border-subtle">
+            <CheckCircle2 className={`w-7 h-7 stroke-[1.5] ${latestCheckin?.reviewed_at ? "text-accent-gold" : "text-text-muted/50"}`} />
           </div>
         </div>
       )}
@@ -236,21 +233,21 @@ export default function ClientHomePage() {
       {isLoading ? (
         <CardSkeleton />
       ) : nutritionPlan ? (
-        <div className="bg-white rounded-card-mobile p-5 shadow-bento space-y-2">
-          <span className="text-[10px] font-bold text-charcoal-muted uppercase tracking-wider">Nutrition Plan</span>
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-5 space-y-2">
+          <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Nutrition Plan</span>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-montserrat font-black text-charcoal-deep">{nutritionPlan.total_calories ?? "—"}</span>
-            <span className="text-sm text-charcoal-muted">kcal / day</span>
+            <span className="text-2xl font-heading font-bold text-text-primary">{nutritionPlan.total_calories ?? "—"}</span>
+            <span className="text-sm text-text-muted">kcal / day</span>
           </div>
           <div className="flex gap-4 text-sm">
-            <div><span className="text-lime-electric font-bold">{nutritionPlan.protein_g ?? "—"}g</span><span className="text-charcoal-muted ml-1 text-xs">protein</span></div>
-            <div><span className="text-charcoal-deep font-bold">{nutritionPlan.carbs_g ?? "—"}g</span><span className="text-charcoal-muted ml-1 text-xs">carbs</span></div>
-            <div><span className="text-charcoal-deep font-bold">{nutritionPlan.fats_g ?? "—"}g</span><span className="text-charcoal-muted ml-1 text-xs">fats</span></div>
+            <div><span className="text-accent-gold font-bold">{nutritionPlan.protein_g ?? "—"}g</span><span className="text-text-muted ml-1 text-xs">protein</span></div>
+            <div><span className="text-text-primary font-bold">{nutritionPlan.carbs_g ?? "—"}g</span><span className="text-text-muted ml-1 text-xs">carbs</span></div>
+            <div><span className="text-text-primary font-bold">{nutritionPlan.fats_g ?? "—"}g</span><span className="text-text-muted ml-1 text-xs">fats</span></div>
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-card-mobile p-5 shadow-bento">
-          <p className="text-xs text-charcoal-muted font-medium">No nutrition plan yet</p>
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-5">
+          <p className="text-xs text-text-muted font-medium">No nutrition plan yet</p>
         </div>
       )}
     </div>

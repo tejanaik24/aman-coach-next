@@ -7,6 +7,7 @@ import { Dumbbell, Apple, Plus, X } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import toast from "react-hot-toast"
+import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import type { Client, WorkoutPlan, NutritionPlan, Profile } from "@/types"
 
 type TabKey = "workout" | "nutrition"
@@ -25,11 +26,11 @@ interface ClientOption {
 }
 
 function PlanSkeleton() {
-  return <div className="bg-white rounded-card-mobile shadow-bento h-20 animate-pulse" />
+  return <div className="bg-bg-card rounded-2xl h-20 skeleton-pulse" />
 }
 
 const inputClass =
-  "w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input h-14 px-4 text-charcoal-deep outline-none transition-all placeholder:text-charcoal-muted/50 text-sm font-semibold shadow-inner"
+  "w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl h-14 px-4 text-text-primary outline-none transition-colors placeholder:text-text-muted/60 text-sm font-semibold"
 
 export default function PlansPage() {
   const router = useRouter()
@@ -54,6 +55,8 @@ export default function PlansPage() {
   const [protein, setProtein] = useState("")
   const [carbs, setCarbs] = useState("")
   const [fats, setFats] = useState("")
+
+  const listRef = useStaggerReveal<HTMLDivElement>([isLoading, tab])
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -174,8 +177,8 @@ export default function PlansPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 space-y-5 pb-8 bg-cream min-h-full">
-      <h2 className="font-montserrat font-black text-xl text-charcoal-deep uppercase tracking-tight">
+    <div className="px-5 pt-2 space-y-5 pb-8 bg-bg-primary min-h-full">
+      <h2 className="font-heading font-bold text-xl text-text-primary tracking-tight">
         Plans Builder
       </h2>
 
@@ -184,37 +187,37 @@ export default function PlansPage() {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => openModal("workout")}
-          className="relative rounded-card-mobile bg-charcoal-deep p-4 h-[110px] flex flex-col justify-between shadow-bento text-left"
+          className="relative rounded-2xl bg-bg-card border border-border-subtle backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
         >
-          <Dumbbell className="w-6 h-6 text-lime-electric" />
-          <span className="font-montserrat font-black text-xs text-white uppercase leading-tight">Create<br />Workout Plan</span>
-          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-lime-electric flex items-center justify-center">
-            <Plus className="w-4 h-4 text-charcoal-deep" />
+          <Dumbbell className="w-6 h-6 text-accent-gold" />
+          <span className="font-heading font-bold text-xs text-text-primary uppercase leading-tight">Create<br />Workout Plan</span>
+          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-accent-gold flex items-center justify-center">
+            <Plus className="w-4 h-4 text-bg-primary" />
           </div>
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => openModal("nutrition")}
-          className="relative rounded-card-mobile bg-lime-electric p-4 h-[110px] flex flex-col justify-between shadow-bento text-left"
+          className="relative rounded-2xl bg-accent-gold/10 border border-accent-gold/40 shadow-[0_0_24px_rgba(255,184,0,0.15)] backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
         >
-          <Apple className="w-6 h-6 text-charcoal-deep" />
-          <span className="font-montserrat font-black text-xs text-charcoal-deep uppercase leading-tight">Create<br />Diet Plan</span>
-          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-charcoal-deep flex items-center justify-center">
-            <Plus className="w-4 h-4 text-lime-electric" />
+          <Apple className="w-6 h-6 text-accent-gold" />
+          <span className="font-heading font-bold text-xs text-text-primary uppercase leading-tight">Create<br />Diet Plan</span>
+          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-accent-gold flex items-center justify-center">
+            <Plus className="w-4 h-4 text-bg-primary" />
           </div>
         </motion.button>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white p-1 rounded-full shadow-sm select-none">
+      <div className="flex bg-bg-elevated p-1 rounded-full border border-border-subtle select-none">
         {tabs.map((t) => {
           const isSelected = tab === t.key
           return (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 h-9 rounded-full text-xs font-montserrat font-black uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors ${
-                isSelected ? "bg-charcoal-deep text-lime-electric" : "text-charcoal-muted"
+              className={`flex-1 h-9 rounded-full text-xs font-heading font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                isSelected ? "bg-accent-gold text-bg-primary" : "text-text-muted"
               }`}
             >
               <t.icon className="size-3.5" />
@@ -224,7 +227,7 @@ export default function PlansPage() {
         })}
       </div>
 
-      <p className="text-[10px] font-bold text-charcoal-muted uppercase tracking-wider -mb-2">Active Client Plans</p>
+      <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider -mb-2">Active Client Plans</p>
 
       {/* Content */}
       {isLoading ? (
@@ -233,31 +236,31 @@ export default function PlansPage() {
         </div>
       ) : tab === "workout" ? (
         workoutPlans.length === 0 ? (
-          <div className="bg-white rounded-card-mobile shadow-bento py-16 flex flex-col items-center gap-4">
-            <Dumbbell className="size-12 text-charcoal-muted/30" />
+          <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl py-16 flex flex-col items-center gap-4">
+            <Dumbbell className="size-12 text-text-muted/40" />
             <div className="text-center">
-              <p className="text-charcoal-deep font-montserrat font-bold">No workout plans yet</p>
-              <p className="text-sm text-charcoal-muted mt-1">Create one above</p>
+              <p className="text-text-primary font-heading font-bold">No workout plans yet</p>
+              <p className="text-sm text-text-muted mt-1">Create one above</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div ref={listRef} className="space-y-3">
             {workoutPlans.map((plan) => (
               <motion.div
                 key={plan.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push(`/plans/workout/${plan.id}`)}
-                className="bg-white rounded-card-mobile shadow-bento p-4 cursor-pointer flex items-center gap-3"
+                className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 cursor-pointer flex items-center gap-3"
               >
-                <div className="w-10 h-10 rounded-full bg-charcoal-deep flex items-center justify-center flex-shrink-0">
-                  <span className="text-lime-electric text-xs font-montserrat font-bold">{plan.clientName.slice(0, 2).toUpperCase()}</span>
+                <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-accent-gold/30">
+                  <span className="text-accent-gold text-xs font-heading font-bold">{plan.clientName.slice(0, 2).toUpperCase()}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-charcoal-deep font-montserrat font-bold text-xs truncate">{plan.name}</p>
-                  <p className="text-charcoal-muted text-[10px] mt-0.5">Assigned: {plan.clientName}</p>
+                  <p className="text-text-primary font-heading font-bold text-xs truncate">{plan.name}</p>
+                  <p className="text-text-muted text-[10px] mt-0.5">Assigned: {plan.clientName}</p>
                 </div>
                 <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                  plan.is_active ? "bg-lime-tint border border-lime-electric/30 text-charcoal-deep" : "bg-cream text-charcoal-muted"
+                  plan.is_active ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold" : "bg-bg-elevated text-text-muted"
                 }`}>
                   {plan.is_active ? "Active" : "Inactive"}
                 </span>
@@ -266,39 +269,39 @@ export default function PlansPage() {
           </div>
         )
       ) : nutritionPlans.length === 0 ? (
-        <div className="bg-white rounded-card-mobile shadow-bento py-16 flex flex-col items-center gap-4">
-          <Apple className="size-12 text-charcoal-muted/30" />
+        <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl py-16 flex flex-col items-center gap-4">
+          <Apple className="size-12 text-text-muted/40" />
           <div className="text-center">
-            <p className="text-charcoal-deep font-montserrat font-bold">No diet plans yet</p>
-            <p className="text-sm text-charcoal-muted mt-1">Create one above</p>
+            <p className="text-text-primary font-heading font-bold">No diet plans yet</p>
+            <p className="text-sm text-text-muted mt-1">Create one above</p>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div ref={listRef} className="space-y-3">
           {nutritionPlans.map((plan) => (
             <motion.div
               key={plan.id}
               whileTap={{ scale: 0.98 }}
               onClick={() => router.push(`/plans/nutrition/${plan.id}`)}
-              className="bg-white rounded-card-mobile shadow-bento p-4 cursor-pointer"
+              className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 cursor-pointer"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-charcoal-deep font-montserrat font-bold text-xs">{plan.clientName}</p>
+                <p className="text-text-primary font-heading font-bold text-xs">{plan.clientName}</p>
                 <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                  plan.is_active ? "bg-lime-tint border border-lime-electric/30 text-charcoal-deep" : "bg-cream text-charcoal-muted"
+                  plan.is_active ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold" : "bg-bg-elevated text-text-muted"
                 }`}>
                   {plan.is_active ? "Active" : "Inactive"}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {plan.total_calories !== null && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-lime-tint text-charcoal-deep">{plan.total_calories} kcal</span>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-accent-gold/15 text-accent-gold">{plan.total_calories} kcal</span>
                 )}
-                {plan.protein_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cream text-charcoal-deep">P {plan.protein_g}g</span>}
-                {plan.carbs_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cream text-charcoal-deep">C {plan.carbs_g}g</span>}
-                {plan.fats_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cream text-charcoal-deep">F {plan.fats_g}g</span>}
+                {plan.protein_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-bg-elevated text-text-primary">P {plan.protein_g}g</span>}
+                {plan.carbs_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-bg-elevated text-text-primary">C {plan.carbs_g}g</span>}
+                {plan.fats_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-bg-elevated text-text-primary">F {plan.fats_g}g</span>}
               </div>
-              <p className="text-charcoal-muted text-[10px] mt-2">{format(new Date(plan.created_at), "d MMM yyyy")}</p>
+              <p className="text-text-muted text-[10px] mt-2">{format(new Date(plan.created_at), "d MMM yyyy")}</p>
             </motion.div>
           ))}
         </div>
@@ -312,7 +315,7 @@ export default function PlansPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-charcoal-deep/60 z-50"
+              className="fixed inset-0 bg-black/70 z-50"
               onClick={closeModal}
             />
             <motion.div
@@ -320,24 +323,24 @@ export default function PlansPage() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-cream rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-bg-surface border-t border-border-subtle rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
             >
               <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-                <div className="w-12 h-1 rounded-full bg-charcoal-deep/20" />
+                <div className="w-12 h-1 rounded-full bg-text-muted/30" />
               </div>
 
               <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
-                <h2 className="font-montserrat font-black text-lg text-charcoal-deep">
+                <h2 className="font-heading font-bold text-lg text-text-primary">
                   Create {modalType === "workout" ? "Workout" : "Diet"} Plan
                 </h2>
-                <button onClick={closeModal} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-charcoal-muted shadow-sm">
+                <button onClick={closeModal} className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted cursor-pointer">
                   <X className="size-4" />
                 </button>
               </div>
 
               <form onSubmit={handleCreatePlan} className="flex-1 overflow-y-auto px-5 pb-8 space-y-4">
                 <div>
-                  <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Client *</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 block">Client *</label>
                   <select
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(e.target.value)}
@@ -359,31 +362,31 @@ export default function PlansPage() {
                 {modalType === "workout" ? (
                   <>
                     <div>
-                      <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Plan Name *</label>
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 block">Plan Name *</label>
                       <input type="text" value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="12-Week Transformation" className={inputClass} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Duration (weeks) *</label>
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 block">Duration (weeks) *</label>
                       <input type="number" inputMode="numeric" value={weeks} onChange={(e) => setWeeks(e.target.value)} min="1" max="52" placeholder="12" className={inputClass} />
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Daily Calories</label>
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 block">Daily Calories</label>
                       <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="2600" className={inputClass} />
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">
                       <div>
-                        <label className="text-[9px] font-bold text-charcoal-deep uppercase tracking-wide mb-1 block">Protein (g)</label>
+                        <label className="text-[9px] font-bold text-text-muted uppercase tracking-wide mb-1 block">Protein (g)</label>
                         <input type="number" value={protein} onChange={(e) => setProtein(e.target.value)} placeholder="180" className={`${inputClass} h-12 text-xs`} />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-charcoal-deep uppercase tracking-wide mb-1 block">Carbs (g)</label>
+                        <label className="text-[9px] font-bold text-text-muted uppercase tracking-wide mb-1 block">Carbs (g)</label>
                         <input type="number" value={carbs} onChange={(e) => setCarbs(e.target.value)} placeholder="300" className={`${inputClass} h-12 text-xs`} />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-charcoal-deep uppercase tracking-wide mb-1 block">Fats (g)</label>
+                        <label className="text-[9px] font-bold text-text-muted uppercase tracking-wide mb-1 block">Fats (g)</label>
                         <input type="number" value={fats} onChange={(e) => setFats(e.target.value)} placeholder="75" className={`${inputClass} h-12 text-xs`} />
                       </div>
                     </div>
@@ -394,10 +397,10 @@ export default function PlansPage() {
                   type="submit"
                   disabled={isSubmitting}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full h-14 rounded-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60 mt-2 shadow-bento"
+                  className="w-full h-14 rounded-full bg-accent-gold text-bg-primary font-heading font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60 mt-2 cursor-pointer"
                 >
                   {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-charcoal-deep/30 border-t-charcoal-deep rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
                   ) : (
                     "Create Plan"
                   )}
