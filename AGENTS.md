@@ -44,6 +44,56 @@ https://aman-coach-next.vercel.app
 - Changed FROM to `onboarding@resend.dev` (need domain verify to use `noreply@akfitness.in`)
 - Saved all API keys and process to this file
 
+### Session 5: Trigger Fix + E2E Verification
+- Fixed `on_auth_user_created` trigger via Supabase Dashboard SQL Editor
+- Recreated with `public.profiles` schema prefix (was failing without it)
+- Updated trigger to set `must_reset_password=true` for new clients, `false` for coaches
+- Added `email TEXT` column to `clients` table (was missing, caused e2e test failure)
+- Fixed `scripts/e2e-fixes.mjs`: removed invalid `name`/`email` fields from client insert
+- **Result: e2e-fixes.mjs 4/4 PASS** — trigger creates profile, must_reset_password=true, login redirect works, password reset flips flag
+
+### Session 4: Real Supabase Queries + Auth Routing + Login Overhaul
+
+**Dashboard & Hook — Mock → Real Supabase:**
+- `src/hooks/useCoach.ts`: Replaced mock data with real Supabase queries. Fetches clients (joined with profiles), then runs 4 parallel count/sum queries: activeClients, pendingCheckins, feesDue, monthlyRevenue.
+- `src/app/(coach)/dashboard/page.tsx`: Replaced mock `fetchData` with real queries. Gets auth user, fetches client IDs, runs 5 parallel queries for recent check-ins (with client names), stats, and attention clients (active + no check-in in 14 days, filtered client-side).
+
+**Auth Routing Fix — proxy.ts → middleware.ts:**
+- Renamed `src/proxy.ts` → `src/middleware.ts` so Next.js actually picks it up. Was dead code before.
+- Added `getRole()` helper: queries `profiles` table for role (not `user_metadata`).
+- Middleware now reads role from `profiles` table for all route protection logic.
+- Login page `redirectAfterLogin()`: also queries `profiles` table for role, not `user_metadata`. Coach → `/dashboard`, client → `/home`, no profile → `/onboarding`.
+
+**Login Page Overhaul — Phone OTP → Email+Password:**
+- `src/app/(auth)/login/page.tsx`: Removed phone OTP flow entirely. Single email+password form for all users (coach and client). Stripped from 258 lines to 111 lines.
+- Removed: `Method` type, `phone`, `otp` state, `handleSendOtp`, `handleVerifyOtp`, `BackHeader` component, all phone-related JSX.
+- Added: single `handleSubmit` that signs in with email+password, queries `profiles` table for role, redirects accordingly.
+
+**Client Creation — Phone → Email+Password:**
+- `src/app/api/clients/create/route.ts`: Changed from phone-based auth user creation to email+password. Accepts `email` (required) + `phone` (optional). Creates auth user with `email`, `password: "Welcome@123"`, `email_confirm: true`. Returns the default password in the response.
+- `src/components/coach/AddClientModal.tsx`: Added required `email` field (labeled "used for login"). Phone is now optional. On success, shows toast with default password: `Client added! Password: Welcome@123`.
+
+**Database Schema Discovery:**
+- Live Supabase DB only had old `users` table — migration `001_initial_schema.sql` was never applied.
+- Prepared 3 SQL blocks to run in Supabase SQL Editor:
+  1. Full `001_initial_schema.sql` (creates profiles, clients, checkins, fees, etc.)
+  2. Coach profile seed: `INSERT INTO profiles (id, name, role) VALUES ('640e5cd9-89e3-4303-9c6f-ff351276250d', 'Aman Khurana', 'coach')`
+  3. `onboarding_forms` table (used by client onboarding questionnaire)
+
+**Test Credentials:**
+- Coach: `coach@akfitness.in` / `AmanCoach@2026` (auth id: `640e5cd9-89e3-4303-9c6f-ff351276250d`)
+- Client 1: `tejasolryder24@gmail.com` / `Welcome@123` (auth id: `4920019d-6708-4011-afc4-d8b23f91902e`)
+- Client 2: `test-e2e-62733@akfitness.in` / `Welcome@123` (auth id: `a27152a9-261b-4b93-8156-129e9d09c637`)
+
+**Scripts Created:**
+- `scripts/check-coach-profile.ts`: Checks/fixes coach profile in `profiles` table using service role key.
+
+**Key Architectural Decisions:**
+- Role is always read from `profiles` table, never from `user_metadata`.
+- Default password for coach-created clients: `Welcome@123`.
+- `onboarding_forms` table: stores client onboarding questionnaire as JSONB `data` column, upserts on `user_id`.
+- Dev server runs on port 3001.
+
 ## Credentials
 - **All secrets:** see `.env.local` — never commit secrets to this file
 

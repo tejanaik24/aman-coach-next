@@ -36,15 +36,15 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { name, phone, goal, packageName, feeAmount, feeDueDay, startDate, notes } = body
+  const { name, email, phone, goal, packageName, feeAmount, feeDueDay, startDate, notes } = body
 
   // Server-side validation
-  if (!name || !phone || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
+  if (!name || !email || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  if (!/^\+\d{10,15}$/.test(phone)) {
-    return NextResponse.json({ error: "Invalid phone number format. Must be +91XXXXXXXXXX" }, { status: 400 })
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
   }
 
   const parsedFeeAmount = Number(feeAmount)
@@ -66,14 +66,17 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // Create auth user (phone_confirm: true skips OTP verification for coach-created users)
+  const defaultPassword = "Welcome@123"
+
+  // Create auth user with email + password
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
-    phone,
-    phone_confirm: true,
+    email,
+    password: defaultPassword,
+    email_confirm: true,
     user_metadata: {
       name,
       role: "client",
-      phone,
+      phone: phone ?? null,
     },
   })
 
@@ -85,7 +88,7 @@ export async function POST(request: Request) {
       (authError as { status?: number }).status === 422
     ) {
       return NextResponse.json(
-        { error: "This number is already registered" },
+        { error: "This email is already registered" },
         { status: 409 }
       )
     }
@@ -134,5 +137,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create fee record" }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, clientId: clientData.id }, { status: 201 })
+  return NextResponse.json({ success: true, clientId: clientData.id, password: defaultPassword }, { status: 201 })
 }

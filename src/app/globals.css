@@ -23,6 +23,25 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+
+  /* Kinetic Elite tokens (new light/lime screens, additive — old dark tokens above still used by unconverted pages) */
+  --color-cream-light: #f9fbe8;
+  --color-cream: #F7F8F3;
+  --color-lime-electric: #C4F542;
+  --color-lime-tint: rgba(196, 245, 66, 0.15);
+  --color-charcoal-deep: #1A1A1A;
+  --color-charcoal-muted: #444935;
+  --color-warmRed-tint: rgba(255, 107, 107, 0.12);
+  --color-warmRed-text: #9E2A2B;
+
+  --font-montserrat: var(--font-montserrat), sans-serif;
+
+  --radius-card-desktop: 32px;
+  --radius-card-mobile: 24px;
+  --radius-input: 12px;
+
+  --shadow-bento: 0px 20px 40px rgba(0, 0, 0, 0.04);
+  --shadow-premium: 0px 30px 60px rgba(0, 0, 0, 0.08);
 }
 
 @layer base {
@@ -62,4 +81,35 @@
 @keyframes skeleton-pulse {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* Kinetic Elite entry animations (additive, used by new light/lime screens) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-slide-up {
+  animation: cardSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

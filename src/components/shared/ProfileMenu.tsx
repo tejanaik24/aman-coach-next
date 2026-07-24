@@ -1,0 +1,194 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "motion/react"
+import { X, Camera, Bell, MessageCircle, LogOut, Check } from "lucide-react"
+import toast from "react-hot-toast"
+import { createClient } from "@/lib/supabase/client"
+
+interface Props {
+  isOpen: boolean
+  onClose: () => void
+  name: string
+  email: string | null
+  avatarUrl: string | null
+  role: "coach" | "client"
+  onNameUpdated: (name: string) => void
+}
+
+const AMAN_WHATSAPP = "919815690656"
+
+function getInitials(name: string): string {
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+}
+
+export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, role, onNameUpdated }: Props) {
+  const router = useRouter()
+  const supabase = createClient()
+
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [draftName, setDraftName] = useState(name)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  function close() {
+    setIsEditingName(false)
+    setDraftName(name)
+    onClose()
+  }
+
+  async function handleSaveName() {
+    if (!draftName.trim() || draftName.trim() === name) { setIsEditingName(false); return }
+    setIsSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { error } = await supabase.from("profiles").update({ name: draftName.trim() }).eq("id", user.id)
+      if (error) throw error
+      onNameUpdated(draftName.trim())
+      toast.success("Name updated")
+      setIsEditingName(false)
+    } catch {
+      toast.error("Failed to update name")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    try {
+      await supabase.auth.signOut()
+      router.replace("/login")
+    } catch {
+      toast.error("Failed to sign out")
+      setIsSigningOut(false)
+    }
+  }
+
+  const initials = getInitials(name)
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-charcoal-deep/60 z-50"
+            onClick={close}
+          />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 350 }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-cream rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
+          >
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div className="w-12 h-1 rounded-full bg-charcoal-deep/20" />
+            </div>
+
+            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
+              <h2 className="font-montserrat font-black text-lg text-charcoal-deep">Profile</h2>
+              <button onClick={close} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-charcoal-muted shadow-sm">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="px-5 pb-8 space-y-5 overflow-y-auto">
+              {/* Avatar + identity */}
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="relative">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-lime-electric" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric">
+                      <span className="text-lime-electric font-montserrat font-black text-2xl">{initials}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => toast("Photo upload coming soon")}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-lime-electric border-2 border-cream flex items-center justify-center shadow-bento"
+                    aria-label="Change photo"
+                  >
+                    <Camera className="size-3.5 text-charcoal-deep" />
+                  </button>
+                </div>
+
+                {isEditingName ? (
+                  <div className="flex items-center gap-2 w-full">
+                    <input
+                      type="text"
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      autoFocus
+                      className="flex-1 bg-white border-2 border-lime-electric rounded-input px-3 py-2 text-sm font-montserrat font-bold text-charcoal-deep text-center outline-none"
+                    />
+                    <button
+                      onClick={handleSaveName}
+                      disabled={isSaving}
+                      className="w-9 h-9 rounded-full bg-lime-electric flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+                    >
+                      <Check className="size-4 text-charcoal-deep" />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setIsEditingName(true)} className="text-center">
+                    <p className="font-montserrat font-black text-lg text-charcoal-deep">{name}</p>
+                    <p className="text-[10px] text-charcoal-muted font-semibold uppercase tracking-wide mt-0.5">Tap to edit name</p>
+                  </button>
+                )}
+
+                {email && <p className="text-xs text-charcoal-muted">{email}</p>}
+                <span className="text-[9px] font-bold text-charcoal-deep bg-lime-tint px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  {role === "coach" ? "Coach Account" : "Client Account"}
+                </span>
+              </div>
+
+              {/* Menu options */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => toast("Notification settings coming soon")}
+                  className="w-full bg-white rounded-2xl shadow-bento p-4 flex items-center gap-3 text-left"
+                >
+                  <div className="w-9 h-9 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
+                    <Bell className="size-4 text-charcoal-deep" />
+                  </div>
+                  <span className="text-xs font-bold text-charcoal-deep flex-1">Notification Settings</span>
+                </button>
+
+                <a
+                  href={`https://wa.me/${AMAN_WHATSAPP}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-white rounded-2xl shadow-bento p-4 flex items-center gap-3 text-left"
+                >
+                  <div className="w-9 h-9 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="size-4 text-charcoal-deep" />
+                  </div>
+                  <span className="text-xs font-bold text-charcoal-deep flex-1">Contact Support</span>
+                </a>
+
+                <button
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="w-full bg-charcoal-deep rounded-2xl shadow-bento p-4 flex items-center gap-3 text-left disabled:opacity-60"
+                >
+                  <div className="w-9 h-9 rounded-full bg-lime-electric flex items-center justify-center flex-shrink-0">
+                    <LogOut className="size-4 text-charcoal-deep" />
+                  </div>
+                  <span className="text-xs font-bold text-lime-electric flex-1">
+                    {isSigningOut ? "Signing out..." : "Sign Out"}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}

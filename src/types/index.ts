@@ -84,6 +84,46 @@ export interface Meal {
   order_index: number
 }
 
+export interface CheckinFormData {
+  training: {
+    energy_workout: number | null
+    days_worked_out: number | null
+    workout_deviation: string
+    exercise_issues: string
+    cardio_achieved: string
+    injury_pain: string
+  }
+  diet: {
+    diet_deviation: string
+    appetite: string
+    digestion: string
+    constipation: string
+    diet_changes_wanted: string
+    food_add_remove: string
+  }
+  general: {
+    energy_day: number | null
+    sleep_quality: string
+    water_intake: number | null
+    urine_colour: string
+    coaching_feedback: string
+    other_notes: string
+  }
+  measurements: {
+    weight: number | null
+    abdomen: number | null
+    hips: number | null
+  }
+  photos: {
+    front_url: string | null
+    back_url: string | null
+    left_url: string | null
+    right_url: string | null
+    favourite_url: string | null
+    mandatory_url: string | null
+  }
+}
+
 export interface Checkin {
   id: string
   client_id: string
@@ -97,6 +137,7 @@ export interface Checkin {
   notes: string | null
   coach_feedback: string | null
   photos: string[]
+  form_data: CheckinFormData | null
   submitted_at: string
   reviewed_at: string | null
   reviewed_by: string | null

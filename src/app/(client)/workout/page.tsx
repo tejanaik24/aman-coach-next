@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "motion/react"
-import { Dumbbell, Moon } from "lucide-react"
-import { differenceInWeeks } from "date-fns"
+import { Dumbbell, Moon, Clock, Download } from "lucide-react"
+import { differenceInWeeks, format } from "date-fns"
+import toast from "react-hot-toast"
+import jsPDF from "jspdf"
 import { createClient } from "@/lib/supabase/client"
 import type { Client, WorkoutPlan, WorkoutDay, Exercise } from "@/types"
 
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={`bg-[#222222] rounded-xl animate-pulse ${className ?? ""}`} />
+  return <div className={`bg-white rounded-card-mobile animate-pulse ${className ?? ""}`} />
 }
 
 function WorkoutSkeleton() {
   return (
-    <div className="p-4 space-y-5">
+    <div className="px-5 pt-2 space-y-5 bg-cream min-h-full">
       <SkeletonBlock className="h-7 w-48" />
       <SkeletonBlock className="h-4 w-32" />
       <div className="flex gap-2 overflow-hidden">
@@ -107,13 +109,13 @@ export default function WorkoutPage() {
 
   if (hasNoPlan || !plan) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="size-16 rounded-full bg-[#C9A84C]/10 flex items-center justify-center">
-          <Dumbbell className="size-8 text-[#C9A84C]" />
+      <div className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-cream">
+        <div className="size-16 rounded-full bg-lime-tint flex items-center justify-center">
+          <Dumbbell className="size-8 text-charcoal-deep" />
         </div>
         <div className="text-center space-y-1">
-          <p className="text-white font-semibold text-lg">No workout plan assigned</p>
-          <p className="text-sm text-[#C9A84C]">Your coach will assign a plan soon</p>
+          <p className="text-charcoal-deep font-montserrat font-bold text-lg">No workout plan assigned</p>
+          <p className="text-sm text-charcoal-muted">Your coach will assign a plan soon</p>
         </div>
       </div>
     )
@@ -127,87 +129,100 @@ export default function WorkoutPage() {
   const activeDay = days[selectedDay]
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="px-5 pt-2 flex flex-col gap-6 bg-cream min-h-full pb-4">
       {/* Header */}
-      <div className="pt-2">
-        <h1
-          className="text-xl font-bold text-white"
-          style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}
-        >
+      <div className="flex flex-col">
+        <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-widest">
+          Active Plan
+        </span>
+        <h2 className="font-montserrat font-black text-xl text-charcoal-deep leading-tight mt-0.5">
           {plan.name}
-        </h1>
-        <p className="text-sm text-[#A0A0A0] mt-0.5">
+        </h2>
+        <p className="text-[10px] text-charcoal-muted font-semibold mt-1 bg-white/40 px-2.5 py-1 rounded-md w-max shadow-inner border border-charcoal-deep/5">
           Week {displayWeek} of {plan.weeks}
         </p>
       </div>
 
       {/* Day tabs */}
       {days.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {days.map((day, i) => (
-            <motion.button
-              key={day.id}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setSelectedDay(i)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                selectedDay === i
-                  ? "bg-[#C9A84C] text-black"
-                  : "bg-[#161616] border border-[#222222] text-[#A0A0A0]"
-              }`}
-            >
-              Day {day.day_number}
-            </motion.button>
-          ))}
+        <div className="flex gap-2 overflow-x-auto pb-2 snap-x select-none">
+          {days.map((day, i) => {
+            const isSelected = selectedDay === i
+            return (
+              <button
+                key={day.id}
+                onClick={() => setSelectedDay(i)}
+                className={`relative px-5 py-3 rounded-full text-xs font-montserrat font-black tracking-wide uppercase snap-start whitespace-nowrap transition-all duration-300 ${
+                  isSelected ? "bg-charcoal-deep text-lime-electric shadow-md" : "bg-white text-charcoal-deep border border-charcoal-deep/5 shadow-sm"
+                }`}
+              >
+                Day {day.day_number}
+              </button>
+            )
+          })}
         </div>
       )}
 
-      {/* Day name + focus */}
+      {/* Focus subtitle */}
       {activeDay && (
-        <div>
-          <p className="text-white font-semibold">{activeDay.day_name}</p>
-          {activeDay.focus && (
-            <p className="text-sm text-[#A0A0A0] mt-0.5">{activeDay.focus}</p>
-          )}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Dumbbell className="w-4 h-4 text-lime-electric fill-charcoal-deep" />
+            <h3 className="text-xs font-bold text-charcoal-deep uppercase tracking-wider">
+              {activeDay.day_name}
+              {activeDay.focus ? ` · ${activeDay.focus}` : ""}
+            </h3>
+          </div>
+          <span className="text-[10px] text-charcoal-muted font-bold">
+            {activeDay.exercises.length} Movement{activeDay.exercises.length === 1 ? "" : "s"}
+          </span>
         </div>
       )}
 
       {/* Exercises */}
       {activeDay && activeDay.exercises.length === 0 ? (
-        <div className="bg-[#161616] border border-[#222222] rounded-2xl p-8 flex flex-col items-center gap-3">
-          <Moon className="size-8 text-[#555555]" />
-          <p className="text-[#A0A0A0] font-medium">Rest day</p>
-          <p className="text-sm text-[#555555] text-center">
+        <div className="bg-white rounded-card-mobile shadow-bento p-8 flex flex-col items-center gap-3">
+          <Moon className="size-8 text-charcoal-muted/40" />
+          <p className="text-charcoal-deep font-medium">Rest day</p>
+          <p className="text-sm text-charcoal-muted text-center">
             Take it easy today. Recovery is part of the plan.
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {(activeDay?.exercises ?? []).map((exercise, i) => (
+        <div key={selectedDay} className="flex flex-col gap-4 animate-fade-in-up">
+          {(activeDay?.exercises ?? []).map((exercise) => (
             <motion.div
               key={exercise.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="bg-[#161616] border border-[#222222] rounded-2xl p-4 space-y-2"
+              whileTap={{ scale: 0.98 }}
+              className="bg-white rounded-card-mobile p-4 shadow-bento flex items-center justify-between cursor-pointer border border-transparent hover:border-lime-electric/20 transition-all duration-300 animate-card-slide-up"
             >
-              <p className="text-white font-semibold">{exercise.name}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                {exercise.sets !== null && exercise.reps !== null && (
-                  <span className="text-sm text-[#C9A84C] font-medium">
-                    {exercise.sets} × {exercise.reps}
-                  </span>
-                )}
-                {exercise.weight && (
-                  <span className="text-sm text-[#A0A0A0]">{exercise.weight}</span>
-                )}
-                {exercise.rest_seconds !== null && (
-                  <span className="text-sm text-[#555555]">
-                    Rest {exercise.rest_seconds}s
-                  </span>
-                )}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-xl bg-lime-tint flex items-center justify-center flex-shrink-0">
+                  <Dumbbell className="w-5 h-5 text-charcoal-deep" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <h4 className="text-xs font-bold text-charcoal-deep font-montserrat leading-tight truncate">
+                    {exercise.name}
+                  </h4>
+                  <p className="text-[10px] text-charcoal-muted font-medium mt-0.5">
+                    {exercise.sets !== null && exercise.reps !== null ? `${exercise.sets} × ${exercise.reps}` : ""}
+                    {exercise.weight ? ` · ${exercise.weight}` : ""}
+                  </p>
+                  {exercise.notes && (
+                    <p className="text-[9px] text-charcoal-muted/70 italic mt-0.5 truncate">{exercise.notes}</p>
+                  )}
+                </div>
               </div>
-              {exercise.notes && (
-                <p className="text-xs text-[#555555] italic">{exercise.notes}</p>
+              {exercise.rest_seconds !== null && (
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[9px] text-charcoal-muted font-bold font-montserrat uppercase flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    Rest
+                  </span>
+                  <span className="text-xs font-montserrat font-black text-charcoal-deep bg-cream px-2 py-1 rounded">
+                    {exercise.rest_seconds}s
+                  </span>
+                </div>
               )}
             </motion.div>
           ))}
@@ -215,11 +230,61 @@ export default function WorkoutPage() {
       )}
 
       {days.length === 0 && (
-        <div className="bg-[#161616] border border-[#222222] rounded-2xl p-8 flex flex-col items-center gap-3">
-          <Dumbbell className="size-8 text-[#555555]" />
-          <p className="text-[#A0A0A0] text-sm">No days configured yet</p>
+        <div className="bg-white rounded-card-mobile shadow-bento p-8 flex flex-col items-center gap-3">
+          <Dumbbell className="size-8 text-charcoal-muted/40" />
+          <p className="text-charcoal-muted text-sm">No days configured yet</p>
         </div>
       )}
+
+      {/* Download PDF */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => {
+          if (!plan || days.length === 0) { toast("No workout data to export"); return }
+          try {
+            const doc = new jsPDF()
+            doc.setFont("helvetica", "bold")
+            doc.setFontSize(22)
+            doc.text("AK FITNESS — WORKOUT PLAN", 20, 20)
+            doc.setFontSize(12)
+            doc.setFont("helvetica", "normal")
+            doc.text(`${plan.name} — Week ${displayWeek} of ${plan.weeks}`, 20, 30)
+
+            let y = 44
+            days.forEach((day) => {
+              if (y > 250) { doc.addPage(); y = 20 }
+              doc.setFont("helvetica", "bold")
+              doc.setFontSize(13)
+              doc.text(`DAY ${day.day_number} — ${day.day_name.toUpperCase()}${day.focus ? ` (${day.focus})` : ""}`, 20, y)
+              y += 8
+              if (day.exercises.length === 0) {
+                doc.setFont("helvetica", "italic")
+                doc.setFontSize(10)
+                doc.text("Rest day", 25, y)
+                y += 8
+              } else {
+                day.exercises.forEach((ex) => {
+                  if (y > 270) { doc.addPage(); y = 20 }
+                  doc.setFont("helvetica", "normal")
+                  doc.setFontSize(10)
+                  const setsReps = ex.sets !== null && ex.reps !== null ? `${ex.sets} × ${ex.reps}` : ""
+                  const rest = ex.rest_seconds ? ` | Rest: ${ex.rest_seconds}s` : ""
+                  doc.text(`• ${ex.name}${setsReps ? ` — ${setsReps}` : ""}${rest}`, 25, y)
+                  y += 6
+                })
+              }
+              y += 6
+            })
+
+            doc.save(`Workout_Plan_AK_Fitness_${format(new Date(), "yyyy-MM-dd")}.pdf`)
+            toast.success("PDF downloaded")
+          } catch { toast.error("Failed to generate PDF") }
+        }}
+        className="w-full border-2 border-charcoal-deep/15 hover:border-charcoal-deep text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-full transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 cursor-pointer bg-white"
+      >
+        <Download className="w-4 h-4 stroke-[2.5]" />
+        Download Workout PDF
+      </motion.button>
     </div>
   )
 }

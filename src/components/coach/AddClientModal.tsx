@@ -14,6 +14,7 @@ interface Props {
 
 interface FormData {
   name: string
+  email: string
   phone: string
   goal: string
   packageName: string
@@ -25,6 +26,7 @@ interface FormData {
 
 interface FormErrors {
   name?: string
+  email?: string
   phone?: string
   goal?: string
   packageName?: string
@@ -49,6 +51,7 @@ const errorInputClass =
 export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
   const [form, setForm] = useState<FormData>({
     name: "",
+    email: "",
     phone: "",
     goal: "",
     packageName: "",
@@ -70,8 +73,7 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
   function validate(): boolean {
     const e: FormErrors = {}
     if (form.name.trim().length < 2) e.name = "Name must be at least 2 characters"
-    if (!/^\d{10}$/.test(form.phone.replace(/\D/g, "")))
-      e.phone = "Enter a valid 10-digit number"
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email address"
     if (!form.goal) e.goal = "Select a goal"
     if (!form.packageName.trim()) e.packageName = "Package name is required"
     if (!form.feeAmount || Number(form.feeAmount) <= 0) e.feeAmount = "Enter a valid fee amount"
@@ -91,7 +93,8 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
-          phone: `+91${form.phone.replace(/\D/g, "")}`,
+          email: form.email.trim(),
+          phone: form.phone.trim() ? `+91${form.phone.replace(/\D/g, "")}` : null,
           goal: form.goal,
           packageName: form.packageName.trim(),
           feeAmount: Number(form.feeAmount),
@@ -103,15 +106,16 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
       const data = await res.json()
       if (!res.ok) {
         if (data.error?.includes("already registered") || res.status === 409) {
-          toast.error("This number is already registered")
+          toast.error("This email is already registered")
         } else {
           toast.error(data.error ?? "Failed to add client")
         }
         return
       }
-      // Reset form and notify parent
+      toast.success(`Client added! Password: ${data.password}`)
       setForm({
         name: "",
+        email: "",
         phone: "",
         goal: "",
         packageName: "",
@@ -184,35 +188,38 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
                 {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
               </div>
 
-              {/* Phone */}
+              {/* Email */}
               <div>
                 <label className="text-xs text-[#A0A0A0] mb-1.5 block">
-                  Phone Number * <span className="text-[#555555]">(used for login)</span>
+                  Email * <span className="text-[#555555]">(used for login)</span>
                 </label>
-                <div
-                  className={cn(
-                    "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 transition-colors",
-                    errors.phone
-                      ? "border-red-500"
-                      : "border-[#333333] focus-within:border-[#C9A84C]"
-                  )}
-                >
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => set("email", e.target.value)}
+                  placeholder="client@email.com"
+                  className={errors.email ? errorInputClass : inputClass}
+                />
+                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+              </div>
+
+              {/* Phone (optional) */}
+              <div>
+                <label className="text-xs text-[#A0A0A0] mb-1.5 block">
+                  Phone <span className="text-[#555555]">(optional)</span>
+                </label>
+                <div className="flex items-center bg-[#1A1A1A] border border-[#333333] rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors">
                   <span className="text-[#C9A84C] font-semibold text-sm">+91</span>
                   <div className="w-px h-5 bg-[#333333] mx-3 flex-shrink-0" />
                   <input
                     type="tel"
                     inputMode="numeric"
                     value={form.phone}
-                    onChange={(e) =>
-                      set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))
-                    }
+                    onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                     placeholder="9876543210"
                     className="flex-1 bg-transparent text-white outline-none placeholder:text-[#555555]"
                   />
                 </div>
-                {errors.phone && (
-                  <p className="text-red-400 text-xs mt-1">{errors.phone}</p>
-                )}
               </div>
 
               {/* Goal */}

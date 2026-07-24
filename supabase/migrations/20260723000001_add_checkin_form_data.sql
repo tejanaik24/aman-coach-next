@@ -1,0 +1,45 @@
+-- Adds form_data jsonb to checkins, matching PRD.md §7 checkins.form_data schema.
+-- The existing flat columns (weight, energy_level, sleep_quality, adherence_workout,
+-- adherence_nutrition, notes, photos) were a simplified placeholder that never
+-- implemented Aman's actual weekly check-in questions. This is additive — no
+-- existing columns are dropped or altered, so the current check-in page (if still
+-- in use during rollout) keeps working unchanged.
+
+ALTER TABLE checkins ADD COLUMN form_data JSONB;
+
+-- Expected shape (per PRD.md §7):
+-- {
+--   "training": {
+--     "energy_workout": integer (1-5),
+--     "days_worked_out": integer,
+--     "workout_deviation": text,
+--     "exercise_issues": text,
+--     "cardio_achieved": text,
+--     "injury_pain": text
+--   },
+--   "diet": {
+--     "diet_deviation": text,
+--     "appetite": text,
+--     "digestion": text,
+--     "constipation": text,
+--     "diet_changes_wanted": text,
+--     "food_add_remove": text
+--   },
+--   "general": {
+--     "energy_day": integer,
+--     "sleep_quality": text,
+--     "water_intake": numeric,
+--     "urine_colour": text,
+--     "coaching_feedback": text,
+--     "other_notes": text
+--   },
+--   "measurements": {
+--     "weight": numeric,
+--     "abdomen": numeric,
+--     "hips": numeric
+--   },
+--   "photos": {
+--     "front_url": text, "back_url": text, "left_url": text,
+--     "right_url": text, "favourite_url": text, "mandatory_url": text
+--   }
+-- }

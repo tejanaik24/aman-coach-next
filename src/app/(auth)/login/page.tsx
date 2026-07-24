@@ -2,249 +2,121 @@
 
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "motion/react"
-import { ChevronRight, ArrowLeft, Phone, Mail } from "lucide-react"
+import { motion } from "motion/react"
 import { createClient } from "@/lib/supabase/client"
-import { cn } from "@/lib/utils"
-
-type Method = "choose" | "phone" | "phone-otp" | "email"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [method, setMethod] = useState<Method>("choose")
-  const [phone, setPhone] = useState("")
-  const [otp, setOtp] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  function reset(m: Method) {
-    setError("")
-    setMethod(m)
-  }
-
-  async function redirectAfterLogin() {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const role = user?.user_metadata?.role ?? "client"
-    router.replace(role === "coach" ? "/dashboard" : "/home")
-  }
-
-  // ── Phone OTP ─────────────────────────────────────────────
-  async function handleSendOtp(e: FormEvent) {
-    e.preventDefault()
-    setError("")
-    const digits = phone.replace(/\D/g, "")
-    if (digits.length !== 10) { setError("Enter a valid 10-digit number"); return }
-    setLoading(true)
-    try {
-      const { error: err } = await createClient().auth.signInWithOtp({ phone: `+91${digits}` })
-      if (err) setError(err.message)
-      else setMethod("phone-otp")
-    } catch { setError("Something went wrong. Try again.") }
-    finally { setLoading(false) }
-  }
-
-  async function handleVerifyOtp(e: FormEvent) {
-    e.preventDefault()
-    setError("")
-    if (otp.length < 4) { setError("Enter the full OTP"); return }
-    setLoading(true)
-    try {
-      const digits = phone.replace(/\D/g, "")
-      const { error: err } = await createClient().auth.verifyOtp({
-        phone: `+91${digits}`, token: otp, type: "sms",
-      })
-      if (err) setError(err.message)
-      else await redirectAfterLogin()
-    } catch { setError("Verification failed. Try again.") }
-    finally { setLoading(false) }
-  }
-
-  // ── Email + Password ──────────────────────────────────────
-  async function handleEmailLogin(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError("")
     if (!email.trim() || !password) { setError("Enter email and password"); return }
     setLoading(true)
     try {
-      const { error: err } = await createClient().auth.signInWithPassword({ email: email.trim(), password })
-      if (err) setError(err.message)
-      else await redirectAfterLogin()
-    } catch { setError("Login failed. Try again.") }
-    finally { setLoading(false) }
+      const supabase = createClient()
+      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (err) { setError(err.message); return }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setError("Login failed. Try again."); return }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, must_reset_password")
+        .eq("id", user.id)
+        .single()
+
+      if (profile?.must_reset_password) { router.replace("/reset-password"); return }
+      const role = profile?.role
+      if (role === "coach") router.replace("/dashboard")
+      else if (role === "client") router.replace("/home")
+      else router.replace("/onboarding")
+    } catch {
+      setError("Login failed. Try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-between px-5 py-10">
-      <div className="flex-1 flex flex-col justify-center">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="w-[72px] h-[72px] rounded-2xl bg-[#C9A84C] flex items-center justify-center mx-auto mb-5">
-            <span className="text-black text-2xl font-bold" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>AK</span>
+    <div className="flex-1 flex flex-col justify-between p-6 bg-cream min-h-full">
+      {/* Top Graphic Header */}
+      <div className="flex flex-col items-center mt-12 space-y-2">
+        <div className="w-16 h-16 rounded-full bg-charcoal-deep flex items-center justify-center font-montserrat text-lime-electric font-black text-3xl tracking-tight animate-fade-in-up">
+          AK
+        </div>
+        <h1 className="font-montserrat font-black text-2xl uppercase tracking-wider text-charcoal-deep animate-fade-in-up">
+          AK Fitness
+        </h1>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-charcoal-muted bg-lime-tint px-3 py-1.5 rounded-full border border-lime-electric/30 animate-fade-in-up">
+          Kinetic Elite System
+        </span>
+      </div>
+
+      {/* Main Login Card */}
+      <div className="bg-white rounded-card-mobile p-6 shadow-premium space-y-6 animate-card-slide-up">
+        <div className="space-y-1">
+          <h2 className="font-montserrat font-extrabold text-lg text-charcoal-deep">Welcome Back</h2>
+          <p className="text-xs text-charcoal-muted font-medium">Log in to check progress, diet, and training.</p>
+        </div>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">Email Address</label>
+            <input
+              type="email"
+              placeholder="e.g. client@akfitness.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError("") }}
+              className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input px-4 py-3 text-xs font-semibold text-charcoal-deep shadow-inner transition-all outline-none"
+              autoFocus
+              required
+            />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-widest" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>
-            AMAN KHURANA
-          </h1>
-          <p className="text-[#A0A0A0] text-xs tracking-[0.3em] mt-1">ELITE COACHING PLATFORM</p>
-          <div className="w-12 h-px bg-[#C9A84C] mx-auto mt-3" />
-        </div>
 
-        {/* Card */}
-        <div className="bg-[#111111] rounded-3xl border border-[#222222] p-6">
-          <AnimatePresence mode="wait">
-
-            {/* Choose method */}
-            {method === "choose" && (
-              <motion.div key="choose" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                <div>
-                  <p className="text-white font-semibold text-lg" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>
-                    Welcome back
-                  </p>
-                  <p className="text-[#A0A0A0] text-sm mt-0.5">How would you like to sign in?</p>
-                </div>
-
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => reset("phone")}
-                  className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] text-white font-semibold text-base flex items-center gap-3 px-4 hover:border-[#C9A84C] transition-colors"
-                >
-                  <Phone className="size-5 text-[#C9A84C]" />
-                  Sign in with Phone (Client)
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => reset("email")}
-                  className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center gap-3 px-4"
-                >
-                  <Mail className="size-5" />
-                  Sign in as Coach
-                </motion.button>
-              </motion.div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError("") }}
+              className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input px-4 py-3 text-xs font-semibold text-charcoal-deep shadow-inner transition-all outline-none"
+              required
+            />
+            {error && (
+              <p className="text-[10px] font-semibold text-warmRed-text bg-warmRed-tint px-3 py-2 rounded-input mt-1">
+                {error}
+              </p>
             )}
+          </div>
 
-            {/* Phone number entry */}
-            {method === "phone" && (
-              <motion.form key="phone" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleSendOtp} className="space-y-5">
-                <BackHeader title="Your mobile number" sub="Enter your registered number" onBack={() => reset("choose")} />
-
-                <div>
-                  <div className={cn(
-                    "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 transition-colors",
-                    error ? "border-red-500" : "border-[#333333] focus-within:border-[#C9A84C]"
-                  )}>
-                    <span className="text-[#C9A84C] font-semibold text-sm">+91</span>
-                    <div className="w-px h-5 bg-[#333333] mx-3 flex-shrink-0" />
-                    <input
-                      type="tel" inputMode="numeric" value={phone}
-                      onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "").slice(0, 10)); setError("") }}
-                      placeholder="9876543210"
-                      className="flex-1 bg-transparent text-white outline-none placeholder:text-[#555555] text-base"
-                      autoFocus
-                    />
-                  </div>
-                  {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
-                </div>
-
-                <GoldButton loading={loading} disabled={phone.replace(/\D/g, "").length !== 10} label="Send OTP" />
-              </motion.form>
-            )}
-
-            {/* OTP entry */}
-            {method === "phone-otp" && (
-              <motion.form key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleVerifyOtp} className="space-y-5">
-                <BackHeader title="Verify OTP" sub={`Sent to +91 ${phone}`} onBack={() => reset("phone")} />
-
-                <div>
-                  <input
-                    type="tel" inputMode="numeric" value={otp}
-                    onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setError("") }}
-                    placeholder="Enter OTP"
-                    className={cn(
-                      "w-full bg-[#1A1A1A] border rounded-2xl h-14 px-4 text-white text-center text-xl tracking-[0.5em] outline-none transition-colors placeholder:text-[#555555] placeholder:tracking-normal placeholder:text-sm",
-                      error ? "border-red-500" : "border-[#333333] focus:border-[#C9A84C]"
-                    )}
-                    autoFocus
-                  />
-                  {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
-                </div>
-
-                <GoldButton loading={loading} disabled={otp.length < 4} label="Verify & Login" />
-                <button type="button" onClick={handleSendOtp} disabled={loading}
-                  className="w-full text-[#A0A0A0] text-sm text-center hover:text-white transition-colors">
-                  Resend OTP
-                </button>
-              </motion.form>
-            )}
-
-            {/* Email + Password (Coach) */}
-            {method === "email" && (
-              <motion.form key="email" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                onSubmit={handleEmailLogin} className="space-y-4">
-                <BackHeader title="Coach Login" sub="Enter your email and password" onBack={() => reset("choose")} />
-
-                <div>
-                  <input
-                    type="email" value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError("") }}
-                    placeholder="coach@email.com"
-                    className="w-full bg-[#1A1A1A] border border-[#333333] rounded-2xl h-14 px-4 text-white outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#555555]"
-                    autoFocus
-                  />
-                </div>
-
-                <div>
-                  <input
-                    type="password" value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError("") }}
-                    placeholder="Password"
-                    className={cn(
-                      "w-full bg-[#1A1A1A] border rounded-2xl h-14 px-4 text-white outline-none transition-colors placeholder:text-[#555555]",
-                      error ? "border-red-500" : "border-[#333333] focus:border-[#C9A84C]"
-                    )}
-                  />
-                  {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
-                </div>
-
-                <GoldButton loading={loading} disabled={!email.trim() || !password} label="Login as Coach" />
-              </motion.form>
-            )}
-
-          </AnimatePresence>
-        </div>
+          <div className="pt-2">
+            <motion.button
+              type="submit"
+              disabled={loading || !email.trim() || !password}
+              whileTap={{ scale: 0.97 }}
+              className="w-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest py-4 px-6 rounded-full shadow-bento hover:bg-lime-electric/95 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center"
+            >
+              {loading
+                ? <div className="w-4 h-4 border-2 border-charcoal-deep/30 border-t-charcoal-deep rounded-full animate-spin" />
+                : "Sign In"}
+            </motion.button>
+          </div>
+        </form>
       </div>
 
-      <p className="text-center text-[#333333] text-xs mt-8">Powered by Vyzma</p>
-    </div>
-  )
-}
-
-function BackHeader({ title, sub, onBack }: { title: string; sub: string; onBack: () => void }) {
-  return (
-    <div className="flex items-center gap-3">
-      <button type="button" onClick={onBack}
-        className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center text-[#A0A0A0] hover:text-white transition-colors flex-shrink-0">
-        <ArrowLeft className="size-4" />
-      </button>
-      <div>
-        <p className="text-white font-semibold text-lg leading-tight" style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}>{title}</p>
-        <p className="text-[#A0A0A0] text-xs">{sub}</p>
+      {/* Footer terms */}
+      <div className="text-center pb-6">
+        <p className="text-[10px] text-charcoal-muted font-medium animate-fade-in-up">
+          Premium Fitness Coaching PWA. Designed for results.
+        </p>
       </div>
     </div>
-  )
-}
-
-function GoldButton({ loading, disabled, label }: { loading: boolean; disabled: boolean; label: string }) {
-  return (
-    <motion.button type="submit" disabled={loading || disabled} whileTap={{ scale: 0.97 }}
-      className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50">
-      {loading
-        ? <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-        : <>{label} <ChevronRight className="size-5" /></>}
-    </motion.button>
   )
 }

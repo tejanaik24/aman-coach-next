@@ -2,22 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "motion/react"
-import {
-  Users,
-  ClipboardCheck,
-  IndianRupee,
-  TrendingUp,
-  Plus,
-  Inbox,
-  AlertCircle,
-} from "lucide-react"
+import { motion, animate } from "motion/react"
+import { Plus, Inbox } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
-import { cn } from "@/lib/utils"
-import type { Checkin, Client, ClientWithProfile, Profile } from "@/types"
+import ProfileMenu from "@/components/shared/ProfileMenu"
+import type { Checkin, ClientWithProfile } from "@/types"
 
 interface Stats {
   activeClients: number
@@ -26,7 +18,7 @@ interface Stats {
   monthRevenue: number
 }
 
-type RecentCheckin = Checkin & { clientName: string }
+type RecentCheckin = Checkin & { clientName: string; clientAvatar: string | null }
 type AttentionClient = ClientWithProfile & { issue: string }
 
 function getGreeting(): string {
@@ -43,32 +35,38 @@ function avgAdherence(c: Checkin): number | null {
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
 }
 
-function adherenceBadgeClass(score: number | null): string {
-  if (!score) return "bg-[#222222] text-[#555555]"
-  if (score >= 8) return "bg-green-500/15 text-green-400"
-  if (score >= 5) return "bg-yellow-500/15 text-yellow-400"
-  return "bg-red-500/15 text-red-400"
+function initials(name: string): string {
+  return name.slice(0, 2).toUpperCase()
+}
+
+function Counter({ to }: { to: number }) {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    const controls = animate(0, to, {
+      duration: 1.2,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (value) => setCount(Math.round(value)),
+    })
+    return () => controls.stop()
+  }, [to])
+
+  return <>{count}</>
 }
 
 function StatSkeleton() {
   return (
-    <div className="bg-[#161616] border border-[#222222] rounded-2xl p-4 space-y-3 animate-pulse">
-      <div className="w-5 h-5 rounded bg-[#222222]" />
-      <div className="w-14 h-7 rounded bg-[#222222]" />
-      <div className="w-24 h-3 rounded bg-[#222222]" />
-    </div>
+    <div className="bg-white p-4.5 rounded-card-mobile shadow-bento h-[105px] animate-pulse" />
   )
 }
 
-function CheckinRowSkeleton() {
+function Avatar({ name, url, size = "w-10 h-10" }: { name: string; url: string | null; size?: string }) {
+  if (url) {
+    return <img src={url} alt={name} className={`${size} rounded-full object-cover border-2 border-lime-electric`} />
+  }
   return (
-    <div className="flex items-center gap-3 py-3 animate-pulse">
-      <div className="w-9 h-9 rounded-full bg-[#222222] flex-shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="w-32 h-3.5 rounded bg-[#222222]" />
-        <div className="w-20 h-3 rounded bg-[#222222]" />
-      </div>
-      <div className="w-12 h-5 rounded-full bg-[#222222]" />
+    <div className={`${size} rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric flex-shrink-0`}>
+      <span className="text-lime-electric text-xs font-montserrat font-bold">{initials(name)}</span>
     </div>
   )
 }
@@ -80,16 +78,97 @@ export default function CoachDashboardPage() {
   const [attentionClients, setAttentionClients] = useState<AttentionClient[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [todayStr, setTodayStr] = useState("")
+  const [coachName, setCoachName] = useState("Aman")
+  const [coachEmail, setCoachEmail] = useState<string | null>(null)
+  const [coachAvatar, setCoachAvatar] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTodayStr(format(new Date(), "EEEE, d MMM"))
+  }, [])
 
   const fetchData = useCallback(async () => {
-    // PREVIEW MODE: inject mock data
-    setStats({ activeClients: 12, pendingCheckins: 4, feesDue: 3, monthRevenue: 48000 })
-    setRecentCheckins([
-      { id: "1", client_id: "c1", week_number: 8, submitted_at: new Date().toISOString(), adherence_workout: 9, adherence_nutrition: 7, reviewed_at: null, clientName: "Priya Sharma" } as unknown as RecentCheckin,
-      { id: "2", client_id: "c2", week_number: 5, submitted_at: new Date(Date.now() - 86400000).toISOString(), adherence_workout: 6, adherence_nutrition: 5, reviewed_at: null, clientName: "Rahul Mehra" } as unknown as RecentCheckin,
-      { id: "3", client_id: "c3", week_number: 12, submitted_at: new Date(Date.now() - 172800000).toISOString(), adherence_workout: 10, adherence_nutrition: 9, reviewed_at: null, clientName: "Ananya Kapoor" } as unknown as RecentCheckin,
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setIsLoading(false); return }
+
+    setCoachEmail(user.email ?? null)
+    const { data: profileRow } = await supabase.from("profiles").select("name, avatar_url").eq("id", user.id).single()
+    if (profileRow) {
+      setCoachName(profileRow.name)
+      setCoachAvatar(profileRow.avatar_url)
+    }
+
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000).toISOString()
+
+    const { data: clientRows } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("coach_id", user.id)
+
+    const clientIds = (clientRows ?? []).map((c: { id: string }) => c.id)
+
+    if (clientIds.length === 0) {
+      setStats({ activeClients: 0, pendingCheckins: 0, feesDue: 0, monthRevenue: 0 })
+      setRecentCheckins([])
+      setAttentionClients([])
+      setIsLoading(false)
+      return
+    }
+
+    const [checkinsRes, activeRes, pendingRes, feesRes, revenueRes] = await Promise.all([
+      supabase
+        .from("checkins")
+        .select("*, client:clients(id, profile:profiles(name, avatar_url))")
+        .in("client_id", clientIds)
+        .order("submitted_at", { ascending: false })
+        .limit(5),
+      supabase.from("clients").select("id", { count: "exact", head: true }).eq("coach_id", user.id).eq("status", "active"),
+      supabase.from("checkins").select("id", { count: "exact", head: true }).in("client_id", clientIds).is("reviewed_at", null),
+      supabase.from("fees").select("id", { count: "exact", head: true }).in("client_id", clientIds).eq("status", "pending"),
+      supabase.from("fees").select("amount").in("client_id", clientIds).eq("status", "paid").gte("paid_date", monthStart).lte("paid_date", monthEnd),
     ])
-    setAttentionClients([])
+
+    const { data: activeClientRows } = await supabase
+      .from("clients")
+      .select("id, profile:profiles(name, avatar_url)")
+      .eq("coach_id", user.id)
+      .eq("status", "active")
+
+    const { data: recentCheckinClients } = await supabase
+      .from("checkins")
+      .select("client_id")
+      .in("client_id", clientIds)
+      .gte("submitted_at", fourteenDaysAgo)
+
+    const recentCheckinClientIds = new Set((recentCheckinClients ?? []).map((r: any) => r.client_id))
+    const attnData = (activeClientRows ?? [])
+      .filter((c: any) => !recentCheckinClientIds.has(c.id))
+      .map((c: any) => ({
+        ...c,
+        issue: "No check-in in 14 days",
+      }))
+
+    const mappedCheckins: RecentCheckin[] = (checkinsRes.data ?? []).map((row: any) => ({
+      ...row,
+      clientName: row.client?.profile?.name ?? "Unknown",
+      clientAvatar: row.client?.profile?.avatar_url ?? null,
+    }))
+    setRecentCheckins(mappedCheckins)
+
+    const monthlyRevenue = (revenueRes.data ?? []).reduce((sum: number, r: any) => sum + (r.amount ?? 0), 0)
+    setStats({
+      activeClients: activeRes.count ?? 0,
+      pendingCheckins: pendingRes.count ?? 0,
+      feesDue: feesRes.count ?? 0,
+      monthRevenue: monthlyRevenue,
+    })
+
+    setAttentionClients(attnData)
     setIsLoading(false)
   }, [])
 
@@ -97,162 +176,192 @@ export default function CoachDashboardPage() {
     fetchData()
   }, [fetchData])
 
-  const statsConfig = [
-    { label: "Active Clients", value: stats?.activeClients ?? 0, icon: Users, format: (v: number) => v.toString() },
-    { label: "Pending Check-ins", value: stats?.pendingCheckins ?? 0, icon: ClipboardCheck, format: (v: number) => v.toString() },
-    { label: "Fees Due", value: stats?.feesDue ?? 0, icon: IndianRupee, format: (v: number) => v.toString() },
-    {
-      label: "This Month",
-      value: stats?.monthRevenue ?? 0,
-      icon: TrendingUp,
-      format: (v: number) =>
-        v >= 1000
-          ? `₹${(v / 1000).toFixed(1)}k`
-          : `₹${v}`,
-    },
-  ]
+  const revenueLabel = (v: number) => (v >= 1000 ? `₹${(v / 1000).toFixed(1)}k` : `₹${v}`)
 
   return (
-    <div className="p-4 space-y-6 pb-8">
+    <div className="px-5 pt-2 flex flex-col gap-6 relative pb-8 bg-cream min-h-full">
       {/* Header */}
-      <div className="flex items-start justify-between pt-2">
+      <div className="flex items-center justify-between">
         <div>
-          <h1
-            className="text-xl font-bold text-white"
-            style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}
-          >
-            {getGreeting()}, Aman
-          </h1>
-          <p className="text-sm text-[#A0A0A0] mt-0.5">
-            {format(new Date(), "EEEE, d MMMM yyyy")}
-          </p>
+          <span className="text-[11px] font-bold text-charcoal-muted uppercase tracking-widest">
+            {todayStr}
+          </span>
+          <h2 className="font-montserrat font-black text-2xl text-charcoal-deep leading-tight mt-0.5">
+            {getGreeting()}, {coachName.split(" ")[0]}
+          </h2>
         </div>
-        <div className="w-10 h-10 rounded-full bg-[#C9A84C] flex items-center justify-center flex-shrink-0">
-          <span className="text-black text-sm font-bold">AK</span>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
-          : statsConfig.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.07 }}
-                className="bg-[#161616] border border-[#222222] rounded-2xl p-4 space-y-2"
-              >
-                <s.icon className="size-5 text-[#C9A84C]" />
-                <p className="text-2xl font-bold text-white">{s.format(s.value)}</p>
-                <p className="text-xs text-[#A0A0A0]">{s.label}</p>
-              </motion.div>
-            ))}
-      </div>
-
-      {/* Recent check-ins */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-white font-semibold">Recent Check-ins</h2>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push("/coach/clients")}
-            className="text-[#C9A84C] text-sm font-medium active:opacity-70"
-          >
-            See all
-          </motion.button>
-        </div>
-        <div className="bg-[#161616] border border-[#222222] rounded-2xl divide-y divide-[#1E1E1E]">
-          {isLoading ? (
-            <div className="px-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <CheckinRowSkeleton key={i} />
-              ))}
-            </div>
-          ) : recentCheckins.length === 0 ? (
-            <div className="flex flex-col items-center py-10 gap-3">
-              <Inbox className="size-10 text-[#333333]" />
-              <p className="text-[#A0A0A0] text-sm">No check-ins yet</p>
-            </div>
+        <button type="button" onClick={() => setIsProfileOpen(true)} aria-label="Open profile" className="relative cursor-pointer">
+          {coachAvatar ? (
+            <img src={coachAvatar} alt={coachName} className="w-12 h-12 rounded-full object-cover border-2 border-lime-electric shadow-md" />
           ) : (
-            recentCheckins.map((c, i) => {
-              const score = avgAdherence(c)
-              return (
-                <motion.button
-                  key={c.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => router.push(`/clients/${c.client_id}`)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#1A1A1A] transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-full bg-[#C9A84C]/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#C9A84C] text-xs font-bold">
-                      {c.clientName.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">
-                      {c.clientName}
-                    </p>
-                    <p className="text-[#555555] text-xs mt-0.5">
-                      Week {c.week_number ?? "?"} ·{" "}
-                      {format(new Date(c.submitted_at), "d MMM")}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0",
-                      adherenceBadgeClass(score)
-                    )}
-                  >
-                    {score !== null ? `${Math.round(score)}/10` : "—"}
-                  </span>
-                </motion.button>
-              )
-            })
+            <div className="w-12 h-12 rounded-full bg-charcoal-deep flex items-center justify-center border-2 border-lime-electric shadow-md">
+              <span className="text-lime-electric text-sm font-montserrat font-bold">{coachName.slice(0, 2).toUpperCase()}</span>
+            </div>
           )}
-        </div>
+          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-lime-electric rounded-full border-2 border-white" />
+        </button>
       </div>
 
-      {/* Needs attention */}
+      <ProfileMenu
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        name={coachName}
+        email={coachEmail}
+        avatarUrl={coachAvatar}
+        role="coach"
+        onNameUpdated={setCoachName}
+      />
+
+      {/* Bento Stats Grid */}
+      <div className="grid grid-cols-2 gap-3.5 select-none">
+        {isLoading || !stats ? (
+          Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
+        ) : (
+          <>
+            <div className="bg-white p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px]">
+              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
+                <Counter to={stats.activeClients} />
+              </span>
+              <span className="text-[11px] font-bold text-charcoal-muted tracking-tight leading-tight">
+                Active Clients
+              </span>
+            </div>
+
+            <div className="bg-white p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px]">
+              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
+                <Counter to={stats.pendingCheckins} />
+              </span>
+              <span className="text-[11px] font-bold text-charcoal-muted tracking-tight leading-tight">
+                Pending Check-ins
+              </span>
+            </div>
+
+            <div className="bg-white p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px]">
+              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
+                <Counter to={stats.feesDue} />
+              </span>
+              <span className="text-[11px] font-bold text-charcoal-muted tracking-tight leading-tight">
+                Fees Due
+              </span>
+            </div>
+
+            <div
+              className="bg-lime-electric p-4.5 rounded-card-mobile shadow-bento flex flex-col justify-between h-[105px] cursor-pointer"
+              onClick={() => router.push("/fees")}
+            >
+              <span className="font-montserrat font-black text-3xl text-charcoal-deep">
+                {revenueLabel(stats.monthRevenue)}
+              </span>
+              <span className="text-[11px] font-bold text-charcoal-deep tracking-tight leading-tight">
+                This Month
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Needs Attention Horizontal Scroll */}
       {!isLoading && attentionClients.length > 0 && (
         <div>
-          <h2 className="text-white font-semibold mb-3">Needs Attention</h2>
-          <div className="space-y-2">
-            {attentionClients.map((c, i) => (
-              <motion.button
-                key={c.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                onClick={() => router.push(`/clients/${c.id}`)}
-                className="w-full bg-[#161616] border border-[#222222] rounded-2xl p-4 flex items-center gap-3 text-left hover:bg-[#1A1A1A] transition-colors"
-              >
-                <AlertCircle className="size-4 text-yellow-500 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">
-                    {c.profile?.name ?? "Unknown"}
-                  </p>
+          <div className="flex justify-between items-center mb-3 px-1">
+            <h3 className="font-montserrat font-bold text-xs text-charcoal-deep uppercase tracking-widest">
+              Needs Attention
+            </h3>
+            <span className="text-[10px] font-bold text-charcoal-muted uppercase">
+              {attentionClients.length} Client{attentionClients.length === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x select-none">
+            {attentionClients.map((c) => {
+              const name = c.profile?.name ?? "Unknown"
+              const avatarUrl = c.profile?.avatar_url ?? null
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => router.push(`/clients/${c.id}`)}
+                  className="snap-start shrink-0 w-[145px] relative rounded-card-mobile overflow-hidden h-[180px] shadow-bento cursor-pointer group"
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-charcoal-deep flex items-center justify-center">
+                      <span className="text-lime-electric font-montserrat font-black text-3xl">{initials(name)}</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal-deep/90 via-charcoal-deep/30 to-transparent" />
+
+                  <div className="absolute top-2.5 left-2.5 bg-lime-electric px-2.5 py-1 rounded-full text-[9px] font-bold text-charcoal-deep tracking-wide uppercase shadow">
+                    {c.issue}
+                  </div>
+
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <p className="font-montserrat font-bold text-xs leading-tight">{name}</p>
+                    {c.goal && <p className="text-[9px] text-white/70 font-medium mt-0.5">{c.goal}</p>}
+                  </div>
                 </div>
-                <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                  {c.issue}
-                </span>
-              </motion.button>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* FAB */}
+      {/* Recent Check-ins */}
+      <div className="flex flex-col gap-3">
+        <h3 className="font-montserrat font-bold text-xs text-charcoal-deep uppercase tracking-widest mb-1 px-1">
+          Recent Check-ins
+        </h3>
+
+        {isLoading ? (
+          <div className="bg-white rounded-card-mobile p-4 shadow-bento h-16 animate-pulse" />
+        ) : recentCheckins.length === 0 ? (
+          <div className="bg-white rounded-card-mobile p-8 shadow-bento flex flex-col items-center gap-2">
+            <Inbox className="size-8 text-charcoal-muted/40" />
+            <p className="text-charcoal-muted text-xs font-medium">No check-ins yet</p>
+          </div>
+        ) : (
+          recentCheckins.map((c) => {
+            const score = avgAdherence(c)
+            const progressPhoto = c.photos?.[0] ?? null
+            return (
+              <div
+                key={c.id}
+                onClick={() => router.push(`/clients/${c.client_id}`)}
+                className="bg-white rounded-card-mobile p-4 shadow-bento flex items-center justify-between hover:scale-[1.01] transition-transform duration-200 cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar name={c.clientName} url={c.clientAvatar} />
+                  <div className="min-w-0">
+                    <h4 className="font-montserrat font-bold text-xs text-charcoal-deep truncate">{c.clientName}</h4>
+                    <p className="text-[10px] text-charcoal-muted font-medium mt-0.5">
+                      Week {c.week_number ?? "?"} · {score !== null ? `${Math.round(score * 10)}% Adherence` : format(new Date(c.submitted_at), "d MMM")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {progressPhoto && (
+                    <img src={progressPhoto} alt="Progress" className="w-9 h-9 rounded-lg object-cover shadow-sm" />
+                  )}
+                  <span className="w-2.5 h-2.5 rounded-full bg-lime-electric ring-4 ring-lime-tint" />
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* FAB — opens Add Client modal */}
       <motion.button
-        whileTap={{ scale: 0.9 }}
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-[#C9A84C] text-black flex items-center justify-center shadow-lg z-40"
+        whileTap={{ scale: 0.85 }}
         aria-label="Add client"
+        className="fixed bottom-24 right-5 w-14 h-14 bg-lime-electric text-charcoal-deep rounded-full flex items-center justify-center shadow-lg border border-white/20 cursor-pointer z-40"
       >
-        <Plus className="size-6" />
+        <Plus className="w-6 h-6 stroke-[3]" />
       </motion.button>
 
       <AddClientModal
