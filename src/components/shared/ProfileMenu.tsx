@@ -87,8 +87,7 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 350 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-bg-surface border-t border-border-subtle rounded-t-3xl z-[100] max-h-[90vh] flex flex-col shadow-2xl overflow-y-auto"
-            style={{ WebkitOverflowScrolling: "touch" }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-bg-surface border-t border-border-subtle rounded-t-3xl z-[100] max-h-[85vh] flex flex-col shadow-2xl"
           >
             {/* Grab Bar */}
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -103,8 +102,11 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
               </button>
             </div>
 
-            {/* Scrollable Body */}
-            <div className="px-5 pt-4 pb-24 space-y-5 flex-1 overscroll-contain touch-pan-y scrollbar-thin">
+            {/* Inner Scrollable Body */}
+            <div
+              className="px-5 pt-4 pb-28 space-y-5 flex-1 overflow-y-auto"
+              style={{ overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+            >
               {/* Avatar + identity */}
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative">
