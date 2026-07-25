@@ -1,24 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-bg-primary: #050505;
-  --color-bg-surface: #101012;
+  --color-bg-primary: #0A0A0A;
+  --color-bg-surface: #111111;
   --color-bg-card: #121215;
   --color-bg-elevated: #18181C;
   --color-accent-gold: #FFB800;
   --color-accent-gold-hover: #FFC82C;
   --color-text-primary: #FFFFFF;
   --color-text-muted: #9494A0;
-  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
   --color-border-gold: rgba(255, 184, 0, 0.35);
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --font-heading: 'Syne', 'Space Grotesk', sans-serif;
+  --color-success: #00CC66;
+  --color-warning: #FFB800;
+  --color-danger: #FF4444;
+  --font-heading: 'Syne', 'Space Grotesk', 'Inter', sans-serif;
   --font-sans: 'Outfit', 'Inter', sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -36,15 +36,15 @@
   html {
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
-    background-color: #050505;
+    background-color: #0A0A0A;
   }
   body {
-    background: #050505;
+    background: #0A0A0A;
     color: var(--color-text-primary);
     font-family: 'Outfit', 'Inter', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Syne', 'Inter', sans-serif;
     letter-spacing: -0.02em;
   }
   ::-webkit-scrollbar {
@@ -55,9 +55,57 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #27272A;
+    background: rgba(255, 184, 0, 0.3);
     border-radius: 4px;
   }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 184, 0, 0.5);
+  }
+}
+
+/* Glassmorphism 2.0 */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-gold {
+  background: rgba(255, 184, 0, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 184, 0, 0.25);
+  box-shadow:
+    0 8px 32px rgba(255, 184, 0, 0.12),
+    inset 0 1px 0 rgba(255, 184, 0, 0.2);
+}
+
+/* Gold glow effect */
+.gold-glow {
+  box-shadow:
+    0 0 20px rgba(255, 184, 0, 0.3),
+    0 0 60px rgba(255, 184, 0, 0.1);
+}
+
+.gold-text-glow {
+  text-shadow:
+    0 0 20px rgba(255, 184, 0, 0.5),
+    0 0 40px rgba(255, 184, 0, 0.3);
 }
 
 /* Metallic Gold Light Sweep Shimmer Animation */
@@ -97,7 +145,8 @@
   background: rgba(18, 18, 22, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .glass-card-gold {
@@ -106,6 +155,54 @@
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 184, 0, 0.35);
   box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.5), inset 0px 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(5deg); }
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lineDraw {
+  from {
+    stroke-dashoffset: 1200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
 }
 
 /* Skeleton Pulse */
@@ -120,17 +217,11 @@
   100% { background-position: -200% 0; }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Hide scrollbar for carousels */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
