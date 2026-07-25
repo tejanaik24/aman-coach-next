@@ -6,19 +6,13 @@ import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
 import { getClientProfile } from "@/lib/store"
 import toast from "react-hot-toast"
-import {
-  User, Dumbbell, Utensils, Activity, Camera, Ruler, Flame, Sparkles, Check,
-  Briefcase, Heart, ShieldAlert, Clock, Moon, Sun, Apple
-} from "lucide-react"
+import { Sparkles, Check } from "lucide-react"
 
 import {
   FormHeader,
   ResumeDraftBanner,
   QuestionWrapper,
-  ImageCardPicker,
-  ChipMultiSelect,
   ChipSingleSelect,
-  GoldSlider,
   NumberStepper,
   TextInputDark,
   TextAreaDark,
@@ -26,153 +20,103 @@ import {
   FormFooter,
 } from "@/components/forms/ConversationalFormComponents"
 
-// ─── Types & Defaults ────────────────────────────────────────────────────────
-
-type FormData = {
-  // Section 1: Contact Information
-  full_name: string
-  email: string
-  address: string
-  contact_number: string
-  alt_contact_number: string
-
-  // Section 2: General Information
-  dob: string
-  height: string
-  goal: string
-  wake_up_time: string
-  sleep_time: string
-  previous_coach: string
-  home_equipment: string
-
-  // Section 3: Lifestyle & Training Information
-  work_details: string
-  current_exercise: string
-  workout_routine: string
-  daily_steps: string
-  cardio_details: string
-  preferred_workout_time: string
-
-  // Section 4: Health History Information
-  injuries: string
-  health_issues: string
-  medications: string
-  constipation_history: string
-  addictions: string
-  urine_color: string
-  menstrual_duration: string
-  menstrual_cycle_frequency: string
-  menstrual_blood_loss: string
-  menstrual_initial_days: string
-  steroid_use: string
-
-  // Section 5: Nutritional Information
-  dietary_preference: string
-  no_non_veg_days: string
-  lactose_intolerant: string
-  breakfast_time: string
-  mid_day_snack_time: string
-  lunch_time: string
-  evening_snack_time: string
-  dinner_time: string
-  max_meals: string
-  pre_workout_meal: string
-  supplements: string
-  supplements_doc: string[]
-  whey_protein_preference: string
-  food_allergies: string
-  food_allergies_doc: string[]
-  current_diet_summary: string
-  current_diet_morning: string
-  current_diet_breakfast: string
-  current_diet_mid_day: string
-  current_diet_lunch: string
-  current_diet_evening: string
-  current_diet_dinner: string
-  water_intake: string
-  loved_foods: string
-  hated_foods: string
-  preferred_foods: string
-  seasonal_fruits: string
-  palate_preference: string
-  chocolate_preference: string
-  cheat_meal: string
-  grocery_stores: string
-  supplement_stores: string
-  other_client_info: string
-
-  // Section 6: Physiological Health Assessment
-  bp_morning: string
-  bp_afternoon: string
-  bp_night: string
-  medical_reports: string[]
-  additional_notes: string
-
-  // Section 7: Pictures Upload
-  pic_front: string
-  pic_back: string
-  pic_left: string
-  pic_right: string
-  men_pic_front: string
-  men_pic_back: string
-  men_pic_left: string
-  men_pic_right: string
-  fav_pose: string
-  mandatory_pose: string[]
-
-  // Section 8: Anthropometrics (Weight & Measurements)
-  weight: string
-  neck: string
-  abdomen: string
-  hips: string
-  right_arm: string
-  right_thigh: string
-  right_calf: string
-  lowest_weight: string
-  lowest_period: string
-  heaviest_weight: string
-  heaviest_period: string
-  form_docs: string[]
-}
-
-const defaultForm: FormData = {
-  full_name: "", email: "", address: "", contact_number: "", alt_contact_number: "",
-  dob: "", height: "170", goal: "Weight Loss", wake_up_time: "06:30", sleep_time: "22:30", previous_coach: "", home_equipment: "",
-  work_details: "Desk Job", current_exercise: "Intermediate", workout_routine: "", daily_steps: "8000", cardio_details: "", preferred_workout_time: "Evening",
-  injuries: "", health_issues: "", medications: "", constipation_history: "", addictions: "", urine_color: "",
-  menstrual_duration: "", menstrual_cycle_frequency: "", menstrual_blood_loss: "", menstrual_initial_days: "", steroid_use: "",
-  dietary_preference: "Non-Veg", no_non_veg_days: "", lactose_intolerant: "No", breakfast_time: "08:30", mid_day_snack_time: "11:30",
-  lunch_time: "14:00", evening_snack_time: "18:00", dinner_time: "21:00", max_meals: "4", pre_workout_meal: "Yes", supplements: "", supplements_doc: [],
-  whey_protein_preference: "Yes", food_allergies: "", food_allergies_doc: [], current_diet_summary: "", current_diet_morning: "",
-  current_diet_breakfast: "", current_diet_mid_day: "", current_diet_lunch: "", current_diet_evening: "", current_diet_dinner: "",
-  water_intake: "3.5", loved_foods: "", hated_foods: "", preferred_foods: "", seasonal_fruits: "", palate_preference: "Both",
-  chocolate_preference: "", cheat_meal: "", grocery_stores: "", supplement_stores: "", other_client_info: "",
-  bp_morning: "", bp_afternoon: "", bp_night: "", medical_reports: [], additional_notes: "",
-  pic_front: "", pic_back: "", pic_left: "", pic_right: "", men_pic_front: "", men_pic_back: "", men_pic_left: "", men_pic_right: "",
-  fav_pose: "", mandatory_pose: [],
-  weight: "70", neck: "15", abdomen: "32", hips: "36", right_arm: "14", right_thigh: "22", right_calf: "14", lowest_weight: "65",
-  lowest_period: "", heaviest_weight: "85", heaviest_period: "", form_docs: [],
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function StandardOnboardingPage() {
   const { user, profile } = useAuth()
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [form, setForm] = useState<FormData>(defaultForm)
+  const [form, setForm] = useState<Record<string, any>>({
+    q1_name: profile?.name || "",
+    q2_email: user?.email || "",
+    q3_address: "",
+    q4_phone: "",
+    q5_alt_phone: "",
+    q6_dob: "1996-08-15",
+    q6_age: "28",
+    q7_height: "175",
+    q8_goal: "",
+    q9_wake_time: "06:30",
+    q10_sleep_time: "22:30",
+    q11_hired_coach: "",
+    q12_home_equipment: "",
+    q13_work_schedule: "",
+    q14_exercise_history: "",
+    q15_workout_routine: "",
+    q16_steps_daily: "8000",
+    q17_cardio_regular: "",
+    q18_workout_timings: "",
+    q19_injuries_pain: "",
+    q20_health_issues: "",
+    q21_prescribed_drugs: "",
+    q22_constipation_history: "",
+    q23_addictions: "",
+    q24_urine_color: "",
+    q25_menstrual_duration: "",
+    q25_menstrual_frequency: "",
+    q25_menstrual_blood_loss: "",
+    q25_menstrual_days_1_4: "",
+    q26_steroids_history: "",
+    q27_diet_preference: "",
+    q28_nonveg_fast_days: "",
+    q29_lactose_intolerant: "",
+    q30_meal_bf: "08:00",
+    q30_meal_midday: "11:30",
+    q30_meal_lunch: "14:00",
+    q30_meal_eve: "17:30",
+    q30_meal_dinner: "21:00",
+    q31_max_meals: "4",
+    q32_preworkout_meal: "",
+    q33_supplements: "",
+    q33_supplements_pics: [],
+    q34_whey_protein: "",
+    q35_food_allergies: "",
+    q35_allergy_reports: [],
+    q36_diet_morning: "",
+    q36_diet_bf: "",
+    q36_diet_midday: "",
+    q36_diet_lunch: "",
+    q36_diet_eve: "",
+    q36_diet_dinner: "",
+    q37_water_intake: "3.5",
+    q38_food_love: "",
+    q39_food_hate: "",
+    q40_food_want: "",
+    q41_seasonal_fruits: "",
+    q42_palate: "",
+    q43_chocolates: "",
+    q44_cheat_meal: "",
+    q45_overseas_links: "",
+    q46_bp_morning: "120/80",
+    q47_blood_tests: [],
+    q48_anything_else: "",
+    q49_front_pic: [],
+    q50_back_pic: [],
+    q51_left_pic: [],
+    q52_right_pic: [],
+    q53_fav_pose: [],
+    q54_mandatory_pose: [],
+    q55_weight: "74.5",
+    q56_neck: "38",
+    q57_abdomen: "85",
+    q58_hips: "95",
+    q59_arm: "35",
+    q60_thigh: "58",
+    q61_calf: "38",
+    q62_lowest_weight: "",
+    q62_lowest_when: "",
+    q63_heaviest_weight: "",
+    q63_heaviest_when: "",
+    q64_gym_photos: [],
+    q64_gym_link: ""
+  })
+
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
-  const [checkingRedirect, setCheckingRedirect] = useState(true)
   const [showResumeBanner, setShowResumeBanner] = useState(false)
+  const [clientObj, setClientObj] = useState<{ id: string } | null>(null)
 
-  // Touch Swipe Gesture State
-  const touchStartX = useRef<number | null>(null)
-  const touchEndX = useRef<number | null>(null)
+  const TOTAL_STEPS = 64
 
-  const TOTAL_STEPS = 40
-
-  const set = useCallback(<K extends keyof FormData>(key: K, val: FormData[K]) => {
+  const set = useCallback((key: string, val: any) => {
     setForm(prev => {
       const updated = { ...prev, [key]: val }
       try {
@@ -182,61 +126,28 @@ export default function StandardOnboardingPage() {
     })
   }, [user?.id])
 
-  // Check client_type redirect requirement
   useEffect(() => {
     if (!user?.id) return
-    getClientProfile(user.id).then(clientData => {
-      if (clientData?.client_type === "antenatal") {
-        router.replace("/onboarding/antenatal")
-      } else {
-        setCheckingRedirect(false)
+    getClientProfile(user.id).then(c => {
+      if (c) {
+        setClientObj({ id: c.id })
+        if (c.client_type === "antenatal") {
+          router.replace("/onboarding/antenatal")
+        }
       }
-    }).catch(() => setCheckingRedirect(false))
+    }).catch(() => {})
   }, [user?.id, router])
 
-  // Pre-fill user profile info
-  useEffect(() => {
-    if (profile?.name && !form.full_name) set("full_name", profile.name)
-    if (user?.email && !form.email) set("email", user.email)
-    if (profile?.phone && !form.contact_number) set("contact_number", profile.phone)
-  }, [profile, user, form.full_name, form.email, form.contact_number, set])
-
-  // Check draft existence
   useEffect(() => {
     if (!user?.id) return
     try {
       const saved = localStorage.getItem(`draft_standard_joining_${user.id}`)
-      if (saved) {
-        setShowResumeBanner(true)
-      }
+      if (saved) setShowResumeBanner(true)
     } catch {}
   }, [user?.id])
 
-  const handleResumeDraft = () => {
-    if (!user?.id) return
-    try {
-      const saved = localStorage.getItem(`draft_standard_joining_${user.id}`)
-      if (saved) {
-        setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
-        toast.success("Resumed saved draft!")
-      }
-    } catch {}
-    setShowResumeBanner(false)
-  }
-
-  const handleStartFresh = () => {
-    if (!user?.id) return
-    try {
-      localStorage.removeItem(`draft_standard_joining_${user.id}`)
-    } catch {}
-    setForm(defaultForm)
-    setShowResumeBanner(false)
-    toast.success("Started fresh form")
-  }
-
-  // Next / Prev Handlers
   const handleNext = () => {
-    if (step < TOTAL_STEPS - 1) {
+    if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
     } else {
@@ -251,37 +162,8 @@ export default function StandardOnboardingPage() {
     }
   }
 
-  // Touch Swipe Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return
-    const distance = touchStartX.current - touchEndX.current
-    const isSwipeLeft = distance > 70
-    const isSwipeRight = distance < -70
-
-    if (isSwipeLeft && step < TOTAL_STEPS - 1) {
-      handleNext()
-    } else if (isSwipeRight && step > 0) {
-      handlePrev()
-    }
-
-    touchStartX.current = null
-    touchEndX.current = null
-  }
-
   const handleSubmit = async () => {
-    if (!user?.id) {
-      toast.error("Please login to submit")
-      return
-    }
-
+    if (!user?.id) return
     setSubmitting(true)
     try {
       const res = await fetch("/api/forms/submit", {
@@ -289,35 +171,20 @@ export default function StandardOnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
+          clientId: clientObj?.id,
           formType: "standard_joining",
           formData: form
         })
       })
-
-      if (!res.ok) throw new Error("Submission failed")
-
-      try {
-        localStorage.removeItem(`draft_standard_joining_${user.id}`)
-      } catch {}
-
+      if (!res.ok) throw new Error("Failed to submit")
+      try { localStorage.removeItem(`draft_standard_joining_${user.id}`) } catch {}
       setDone(true)
-      toast.success("Questionnaire submitted successfully!")
-    } catch (err: unknown) {
-      console.error(err)
-      toast.error("Error submitting form. Please try again.")
+      toast.success("Standard joining questionnaire submitted!")
+    } catch {
+      toast.error("Submission failed")
     } finally {
       setSubmitting(false)
     }
-  }
-
-  if (checkingRedirect) {
-    return (
-      <ClientLayout>
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="size-8 rounded-full border-2 border-[#FFB800] border-t-transparent animate-spin" />
-        </div>
-      </ClientLayout>
-    )
   }
 
   if (done) {
@@ -328,22 +195,11 @@ export default function StandardOnboardingPage() {
             <Sparkles className="size-10 text-[#FFB800]" />
           </div>
           <div>
-            <span className="text-[#FFB800] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">
-              #TeamAKF
-            </span>
-            <h2 className="font-heading text-3xl sm:text-4xl text-white font-extrabold tracking-wide">
-              WELCOME TO #TEAMAKF! 🎉
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 max-w-xs mx-auto mt-3 leading-relaxed">
-              Your lifestyle questionnaire has been received! Coach Aman will review your details and prepare your customized plan within 24 hours.
-            </p>
+            <span className="text-[#FFB800] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">#TeamAKF</span>
+            <h2 className="font-heading text-3xl font-extrabold text-white">WELCOME TO #TEAMAKF! 🎉</h2>
+            <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-3">Coach Aman will review your details personally and build your custom plan within 24 hours.</p>
           </div>
-          <button
-            onClick={() => router.push("/home")}
-            className="px-8 py-4 rounded-2xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black hover:bg-[#FFC82C] transition-all shadow-xl shadow-[#FFB800]/20"
-          >
-            Go to Home
-          </button>
+          <button onClick={() => router.push("/home")} className="w-full max-w-xs py-4 rounded-2xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black">Go to Home</button>
         </div>
       </ClientLayout>
     )
@@ -352,776 +208,215 @@ export default function StandardOnboardingPage() {
   return (
     <ClientLayout>
       {showResumeBanner && (
-        <ResumeDraftBanner onResume={handleResumeDraft} onReset={handleStartFresh} />
+        <ResumeDraftBanner
+          onResume={() => {
+            try {
+              const saved = localStorage.getItem(`draft_standard_joining_${user?.id}`)
+              if (saved) setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
+            } catch {}
+            setShowResumeBanner(false)
+          }}
+          onReset={() => {
+            try { localStorage.removeItem(`draft_standard_joining_${user?.id}`) } catch {}
+            setShowResumeBanner(false)
+          }}
+        />
       )}
 
-      <FormHeader
-        currentStep={step}
-        totalSteps={TOTAL_STEPS}
-        onBack={handlePrev}
-      />
+      {step > 0 && <FormHeader currentStep={step - 1} totalSteps={TOTAL_STEPS} onBack={handlePrev} />}
 
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4"
-      >
-        {/* STEP 1: Full Name */}
+      <div className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4 max-w-xl mx-auto w-full">
         {step === 0 && (
-          <QuestionWrapper
-            title="What is your full name?"
-            subtitle="As you'd like Coach Aman to address you."
-          >
-            <TextInputDark
-              value={form.full_name}
-              onChange={(val) => set("full_name", val)}
-              placeholder="e.g. Aman Khurana"
-              required
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 2: Email & Phone */}
-        {step === 1 && (
-          <QuestionWrapper
-            title="What are your primary contact details?"
-            subtitle="Email & Phone for client updates and WhatsApp communication."
-          >
-            <div className="space-y-4">
-              <TextInputDark
-                type="email"
-                value={form.email}
-                onChange={(val) => set("email", val)}
-                placeholder="Email Address (e.g. client@example.com)"
-                required
-              />
-              <TextInputDark
-                type="tel"
-                value={form.contact_number}
-                onChange={(val) => set("contact_number", val)}
-                placeholder="Primary WhatsApp / Phone Number"
-                required
-              />
-              <TextInputDark
-                type="tel"
-                value={form.alt_contact_number}
-                onChange={(val) => set("alt_contact_number", val)}
-                placeholder="Alternate Contact Number (Optional)"
-              />
+          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FFB800]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
+            <div><span className="inline-block text-xs font-heading font-extrabold text-[#FFB800] uppercase tracking-widest bg-[#FFB800]/10 px-3 py-1 rounded-full border border-[#FFB800]/30">#TeamAKF</span></div>
+            <div className="text-6xl sm:text-7xl animate-bounce pt-2">👊</div>
+            <div>
+              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Welcome to #TeamAKF 👊</h1>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Coach Aman reviews every answer personally to build your custom training & nutrition plan.</p>
             </div>
-          </QuestionWrapper>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">⏱ ~10 mins</span></div>
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">💾 Auto-saves</span></div>
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">🔄 Resume</span></div>
+            </div>
+            <div className="bg-[#141414] border-l-4 border-[#FFB800] border-y border-r border-zinc-800 rounded-2xl p-4 text-left">
+              <p className="text-xs sm:text-sm text-zinc-300 italic">"Fill every section honestly — the more detail you give, the better your plan. No judgment here."</p>
+              <p className="text-xs font-bold text-[#FFB800] text-right mt-1">— Coach Aman Khurana</p>
+            </div>
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FFB800] text-sm font-extrabold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255,184,0,0.4)]">Let's Begin 💪</button>
+            <p className="text-xs text-zinc-500 font-mono">64 questions • Saves automatically</p>
+          </div>
         )}
 
-        {/* STEP 3: Address */}
-        {step === 2 && (
-          <QuestionWrapper
-            title="What is your residence address?"
-            subtitle="Required for GST invoicing and location-based plan optimization."
-          >
-            <TextAreaDark
-              value={form.address}
-              onChange={(val) => set("address", val)}
-              placeholder="Full Street Address, City, State, Country..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 4: Date of Birth */}
-        {step === 3 && (
-          <QuestionWrapper
-            title="What is your Date of Birth?"
-            subtitle="Used to compute age and metabolic rate."
-          >
-            <TextInputDark
-              type="date"
-              value={form.dob}
-              onChange={(val) => set("dob", val)}
-              required
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 5: Height */}
-        {step === 4 && (
-          <QuestionWrapper
-            title="What is your height in centimeters?"
-            subtitle="Tap + or - to select exact height."
-          >
-            <NumberStepper
-              value={form.height}
-              onChange={(val) => set("height", val)}
-              min={120}
-              max={230}
-              unit="cm"
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 6: Primary Fitness Goal */}
-        {step === 5 && (
-          <QuestionWrapper
-            title="What is your primary fitness goal?"
-            subtitle="Select the goal that matters most right now."
-          >
-            <ImageCardPicker
-              selectedValue={form.goal}
-              onChange={(val) => set("goal", val)}
-              options={[
-                { value: "Weight Loss", label: "Fat / Weight Loss", subtitle: "Drop body fat & get lean", icon: <Flame /> },
-                { value: "Muscle Gain", label: "Muscle Building", subtitle: "Add lean muscle mass & size", icon: <Dumbbell /> },
-                { value: "Body Recomposition", label: "Body Recomp", subtitle: "Burn fat & build muscle simultaneously", icon: <Sparkles /> },
-                { value: "Endurance / Health", label: "Endurance & Vitality", subtitle: "Improve stamina, BP & blood work", icon: <Heart /> },
-                { value: "Contest Prep", label: "Contest Prep", subtitle: "Competitive physique transformation", icon: <User /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 7: Daily Sleep & Wake Schedule */}
+        {/* Q1-Q64 Exact Questions */}
+        {step === 1 && <QuestionWrapper title="Your Full Name" subtitle="As you'd like Coach Aman to address you."><TextInputDark value={form.q1_name} onChange={v => set("q1_name", v)} placeholder="e.g. Aman Khurana" /></QuestionWrapper>}
+        {step === 2 && <QuestionWrapper title="Your Email ID" subtitle="For WhatsApp updates & client portal login."><TextInputDark type="email" value={form.q2_email} onChange={v => set("q2_email", v)} placeholder="email@example.com" /></QuestionWrapper>}
+        {step === 3 && <QuestionWrapper title="Your Complete Residence Address" subtitle="Required for client records & GST tax invoice."><TextAreaDark value={form.q3_address} onChange={v => set("q3_address", v)} placeholder="Full address..." /></QuestionWrapper>}
+        {step === 4 && <QuestionWrapper title="Your Primary Contact Number" subtitle="WhatsApp phone number for direct coach access."><TextInputDark type="tel" value={form.q4_phone} onChange={v => set("q4_phone", v)} placeholder="+91 98156 90656" /></QuestionWrapper>}
+        {step === 5 && <QuestionWrapper title="Alternate Contact Number (optional)" subtitle="Secondary or family phone number."><TextInputDark type="tel" value={form.q5_alt_phone} onChange={v => set("q5_alt_phone", v)} placeholder="+91 98765 43210" /></QuestionWrapper>}
+        
         {step === 6 && (
-          <QuestionWrapper
-            title="What is your sleep & wake up schedule?"
-            subtitle="Circadian rhythm dictates your meal & workout timing."
-          >
+          <QuestionWrapper title="Your Age & Date of Birth" subtitle="Used to calculate metabolic rate & macro targets.">
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Wake Up Time</label>
-                <TextInputDark
-                  type="time"
-                  value={form.wake_up_time}
-                  onChange={(val) => set("wake_up_time", val)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Bed Time</label>
-                <TextInputDark
-                  type="time"
-                  value={form.sleep_time}
-                  onChange={(val) => set("sleep_time", val)}
-                />
-              </div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">DATE OF BIRTH</label><TextInputDark type="date" value={form.q6_dob} onChange={v => set("q6_dob", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">AGE (YEARS)</label><NumberStepper value={form.q6_age} onChange={v => set("q6_age", v)} min={12} max={100} unit="years" /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 8: Previous Coach History */}
-        {step === 7 && (
-          <QuestionWrapper
-            title="Have you hired a coach or nutritionist before?"
-            subtitle="If yes, share who & the reason for leaving if comfortable."
-          >
-            <TextAreaDark
-              value={form.previous_coach}
-              onChange={(val) => set("previous_coach", val)}
-              placeholder="e.g. Yes, hired a online trainer 6 months ago, left due to rigid non-customized diet..."
-            />
-          </QuestionWrapper>
-        )}
+        {step === 7 && <QuestionWrapper title="Your Height (cm or ft-in)" subtitle="Baseline body composition metric."><TextInputDark value={form.q7_height} onChange={v => set("q7_height", v)} placeholder="e.g. 175 cm or 5'9" /></QuestionWrapper>}
+        {step === 8 && <QuestionWrapper title="What is your goal?" subtitle="Aman wants a detailed answer on your ideal outcome."><TextAreaDark value={form.q8_goal} onChange={v => set("q8_goal", v)} placeholder="Describe your exact goal (fat loss, muscle gain, strength, health)..." /></QuestionWrapper>}
+        {step === 9 && <QuestionWrapper title="What time do you wake up?" subtitle="Circadian timing dictates breakfast & meal scheduling."><TextInputDark type="time" value={form.q9_wake_time} onChange={v => set("q9_wake_time", v)} /></QuestionWrapper>}
+        {step === 10 && <QuestionWrapper title="What time do you sleep?" subtitle="Dictates evening meal & sleep quality guidance."><TextInputDark type="time" value={form.q10_sleep_time} onChange={v => set("q10_sleep_time", v)} /></QuestionWrapper>}
+        {step === 11 && <QuestionWrapper title="Have you ever hired any coach/Nutritionist before? Who & why did you leave?" subtitle="Helps Coach Aman understand what worked or failed."><TextAreaDark value={form.q11_hired_coach} onChange={v => set("q11_hired_coach", v)} placeholder="Share past coaching experience..." /></QuestionWrapper>}
+        {step === 12 && <QuestionWrapper title="Do you have any equipment at home? (cycle, dumbbells etc.)" subtitle="Helps design home workout options if needed."><TextAreaDark value={form.q12_home_equipment} onChange={v => set("q12_home_equipment", v)} placeholder="List dumbbells, bands, bench, bike..." /></QuestionWrapper>}
 
-        {/* STEP 9: Home Equipment */}
-        {step === 8 && (
-          <QuestionWrapper
-            title="What workout equipment do you have at home?"
-            subtitle="Tap all equipment available to you."
-          >
-            <ChipMultiSelect
-              options={["Dumbbells", "Resistance Bands", "Pull-up Bar", "Treadmill / Spin Bike", "Adjustable Bench", "Barbell & Plates", "None"]}
-              selectedValues={form.home_equipment ? form.home_equipment.split(", ") : []}
-              onChange={(vals) => set("home_equipment", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
+        {step === 13 && <QuestionWrapper title="Are you working? Sitting or standing job? How many hours & timings?" subtitle="Determines non-exercise activity thermogenesis (NEAT)."><TextAreaDark value={form.q13_work_schedule} onChange={v => set("q13_work_schedule", v)} placeholder="e.g. Desk job, 9am-6pm sitting..." /></QuestionWrapper>}
+        {step === 14 && <QuestionWrapper title="Do you exercise currently? What type & since how long?" subtitle="Current physical conditioning level."><TextAreaDark value={form.q14_exercise_history} onChange={v => set("q14_exercise_history", v)} placeholder="Weight training, gym, yoga, walking..." /></QuestionWrapper>}
+        {step === 15 && <QuestionWrapper title="Share your exact workout routine (exercises/sets/reps/split/days/duration)" subtitle="Detailed exercise log."><TextAreaDark value={form.q15_workout_routine} onChange={v => set("q15_workout_routine", v)} rows={6} placeholder="Chest/Triceps on Mon: Bench press 4x10, Incline 3x12..." /></QuestionWrapper>}
+        {step === 16 && <QuestionWrapper title="How many steps do you walk daily on average?" subtitle="Tracked on phone pedometer or smartwatch."><NumberStepper value={form.q16_steps_daily} onChange={v => set("q16_steps_daily", v)} min={0} max={30000} step={500} unit="steps" /></QuestionWrapper>}
+        {step === 17 && <QuestionWrapper title="Do you do cardio regularly? How many mins/day or week & what type?" subtitle="Treadmill, outdoor walk, cycling, HIIT."><TextAreaDark value={form.q17_cardio_regular} onChange={v => set("q17_cardio_regular", v)} placeholder="30 mins treadmill walk 4x/week..." /></QuestionWrapper>}
+        {step === 18 && <QuestionWrapper title="Morning or evening workouts? Tentative time? How many days per week?" subtitle="Workout scheduling."><TextAreaDark value={form.q18_workout_timings} onChange={v => set("q18_workout_timings", v)} placeholder="Evening 6-7:30 PM, 5 days per week..." /></QuestionWrapper>}
 
-        {/* STEP 10: Work Details */}
-        {step === 9 && (
-          <QuestionWrapper
-            title="What is your daily work schedule & activity level?"
-            subtitle="Helps calculate total daily energy expenditure (TDEE)."
-          >
-            <ImageCardPicker
-              selectedValue={form.work_details}
-              onChange={(val) => set("work_details", val)}
-              options={[
-                { value: "Desk Job", label: "Desk / Sitting Job", subtitle: "9-5 sedentary office or WFH", icon: <Briefcase /> },
-                { value: "Active Job", label: "Active Job", subtitle: "On your feet for most of the day", icon: <Activity /> },
-                { value: "Field Work", label: "Field Work / Physical", subtitle: "High mobility, outdoors, heavy movement", icon: <Flame /> },
-                { value: "Home / Student", label: "Homemaker / Student", subtitle: "Flexible daily schedule", icon: <User /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 11: Current Exercise Experience */}
-        {step === 10 && (
-          <QuestionWrapper
-            title="What is your training experience level?"
-            subtitle="Select your experience level with weight training."
-          >
-            <ImageCardPicker
-              selectedValue={form.current_exercise}
-              onChange={(val) => set("current_exercise", val)}
-              options={[
-                { value: "Beginner", label: "Beginner", subtitle: "0 - 6 months of weight training", icon: <User /> },
-                { value: "Intermediate", label: "Intermediate", subtitle: "6 months - 2 years consistent training", icon: <Dumbbell /> },
-                { value: "Advanced", label: "Advanced", subtitle: "2+ years lifting experience", icon: <Flame /> },
-                { value: "Athlete", label: "Competitive Athlete", subtitle: "Powerlifting / Bodybuilding / Sports", icon: <Sparkles /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 12: Workout Routine Detail */}
-        {step === 11 && (
-          <QuestionWrapper
-            title="Describe your present or past workout routine."
-            subtitle="Exercises, sets, reps, split, and total duration."
-          >
-            <TextAreaDark
-              value={form.workout_routine}
-              onChange={(val) => set("workout_routine", val)}
-              placeholder="e.g. Push Pull Legs split, 4-5 days a week, 60 minutes per session..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 13: Daily Steps Target */}
-        {step === 12 && (
-          <QuestionWrapper
-            title="What is your average daily step count?"
-            subtitle="Tracked on smart watch or phone pedometer."
-          >
-            <GoldSlider
-              value={parseFloat(form.daily_steps) || 8000}
-              onChange={(val) => set("daily_steps", val.toString())}
-              min={2000}
-              max={20000}
-              step={500}
-              unit="steps"
-              labels={{ min: "2,000 steps", max: "20,000 steps" }}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 14: Cardio Preferences */}
-        {step === 13 && (
-          <QuestionWrapper
-            title="What type of cardio do you prefer or do regularly?"
-            subtitle="Tap all cardio formats you enjoy."
-          >
-            <ChipMultiSelect
-              options={["Incline Treadmill Walk", "Outdoors Walking", "Running / Jogging", "Spin Cycling", "HIIT / Circuit", "None"]}
-              selectedValues={form.cardio_details ? form.cardio_details.split(", ") : []}
-              onChange={(vals) => set("cardio_details", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 15: Preferred Workout Timing */}
-        {step === 14 && (
-          <QuestionWrapper
-            title="When do you prefer to workout?"
-            subtitle="Select your preferred time slot for training."
-          >
-            <ImageCardPicker
-              selectedValue={form.preferred_workout_time}
-              onChange={(val) => set("preferred_workout_time", val)}
-              options={[
-                { value: "Morning", label: "Morning (6 AM - 10 AM)", icon: <Sun /> },
-                { value: "Afternoon", label: "Afternoon (12 PM - 3 PM)", icon: <Sun /> },
-                { value: "Evening", label: "Evening (5 PM - 8 PM)", icon: <Moon /> },
-                { value: "Night", label: "Night (8 PM - 11 PM)", icon: <Moon /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 16: Injuries & Joint Health */}
-        {step === 15 && (
-          <QuestionWrapper
-            title="Any past injuries, surgeries, or joint issues?"
-            subtitle="Critical for tailoring exercise selection and avoiding pain."
-          >
-            <ChipMultiSelect
-              options={["Knee Pain", "Shoulder Discomfort", "Lower Back", "Hip Stiffness", "Past Surgery", "None"]}
-              selectedValues={form.injuries ? form.injuries.split(", ") : []}
-              onChange={(vals) => set("injuries", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 17: Health Issues */}
-        {step === 16 && (
-          <QuestionWrapper
-            title="Any medical conditions or hormonal issues?"
-            subtitle="Tap all that apply."
-          >
-            <ChipMultiSelect
-              options={["PCOS / PCOD", "Thyroid (Hypo/Hyper)", "Diabetes / Prediabetes", "High Blood Pressure", "High Cholesterol", "None"]}
-              selectedValues={form.health_issues ? form.health_issues.split(", ") : []}
-              onChange={(vals) => set("health_issues", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 18: Prescribed Medications */}
-        {step === 17 && (
-          <QuestionWrapper
-            title="Are you taking any prescribed medications?"
-            subtitle="Mention medicine names, salts, and dosages if any."
-          >
-            <TextAreaDark
-              value={form.medications}
-              onChange={(val) => set("medications", val)}
-              placeholder="e.g. Metformin 500mg, Thyronorm 50mcg, None..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 19: Constipation & Digestion */}
-        {step === 18 && (
-          <QuestionWrapper
-            title="Stool frequency & constipation history?"
-            subtitle="Select option best reflecting your digestive rhythm."
-          >
-            <ChipSingleSelect
-              options={["Regular (1-2x daily)", "Mild Constipation", "Severe Constipation", "Irregular"]}
-              selectedValue={form.constipation_history}
-              onChange={(val) => set("constipation_history", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 20: Habits & Addictions */}
-        {step === 19 && (
-          <QuestionWrapper
-            title="Alcohol, Smoking, or other regular habits?"
-            subtitle="Honesty ensures proper caloric & recovery planning."
-          >
-            <TextAreaDark
-              value={form.addictions}
-              onChange={(val) => set("addictions", val)}
-              placeholder="e.g. Alcohol 1-2 drinks on weekends, Non-smoker..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 21: Menstrual Health (For Women) */}
-        {step === 20 && (
-          <QuestionWrapper
-            title="Menstrual Health & Cycle Details (For Women)"
-            subtitle="Duration, frequency, and symptom details. Leave blank if N/A."
-          >
-            <div className="space-y-4">
-              <TextInputDark
-                value={form.menstrual_duration}
-                onChange={(val) => set("menstrual_duration", val)}
-                placeholder="Bleeding Duration (e.g. 4-5 days)"
-              />
-              <TextInputDark
-                value={form.menstrual_cycle_frequency}
-                onChange={(val) => set("menstrual_cycle_frequency", val)}
-                placeholder="Cycle Frequency (e.g. Every 28 days)"
-              />
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Blood Loss Amount</label>
-                <ChipSingleSelect
-                  options={["Light", "Moderate", "Heavy", "N/A"]}
-                  selectedValue={form.menstrual_blood_loss}
-                  onChange={(val) => set("menstrual_blood_loss", val)}
-                />
-              </div>
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 22: Dietary Preference */}
-        {step === 21 && (
-          <QuestionWrapper
-            title="What is your dietary preference?"
-            subtitle="Your diet plan will strictly follow this preference."
-          >
-            <ImageCardPicker
-              selectedValue={form.dietary_preference}
-              onChange={(val) => set("dietary_preference", val)}
-              options={[
-                { value: "Non-Veg", label: "Non-Vegetarian", subtitle: "Chicken, Mutton, Fish, Eggs", icon: <Utensils /> },
-                { value: "Vegetarian", label: "Vegetarian", subtitle: "Paneer, Dal, Tofu, Milk", icon: <Apple /> },
-                { value: "Eggetarian", label: "Eggetarian", subtitle: "Vegetarian + Eggs", icon: <Utensils /> },
-                { value: "Vegan", label: "Vegan", subtitle: "Plant-based only", icon: <Apple /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 23: Non-Veg Excluded Days */}
-        {step === 22 && (
-          <QuestionWrapper
-            title="Any specific days you refrain from Non-Veg?"
-            subtitle="Select religious or fast days if applicable."
-          >
-            <ChipMultiSelect
-              options={["Monday", "Tuesday", "Thursday", "Saturday", "Navratri", "None"]}
-              selectedValues={form.no_non_veg_days ? form.no_non_veg_days.split(", ") : []}
-              onChange={(vals) => set("no_non_veg_days", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 24: Lactose Intolerance */}
-        {step === 23 && (
-          <QuestionWrapper
-            title="Are you lactose intolerant?"
-            subtitle="Can you digest milk, curd, paneer, and whey protein easily?"
-          >
-            <ChipSingleSelect
-              options={["No - Digest Dairy Fine", "Yes - Lactose Intolerant", "Partial Intolerance"]}
-              selectedValue={form.lactose_intolerant}
-              onChange={(val) => set("lactose_intolerant", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 25: Present Meal Timings */}
-        {step === 24 && (
-          <QuestionWrapper
-            title="What are your present meal timings?"
-            subtitle="Select typical times for your main meals."
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Breakfast</label>
-                <TextInputDark type="time" value={form.breakfast_time} onChange={(val) => set("breakfast_time", val)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Lunch</label>
-                <TextInputDark type="time" value={form.lunch_time} onChange={(val) => set("lunch_time", val)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Eve Snack</label>
-                <TextInputDark type="time" value={form.evening_snack_time} onChange={(val) => set("evening_snack_time", val)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Dinner</label>
-                <TextInputDark type="time" value={form.dinner_time} onChange={(val) => set("dinner_time", val)} />
-              </div>
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 26: Max Meals Manageable */}
+        {step === 19 && <QuestionWrapper title="Any injury, pain, stiffness, joint mobility problem or surgery history?" subtitle="Joint & tissue safety boundaries."><TextAreaDark value={form.q19_injuries_pain} onChange={v => set("q19_injuries_pain", v)} placeholder="Left knee pain on deep squats, past shoulder injury..." /></QuestionWrapper>}
+        {step === 20 && <QuestionWrapper title="Any health issues or genetic disorders?" subtitle="PCOS, Thyroid, Diabetes, High BP, Cholesterol."><TextAreaDark value={form.q20_health_issues} onChange={v => set("q20_health_issues", v)} placeholder="Thyroid hypo, Prediabetes..." /></QuestionWrapper>}
+        {step === 21 && <QuestionWrapper title="Are you taking any prescribed drugs/medicines? If yes, mention names." subtitle="Prescriptions & dosages."><TextAreaDark value={form.q21_prescribed_drugs} onChange={v => set("q21_prescribed_drugs", v)} placeholder="Thyronorm 50mcg morning..." /></QuestionWrapper>}
+        {step === 22 && <QuestionWrapper title="Are you prone to constipation? Stool frequency per day/week?" subtitle="Gut motility assessment."><TextAreaDark value={form.q22_constipation_history} onChange={v => set("q22_constipation_history", v)} placeholder="Regular 1x daily or mild constipation..." /></QuestionWrapper>}
+        {step === 23 && <QuestionWrapper title="Any addiction — drugs, alcohol, smoking? Mention frequency & amount." subtitle="Social habits & frequency."><TextAreaDark value={form.q23_addictions} onChange={v => set("q23_addictions", v)} placeholder="Social alcohol 1-2 drinks on weekends..." /></QuestionWrapper>}
+        {step === 24 && <QuestionWrapper title="Your average urine colour throughout the day (except early morning)?" subtitle="Hydration baseline."><ChipSingleSelect options={["Clear", "Light Yellow", "Yellow", "Dark Yellow", "Orange"]} selectedValue={form.q24_urine_color} onChange={v => set("q24_urine_color", v)} /></QuestionWrapper>}
+        
         {step === 25 && (
-          <QuestionWrapper
-            title="Maximum number of meals manageable per day?"
-            subtitle="Choose meal frequency fitting your daily schedule."
-          >
-            <ChipSingleSelect
-              options={["3 Meals", "4 Meals", "5 Meals"]}
-              selectedValue={form.max_meals}
-              onChange={(val) => set("max_meals", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 27: Supplements Currently Taken */}
-        {step === 26 && (
-          <QuestionWrapper
-            title="What supplements do you currently take?"
-            subtitle="Tap all supplements in your stack."
-          >
-            <ChipMultiSelect
-              options={["Whey Protein", "Creatine Monohydrate", "Multivitamin", "Fish Oil / Omega 3", "Pre-workout", "Vitamin D3", "None"]}
-              selectedValues={form.supplements ? form.supplements.split(", ") : []}
-              onChange={(vals) => set("supplements", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 28: Whey Protein Preference */}
-        {step === 27 && (
-          <QuestionWrapper
-            title="Would you mind taking Whey Protein in your plan?"
-            subtitle="Used as a clean protein source to hit daily targets."
-          >
-            <ChipSingleSelect
-              options={["Yes - Happy to take Whey", "Prefer Whole Foods Only", "Need Guidance"]}
-              selectedValue={form.whey_protein_preference}
-              onChange={(val) => set("whey_protein_preference", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 29: Food Allergies */}
-        {step === 28 && (
-          <QuestionWrapper
-            title="Any food allergies or intolerances?"
-            subtitle="Tap any allergies or type specific items."
-          >
+          <QuestionWrapper title="Menstrual Health (For Women)" subtitle="Hormonal cycle impacts fluid retention & strength.">
             <div className="space-y-4">
-              <ChipMultiSelect
-                options={["Dairy", "Gluten", "Eggs", "Peanuts / Tree Nuts", "Shellfish", "Soy", "None"]}
-                selectedValues={form.food_allergies ? form.food_allergies.split(", ") : []}
-                onChange={(vals) => set("food_allergies", vals.join(", "))}
-              />
-              <TextInputDark
-                value={form.food_allergies}
-                onChange={(val) => set("food_allergies", val)}
-                placeholder="Other specific food allergies..."
-              />
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BLEEDING DURATION (DAYS)</label><TextInputDark value={form.q25_menstrual_duration} onChange={v => set("q25_menstrual_duration", v)} placeholder="e.g. 4-5 days" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">CYCLE FREQUENCY (DAYS)</label><TextInputDark value={form.q25_menstrual_frequency} onChange={v => set("q25_menstrual_frequency", v)} placeholder="e.g. 28-30 days" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BLOOD LOSS AMOUNT</label><TextInputDark value={form.q25_menstrual_blood_loss} onChange={v => set("q25_menstrual_blood_loss", v)} placeholder="Light / Moderate / Heavy" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">INITIAL 1-4 DAYS SYMPTOMS</label><TextInputDark value={form.q25_menstrual_days_1_4} onChange={v => set("q25_menstrual_days_1_4", v)} placeholder="Cramps, fatigue, bloating..." /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 30: Current Diet Log */}
-        {step === 29 && (
-          <QuestionWrapper
-            title="Log your current diet from morning to night."
-            subtitle="Describe what you typically eat in a day."
-          >
-            <div className="space-y-3">
-              <TextAreaDark
-                value={form.current_diet_breakfast}
-                onChange={(val) => set("current_diet_breakfast", val)}
-                placeholder="Breakfast details (e.g. 3 eggs, 2 toasts, tea)..."
-                rows={2}
-              />
-              <TextAreaDark
-                value={form.current_diet_lunch}
-                onChange={(val) => set("current_diet_lunch", val)}
-                placeholder="Lunch details (e.g. 2 rotis, chicken curry, salad)..."
-                rows={2}
-              />
-              <TextAreaDark
-                value={form.current_diet_dinner}
-                onChange={(val) => set("current_diet_dinner", val)}
-                placeholder="Dinner details (e.g. Rice, dal, paneer)..."
-                rows={2}
-              />
-            </div>
-          </QuestionWrapper>
-        )}
+        {step === 26 && <QuestionWrapper title="Have you used Anabolic Steroids/SARMS/PEPTIDES? Full history." subtitle="For competitive athletes."><TextAreaDark value={form.q26_steroids_history} onChange={v => set("q26_steroids_history", v)} placeholder="Full cycle history or N/A..." /></QuestionWrapper>}
 
-        {/* STEP 31: Water Intake */}
+        {step === 27 && <QuestionWrapper title="Are you Vegetarian / Vegan / Non-Vegetarian / Eggetarian?" subtitle="Primary dietary pattern."><ChipSingleSelect options={["Vegetarian", "Vegan", "Non-Vegetarian", "Eggetarian"]} selectedValue={form.q27_diet_preference} onChange={v => set("q27_diet_preference", v)} /></QuestionWrapper>}
+        {step === 28 && <QuestionWrapper title="Any specific days you avoid non-veg for religious reasons?" subtitle="Religious fast days."><TextInputDark value={form.q28_nonveg_fast_days} onChange={v => set("q28_nonveg_fast_days", v)} placeholder="Tuesdays, Thursdays, Navratri..." /></QuestionWrapper>}
+        {step === 29 && <QuestionWrapper title="Are you lactose intolerant?" subtitle="Dairy tolerance."><ChipSingleSelect options={["Yes", "No", "Partially"]} selectedValue={form.q29_lactose_intolerant} onChange={v => set("q29_lactose_intolerant", v)} /></QuestionWrapper>}
+        
         {step === 30 && (
-          <QuestionWrapper
-            title="What is your present daily water intake?"
-            subtitle="Drag slider to select liters per day."
-          >
-            <GoldSlider
-              value={parseFloat(form.water_intake) || 3.5}
-              onChange={(val) => set("water_intake", val.toString())}
-              min={1.0}
-              max={6.0}
-              step={0.5}
-              unit="L"
-              labels={{ min: "1.0 L", max: "6.0 L" }}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 32: Food Likes & Dislikes */}
-        {step === 31 && (
-          <QuestionWrapper
-            title="Which foods do you LOVE & HATE eating?"
-            subtitle="Coach Aman will include your favorite foods in your plan."
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Loved Foods</label>
-                <TextAreaDark
-                  value={form.loved_foods}
-                  onChange={(val) => set("loved_foods", val)}
-                  placeholder="e.g. Chicken biryani, dark chocolate, peanut butter, eggs..."
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-red-400 uppercase tracking-wider block mb-1">Hated Foods</label>
-                <TextAreaDark
-                  value={form.hated_foods}
-                  onChange={(val) => set("hated_foods", val)}
-                  placeholder="e.g. Karela, lauki, broccoli..."
-                />
-              </div>
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 33: Palate & Cheat Meal */}
-        {step === 32 && (
-          <QuestionWrapper
-            title="Palate preference & favorite treat meal?"
-            subtitle="Savory, sweet tooth, or favorite cheat meal."
-          >
-            <div className="space-y-4">
-              <ChipSingleSelect
-                options={["Savory Palate", "Sweet Tooth", "Both"]}
-                selectedValue={form.palate_preference}
-                onChange={(val) => set("palate_preference", val)}
-              />
-              <TextInputDark
-                value={form.cheat_meal}
-                onChange={(val) => set("cheat_meal", val)}
-                placeholder="Favorite cheat meal (e.g. Pizza, Burger, Dosa)"
-              />
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 34: Blood Pressure Monitoring */}
-        {step === 33 && (
-          <QuestionWrapper
-            title="Resting Blood Pressure Readings (if available)"
-            subtitle="Recommended for overall health tracking."
-          >
+          <QuestionWrapper title="Your present meal timings" subtitle="Structure your typical daily meal schedule.">
             <div className="space-y-3">
-              <TextInputDark
-                value={form.bp_morning}
-                onChange={(val) => set("bp_morning", val)}
-                placeholder="Morning BP (e.g. 120/80 mmHg)"
-              />
-              <TextInputDark
-                value={form.bp_afternoon}
-                onChange={(val) => set("bp_afternoon", val)}
-                placeholder="Afternoon BP"
-              />
-              <TextInputDark
-                value={form.bp_night}
-                onChange={(val) => set("bp_night", val)}
-                placeholder="Night Time BP"
-              />
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BREAKFAST</label><TextInputDark type="time" value={form.q30_meal_bf} onChange={v => set("q30_meal_bf", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">MID-DAY SNACK</label><TextInputDark type="time" value={form.q30_meal_midday} onChange={v => set("q30_meal_midday", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">LUNCH</label><TextInputDark type="time" value={form.q30_meal_lunch} onChange={v => set("q30_meal_lunch", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">EVENING SNACK</label><TextInputDark type="time" value={form.q30_meal_eve} onChange={v => set("q30_meal_eve", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">DINNER</label><TextInputDark type="time" value={form.q30_meal_dinner} onChange={v => set("q30_meal_dinner", v)} /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 35: Medical Reports Upload */}
-        {step === 34 && (
-          <QuestionWrapper
-            title="Upload Blood Test or Medical Reports"
-            subtitle="Done within the last 3 months (Optional)."
-          >
-            <PhotoUploadScreen
-              label="UPLOAD MEDICAL REPORTS / BLOOD TESTS"
-              files={form.medical_reports}
-              onFilesChange={(f) => set("medical_reports", f)}
-              multiple
-            />
+        {step === 31 && <QuestionWrapper title="Maximum number of meals manageable for you? (3–5)" subtitle="Meal frequency preference."><NumberStepper value={form.q31_max_meals} onChange={v => set("q31_max_meals", v)} min={3} max={5} unit="meals" /></QuestionWrapper>}
+        {step === 32 && <QuestionWrapper title="Can you prepare & eat a pre-workout meal 60–90 min before workout?" subtitle="Fueling protocol."><ChipSingleSelect options={["Yes", "No", "Sometimes"]} selectedValue={form.q32_preworkout_meal} onChange={v => set("q32_preworkout_meal", v)} /></QuestionWrapper>}
+        {step === 33 && (
+          <QuestionWrapper title="Do you take any supplements? Mention which ones + upload photos." subtitle="Supplements stack.">
+            <TextAreaDark value={form.q33_supplements} onChange={v => set("q33_supplements", v)} placeholder="Whey, Creatine, Multivitamin, Omega 3..." />
+            <div className="pt-3"><PhotoUploadScreen label="UPLOAD SUPPLEMENT PHOTOS" multiple files={form.q33_supplements_pics} onFilesChange={files => set("q33_supplements_pics", files)} /></div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 36: Weight & Measurements - Body Weight */}
+        {step === 34 && <QuestionWrapper title="Would you take Whey Protein supplement?" subtitle="Protein supplementation."><ChipSingleSelect options={["Yes", "No", "Already taking"]} selectedValue={form.q34_whey_protein} onChange={v => set("q34_whey_protein", v)} /></QuestionWrapper>}
         {step === 35 && (
-          <QuestionWrapper
-            title="Current Morning Weight (kg)"
-            subtitle="Measured empty stomach after getting fresh."
-          >
-            <NumberStepper
-              value={form.weight}
-              onChange={(val) => set("weight", val)}
-              min={30}
-              max={250}
-              step={0.1}
-              unit="kg"
-            />
+          <QuestionWrapper title="Any food allergies? (attach Food Intolerance Test if done)" subtitle="Allergies & intolerances.">
+            <TextAreaDark value={form.q35_food_allergies} onChange={v => set("q35_food_allergies", v)} placeholder="Peanuts, Gluten, Dairy..." />
+            <div className="pt-3"><PhotoUploadScreen label="UPLOAD INTOLERANCE REPORT" files={form.q35_allergy_reports} onFilesChange={files => set("q35_allergy_reports", files)} /></div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 37: Body Measurements */}
         {step === 36 && (
-          <QuestionWrapper
-            title="Body Circumference Measurements (inches)"
-            subtitle="Measure abdomen at navel level and hips at widest point."
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Abdomen (at navel)</label>
-                <NumberStepper
-                  value={form.abdomen}
-                  onChange={(val) => set("abdomen", val)}
-                  min={20}
-                  max={70}
-                  step={0.25}
-                  unit="in"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Hips</label>
-                <NumberStepper
-                  value={form.hips}
-                  onChange={(val) => set("hips", val)}
-                  min={20}
-                  max={70}
-                  step={0.25}
-                  unit="in"
-                />
-              </div>
+          <QuestionWrapper title="Share your current daily diet from morning to night" subtitle="Describe your typical food & drink items.">
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">EARLY MORNING</label><TextAreaDark rows={2} value={form.q36_diet_morning} onChange={v => set("q36_diet_morning", v)} placeholder="Warm water, almonds..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BREAKFAST</label><TextAreaDark rows={2} value={form.q36_diet_bf} onChange={v => set("q36_diet_bf", v)} placeholder="4 eggs, toast, tea..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">MID-DAY</label><TextAreaDark rows={2} value={form.q36_diet_midday} onChange={v => set("q36_diet_midday", v)} placeholder="Fruit, whey..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">LUNCH</label><TextAreaDark rows={2} value={form.q36_diet_lunch} onChange={v => set("q36_diet_lunch", v)} placeholder="Rice, chicken/paneer, dal..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">EVENING</label><TextAreaDark rows={2} value={form.q36_diet_eve} onChange={v => set("q36_diet_eve", v)} placeholder="Coffee, makhana..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">DINNER</label><TextAreaDark rows={2} value={form.q36_diet_dinner} onChange={v => set("q36_diet_dinner", v)} placeholder="Roti, sabzi, salad..." /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 38: Front View Photo */}
-        {step === 37 && (
-          <QuestionWrapper
-            title="Front View Progress Photo"
-            subtitle="Empty stomach in morning. Standing straight."
-          >
-            <PhotoUploadScreen
-              label="FRONT VIEW PHOTO"
-              files={form.pic_front || form.men_pic_front ? [form.pic_front || form.men_pic_front] : []}
-              onFilesChange={(f) => {
-                set("pic_front", f[0] || "")
-                set("men_pic_front", f[0] || "")
-              }}
-            />
-          </QuestionWrapper>
-        )}
+        {step === 37 && <QuestionWrapper title="Your present water intake?" subtitle="Daily hydration level."><NumberStepper value={form.q37_water_intake} onChange={v => set("q37_water_intake", v)} min={0.5} max={6.0} step={0.5} unit="L" /></QuestionWrapper>}
+        {step === 38 && <QuestionWrapper title="Food items you LOVE to eat?" subtitle="Coach Aman will try to include these in your plan."><TextAreaDark value={form.q38_food_love} onChange={v => set("q38_food_love", v)} placeholder="Paneer, Chicken biryani, Eggs, Oats..." /></QuestionWrapper>}
+        {step === 39 && <QuestionWrapper title="Food items you HATE eating?" subtitle="Foods to exclude."><TextAreaDark value={form.q39_food_hate} onChange={v => set("q39_food_hate", v)} placeholder="Broccoli, Bitter gourd..." /></QuestionWrapper>}
+        {step === 40 && <QuestionWrapper title="Food items you specifically want in your plan?" subtitle="Must-have ingredients."><TextAreaDark value={form.q40_food_want} onChange={v => set("q40_food_want", v)} placeholder="Peanut butter, eggs, rice..." /></QuestionWrapper>}
+        {step === 41 && <QuestionWrapper title="Seasonal fruits available in your area? Likes/dislikes?" subtitle="Fruit preferences."><TextAreaDark value={form.q41_seasonal_fruits} onChange={v => set("q41_seasonal_fruits", v)} placeholder="Apples, Bananas, Papaya, Oranges..." /></QuestionWrapper>}
+        {step === 42 && <QuestionWrapper title="Savoury palate or sweet tooth?" subtitle="Flavor profile."><ChipSingleSelect options={["Savoury", "Sweet", "Both"]} selectedValue={form.q42_palate} onChange={v => set("q42_palate", v)} /></QuestionWrapper>}
+        {step === 43 && <QuestionWrapper title="Do you like chocolates? Which ones specifically?" subtitle="Chocolate treats."><TextAreaDark value={form.q43_chocolates} onChange={v => set("q43_chocolates", v)} placeholder="Dark chocolate 70%..." /></QuestionWrapper>}
+        {step === 44 && <QuestionWrapper title="Your favourite cheat/treat meal?" subtitle="For reward meal scheduling."><TextInputDark value={form.q44_cheat_meal} onChange={v => set("q44_cheat_meal", v)} placeholder="Pizza, Burger, Biryani..." /></QuestionWrapper>}
+        {step === 45 && <QuestionWrapper title="Grocery store links, supplement store links (Overseas Clients)" subtitle="Store links for custom international grocery planning."><TextAreaDark value={form.q45_overseas_links} onChange={v => set("q45_overseas_links", v)} placeholder="MyProtein link, local supermarket link..." /></QuestionWrapper>}
 
-        {/* STEP 39: Back View Photo */}
-        {step === 38 && (
-          <QuestionWrapper
-            title="Back View Progress Photo"
-            subtitle="Empty stomach in morning. Standing straight."
-          >
-            <PhotoUploadScreen
-              label="BACK VIEW PHOTO"
-              files={form.pic_back || form.men_pic_back ? [form.pic_back || form.men_pic_back] : []}
-              onFilesChange={(f) => {
-                set("pic_back", f[0] || "")
-                set("men_pic_back", f[0] || "")
-              }}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 40: Additional Notes & Gym Tour Upload */}
-        {step === 39 && (
-          <QuestionWrapper
-            title="Additional notes & Gym equipment photos/videos"
-            subtitle="Anything else you want Coach Aman to know!"
-          >
+        {step === 46 && (
+          <QuestionWrapper title="Resting Blood Pressure" subtitle="Sit relaxed for 2 mins before checking.">
             <div className="space-y-4">
-              <TextAreaDark
-                value={form.additional_notes}
-                onChange={(val) => set("additional_notes", val)}
-                placeholder="Write any final comments or questions for Coach Aman..."
-              />
-              <PhotoUploadScreen
-                label="UPLOAD GYM / EQUIPMENT PHOTOS (OPTIONAL)"
-                files={form.form_docs}
-                onFilesChange={(f) => set("form_docs", f)}
-                multiple
-              />
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">MORNING BP</label><TextInputDark value={form.q46_bp_morning} onChange={v => set("q46_bp_morning", v)} placeholder="120/80 mmHg" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">AFTERNOON BP</label><TextInputDark value={form.q46_bp_afternoon || ""} onChange={v => set("q46_bp_afternoon", v)} placeholder="122/82 mmHg" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">NIGHT BP</label><TextInputDark value={form.q46_bp_night || ""} onChange={v => set("q46_bp_night", v)} placeholder="118/78 mmHg" /></div>
             </div>
+          </QuestionWrapper>
+        )}
+
+        {step === 47 && <QuestionWrapper title="Attach Blood tests, Urine Analysis, Dexa/BCA reports" subtitle="If done within 3 months."><PhotoUploadScreen label="UPLOAD MEDICAL REPORTS" multiple files={form.q47_blood_tests} onFilesChange={files => set("q47_blood_tests", files)} /></QuestionWrapper>}
+        {step === 48 && <QuestionWrapper title="Anything else you want to mention?" subtitle="Additional note for Coach Aman."><TextAreaDark value={form.q48_anything_else} onChange={v => set("q48_anything_else", v)} placeholder="Write any extra notes here..." /></QuestionWrapper>}
+
+        {step === 49 && <QuestionWrapper title="Front View Progress Photo" subtitle="Women: sports bra/shorts. Men: shirtless in shorts."><PhotoUploadScreen label="FRONT PHOTO" files={form.q49_front_pic} onFilesChange={files => set("q49_front_pic", files)} /></QuestionWrapper>}
+        {step === 50 && <QuestionWrapper title="Back View Progress Photo" subtitle="Morning empty stomach."><PhotoUploadScreen label="BACK PHOTO" files={form.q50_back_pic} onFilesChange={files => set("q50_back_pic", files)} /></QuestionWrapper>}
+        {step === 51 && <QuestionWrapper title="Left Side View Progress Photo" subtitle="Morning empty stomach."><PhotoUploadScreen label="LEFT SIDE PHOTO" files={form.q51_left_pic} onFilesChange={files => set("q51_left_pic", files)} /></QuestionWrapper>}
+        {step === 52 && <QuestionWrapper title="Right Side View Progress Photo" subtitle="Morning empty stomach."><PhotoUploadScreen label="RIGHT SIDE PHOTO" files={form.q52_right_pic} onFilesChange={files => set("q52_right_pic", files)} /></QuestionWrapper>}
+        {step === 53 && <QuestionWrapper title="Favourite Pose Photo" subtitle="Optional flex pose."><PhotoUploadScreen label="FAVOURITE POSE" files={form.q53_fav_pose} onFilesChange={files => set("q53_fav_pose", files)} /></QuestionWrapper>}
+        {step === 54 && <QuestionWrapper title="Mandatory Poses (Competitive Athletes only)" subtitle="Optional athlete poses."><PhotoUploadScreen label="MANDATORY POSES" multiple files={form.q54_mandatory_pose} onFilesChange={files => set("q54_mandatory_pose", files)} /></QuestionWrapper>}
+
+        {step === 55 && <QuestionWrapper title="Current Weight (kg)" subtitle="Empty stomach morning weight."><NumberStepper value={form.q55_weight} onChange={v => set("q55_weight", v)} min={30} max={250} step={0.1} unit="kg" /></QuestionWrapper>}
+        {step === 56 && <QuestionWrapper title="Neck (cm/inches)" subtitle="Neck circumference."><NumberStepper value={form.q56_neck} onChange={v => set("q56_neck", v)} min={20} max={70} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 57 && <QuestionWrapper title="Abdomen at navel (cm/inches)" subtitle="Navel circumference."><NumberStepper value={form.q57_abdomen} onChange={v => set("q57_abdomen", v)} min={30} max={200} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 58 && <QuestionWrapper title="Hips (cm/inches)" subtitle="Widest glute circumference."><NumberStepper value={form.q58_hips} onChange={v => set("q58_hips", v)} min={30} max={200} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 59 && <QuestionWrapper title="Right Arm (cm/inches)" subtitle="Biceps circumference."><NumberStepper value={form.q59_arm} onChange={v => set("q59_arm", v)} min={15} max={70} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 60 && <QuestionWrapper title="Right Thigh (cm/inches)" subtitle="Thigh circumference."><NumberStepper value={form.q60_thigh} onChange={v => set("q60_thigh", v)} min={20} max={120} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 61 && <QuestionWrapper title="Right Calf (cm/inches)" subtitle="Calf circumference."><NumberStepper value={form.q61_calf} onChange={v => set("q61_calf", v)} min={15} max={70} step={0.5} unit="cm" /></QuestionWrapper>}
+
+        {step === 62 && (
+          <QuestionWrapper title="Lowest body weight in last 3–5 years + when?" subtitle="Historical weight low.">
+            <div className="space-y-4">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">LOWEST WEIGHT (KG)</label><TextInputDark value={form.q62_lowest_weight} onChange={v => set("q62_lowest_weight", v)} placeholder="e.g. 68 kg" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">WHEN (MONTH/YEAR)</label><TextInputDark value={form.q62_lowest_when} onChange={v => set("q62_lowest_when", v)} placeholder="e.g. June 2023" /></div>
+            </div>
+          </QuestionWrapper>
+        )}
+
+        {step === 63 && (
+          <QuestionWrapper title="Heaviest body weight in last 3–5 years + when?" subtitle="Historical weight high.">
+            <div className="space-y-4">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">HEAVIEST WEIGHT (KG)</label><TextInputDark value={form.q63_heaviest_weight} onChange={v => set("q63_heaviest_weight", v)} placeholder="e.g. 84 kg" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">WHEN (MONTH/YEAR)</label><TextInputDark value={form.q63_heaviest_when} onChange={v => set("q63_heaviest_when", v)} placeholder="e.g. December 2022" /></div>
+            </div>
+          </QuestionWrapper>
+        )}
+
+        {step === 64 && (
+          <QuestionWrapper title="Share gym video/photos or gym website link" subtitle="Helps Coach see available gym machinery.">
+            <PhotoUploadScreen label="UPLOAD GYM PHOTOS" multiple files={form.q64_gym_photos} onFilesChange={files => set("q64_gym_photos", files)} />
+            <div className="pt-3"><TextInputDark value={form.q64_gym_link} onChange={v => set("q64_gym_link", v)} placeholder="Or paste Gym website / Instagram link..." /></div>
           </QuestionWrapper>
         )}
       </div>
 
-      <FormFooter
-        onNext={handleNext}
-        isLastStep={step === TOTAL_STEPS - 1}
-        submitting={submitting}
-        showSkip={step >= 34}
-        onSkip={handleNext}
-      />
+      {step > 0 && (
+        <FormFooter
+          onNext={handleNext}
+          isLastStep={step === TOTAL_STEPS}
+          submitting={submitting}
+          showSkip={[5, 11, 12, 17, 21, 23, 26, 28, 35, 43, 45, 47, 48, 53, 54, 64].includes(step)}
+          onSkip={handleNext}
+        />
+      )}
     </ClientLayout>
   )
 }

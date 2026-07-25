@@ -8,20 +8,15 @@ import { getClientProfile, getCheckins } from "@/lib/store"
 import toast from "react-hot-toast"
 import jsPDF from "jspdf"
 import {
-  AlertTriangle, Sparkles, Download, Dumbbell, Utensils, Activity, Ruler, Camera,
-  Smile, Flame, Battery, ShieldAlert, Heart, Check
+  AlertTriangle, Sparkles, Download, Flame, Check, ShieldAlert
 } from "lucide-react"
 
 import {
   FormHeader,
   ResumeDraftBanner,
   QuestionWrapper,
-  ImageCardPicker,
-  ChipMultiSelect,
   ChipSingleSelect,
-  GoldSlider,
   NumberStepper,
-  TextInputDark,
   TextAreaDark,
   PhotoUploadScreen,
   FormFooter,
@@ -69,7 +64,7 @@ type CheckinFormData = {
 }
 
 const defaultCheckinForm: CheckinFormData = {
-  t1_energy_workout: "8",
+  t1_energy_workout: "",
   t2_days_worked_out: "10",
   t3_workout_deviation: "",
   t4_exercise_issues: "",
@@ -81,15 +76,15 @@ const defaultCheckinForm: CheckinFormData = {
   d4_constipation: "",
   d5_diet_changes_wanted: "",
   d6_food_add_remove: "",
-  g1_day_energy: "8",
-  g2_sleep_quality: "8",
-  g3_water_intake: "3.5",
+  g1_day_energy: "",
+  g2_sleep_quality: "",
+  g3_water_intake: "",
   g4_urine_color: "",
   g5_coaching_feedback: "",
   g6_additional_notes: "",
-  w1_weight: "70",
-  w2_abdomen: "32",
-  w3_hips: "36",
+  w1_weight: "73.5",
+  w2_abdomen: "33.5",
+  w3_hips: "37.5",
   front_pic: [],
   back_pic: [],
   both_side_pic: [],
@@ -250,7 +245,7 @@ export default function CheckinFormPage() {
 
   // Next / Prev Handlers
   const handleNext = () => {
-    if (step < TOTAL_STEPS - 1) {
+    if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
     } else {
@@ -280,7 +275,7 @@ export default function CheckinFormPage() {
     const isSwipeLeft = distance > 70
     const isSwipeRight = distance < -70
 
-    if (isSwipeLeft && step < TOTAL_STEPS - 1) {
+    if (isSwipeLeft && step < TOTAL_STEPS) {
       handleNext()
     } else if (isSwipeRight && step > 0) {
       handlePrev()
@@ -309,7 +304,7 @@ export default function CheckinFormPage() {
     doc.text("1. TRAINING FEEDBACK", 15, y); y += 8
     doc.setFontSize(10)
     doc.setTextColor(255, 255, 255)
-    doc.text(`Workout Energy: ${form.t1_energy_workout}/10`, 15, y); y += 6
+    doc.text(`Workout Energy: ${form.t1_energy_workout || "N/A"}`, 15, y); y += 6
     doc.text(`Days Worked Out: ${form.t2_days_worked_out}`, 15, y); y += 6
     doc.text(`Workout Deviations: ${form.t3_workout_deviation || "None"}`, 15, y); y += 6
     doc.text(`Exercise Issues: ${form.t4_exercise_issues || "None"}`, 15, y); y += 6
@@ -334,7 +329,7 @@ export default function CheckinFormPage() {
     doc.setFontSize(10)
     doc.setTextColor(255, 255, 255)
     doc.text(`Weight: ${form.w1_weight} kg | Abdomen: ${form.w2_abdomen} in | Hips: ${form.w3_hips} in`, 15, y); y += 6
-    doc.text(`Daily Energy: ${form.g1_day_energy}/10 | Sleep: ${form.g2_sleep_quality}/10 | Water: ${form.g3_water_intake}L`, 15, y); y += 12
+    doc.text(`Daily Energy: ${form.g1_day_energy} | Sleep: ${form.g2_sleep_quality} | Water: ${form.g3_water_intake}`, 15, y); y += 12
 
     doc.save(`Checkin_${profile?.name || "Client"}_${new Date().toISOString().slice(0, 10)}.pdf`)
     toast.success("PDF summary downloaded!")
@@ -444,37 +439,70 @@ export default function CheckinFormPage() {
         <ResumeDraftBanner onResume={handleResumeDraft} onReset={handleStartFresh} />
       )}
 
-      <FormHeader
-        currentStep={step}
-        totalSteps={TOTAL_STEPS}
-        onBack={handlePrev}
-      />
+      {step > 0 && (
+        <FormHeader
+          currentStep={step - 1}
+          totalSteps={TOTAL_STEPS}
+          onBack={handlePrev}
+        />
+      )}
 
       {/* Main Full Viewport Question Container */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4"
+        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4 max-w-xl mx-auto w-full"
       >
-        {/* STEP 1: Workout Energy */}
+        {/* STEP 0: WELCOME INTRO SCREEN */}
         {step === 0 && (
+          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FFB800]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
+            <div>
+              <span className="inline-block text-xs font-heading font-extrabold text-[#FFB800] uppercase tracking-widest bg-[#FFB800]/10 px-3 py-1 rounded-full border border-[#FFB800]/30">
+                WEEK CHECK-IN
+              </span>
+            </div>
+            <div className="text-6xl sm:text-7xl animate-bounce pt-2">🔥</div>
+            <div>
+              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Time to Check In 🔥</h1>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Good week or tough week — your coach needs the truth to keep your plan on track.</p>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-[#FFB800]/10 border border-[#FFB800]/30 px-4 py-2 rounded-2xl text-xs font-extrabold text-[#FFB800] tracking-wide">
+              <span>🔥</span> 7 Day Check-in Streak
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">⏱ ~5 mins</span></div>
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">📸 Photos</span></div>
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">💬 Coach reads</span></div>
+            </div>
+            <div className="bg-[#141414] border-l-4 border-[#FFB800] border-y border-r border-zinc-800 rounded-2xl p-4 text-left space-y-1">
+              <p className="text-xs sm:text-sm text-zinc-300 italic">"Don't sugarcoat it. If you had a bad week, tell me why — that's how we fix it together."</p>
+              <p className="text-xs font-bold text-[#FFB800] text-right">— Coach Aman Khurana</p>
+            </div>
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FFB800] text-sm font-extrabold uppercase tracking-wider text-black hover:bg-[#FFC82C] shadow-[0_0_20px_rgba(255,184,0,0.4)] transition-all">
+              Let's Go 💪
+            </button>
+            <p className="text-xs text-zinc-500 font-mono">27 questions • Your coach will review within 24hrs</p>
+          </div>
+        )}
+
+        {/* STEP 1: Q1 */}
+        {step === 1 && (
           <QuestionWrapper
-            title="How were your energy levels during workouts?"
-            subtitle="Rate your training energy on a scale of 1 to 10."
+            title="How are your energy levels during working out?"
+            subtitle="Rate your workout intensity, stamina, and power output over the past week."
           >
-            <GoldSlider
-              value={parseFloat(form.t1_energy_workout) || 8}
-              onChange={(val) => set("t1_energy_workout", val.toString())}
-              min={1}
-              max={10}
-              labels={{ min: "1 (Exhausted)", max: "10 (Peak Power)" }}
+            <TextAreaDark
+              value={form.t1_energy_workout}
+              onChange={(val) => set("t1_energy_workout", val)}
+              rows={4}
+              placeholder="e.g. Energy was 8/10 on push days, but felt slightly depleted during leg day..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 2: Days Worked Out */}
-        {step === 1 && (
+        {/* STEP 2: Q2 */}
+        {step === 2 && (
           <QuestionWrapper
             title="How many days did you workout in the past 2 weeks?"
             subtitle="Tap + or - to select total completed workout sessions."
@@ -489,262 +517,249 @@ export default function CheckinFormPage() {
           </QuestionWrapper>
         )}
 
-        {/* STEP 3: Workout Deviations */}
-        {step === 2 && (
+        {/* STEP 3: Q3 */}
+        {step === 3 && (
           <QuestionWrapper
-            title="Did you have any workout deviations or missed sessions?"
-            subtitle="Be honest with Coach Aman. Write details or leave blank if none."
+            title="Any deviation from the workout? Did you miss any workout?"
+            subtitle="Honesty helps Coach Aman adjust your workout volume and schedule."
           >
             <TextAreaDark
               value={form.t3_workout_deviation}
               onChange={(val) => set("t3_workout_deviation", val)}
-              placeholder="e.g. Missed leg day on Thursday due to late office meeting..."
+              rows={4}
+              placeholder="e.g. Missed leg day on Thursday due to late office meeting, completed rest 100%..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 4: Exercise Issues */}
-        {step === 3 && (
+        {/* STEP 4: Q4 */}
+        {step === 4 && (
           <QuestionWrapper
-            title="Any issues or discomfort with any specific exercise?"
-            subtitle="Mention exercise name & form issues if any."
+            title="Any major issues with any particular exercise?"
+            subtitle="Mention exercise name & form issues so Coach can replace it."
           >
             <TextAreaDark
               value={form.t4_exercise_issues}
               onChange={(val) => set("t4_exercise_issues", val)}
+              rows={4}
               placeholder="e.g. Incline dumbbell press shoulder discomfort..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 5: Cardio / Steps Goal */}
-        {step === 4 && (
-          <QuestionWrapper
-            title="Did you hit your daily Cardio & Step goals?"
-            subtitle="Select your goal completion status."
-          >
-            <ImageCardPicker
-              selectedValue={form.t5_cardio_steps_goal}
-              onChange={(val) => set("t5_cardio_steps_goal", val)}
-              options={[
-                { value: "Achieved 100%", label: "Achieved 100%", subtitle: "Hit steps & cardio every day", icon: <Check /> },
-                { value: "Missed 1-2 Days", label: "Missed 1-2 Days", subtitle: "Slight deviation due to busy days", icon: <Flame /> },
-                { value: "Missed Most Days", label: "Missed Most Days", subtitle: "Struggled with target", icon: <AlertTriangle /> },
-                { value: "N/A - No Goal Set", label: "No Goal Assigned", subtitle: "Not currently on steps protocol", icon: <Smile /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 6: Injury / Pain */}
+        {/* STEP 5: Q5 */}
         {step === 5 && (
           <QuestionWrapper
-            title="Any injuries, stiffness, or joint pain?"
-            subtitle="Select all areas affected."
+            title="Did you achieve your Cardio/Steps Goals? If not, how much did you miss?"
+            subtitle="Tracked on your phone pedometer or smartwatch."
           >
-            <ChipMultiSelect
-              options={["Knee Pain", "Shoulder Discomfort", "Lower Back", "Neck / Upper Trap", "Hip Stiffness", "Ankle", "None"]}
-              selectedValues={form.t6_injury_pain ? form.t6_injury_pain.split(", ") : []}
-              onChange={(vals) => set("t6_injury_pain", vals.join(", "))}
+            <TextAreaDark
+              value={form.t5_cardio_steps_goal}
+              onChange={(val) => set("t5_cardio_steps_goal", val)}
+              rows={4}
+              placeholder="e.g. Achieved 10,000 steps on 5 days, missed target on weekend by ~2,000 steps..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 7: Diet Deviation */}
+        {/* STEP 6: Q6 */}
         {step === 6 && (
           <QuestionWrapper
-            title="Any deviation from your diet plan this week?"
-            subtitle="Mention cheat meals, missed meals, or outside food."
+            title="Any injury or ache/pains?"
+            subtitle="Describe any joint stiffness, knee pain, lower back tightness, or shoulder discomfort."
+          >
+            <TextAreaDark
+              value={form.t6_injury_pain}
+              onChange={(val) => set("t6_injury_pain", val)}
+              rows={4}
+              placeholder="e.g. Mild lower back tightness after heavy deadlifts, no acute injury..."
+            />
+          </QuestionWrapper>
+        )}
+
+        {/* STEP 7: Q7 */}
+        {step === 7 && (
+          <QuestionWrapper
+            title="Any deviation from the current diet plan? Did you miss any meal or eat something else?"
+            subtitle="Mention cheat meals, missed meals, or outside food eaten."
           >
             <TextAreaDark
               value={form.d1_diet_deviation}
               onChange={(val) => set("d1_diet_deviation", val)}
-              placeholder="e.g. Had 2 slices of pizza on Saturday dinner, rest 100% on plan..."
+              rows={4}
+              placeholder="e.g. Ate 2 slices of pizza on Saturday evening, rest 100% on plan..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 8: Appetite */}
-        {step === 7 && (
-          <QuestionWrapper
-            title="How was your appetite throughout the week?"
-            subtitle="Select the option that best describes your hunger."
-          >
-            <ImageCardPicker
-              selectedValue={form.d2_appetite}
-              onChange={(val) => set("d2_appetite", val)}
-              options={[
-                { value: "Feeling Full", label: "Feeling Full", subtitle: "Satisfied after meals, no cravings", icon: <Smile /> },
-                { value: "Normal Appetite", label: "Normal Appetite", subtitle: "Healthy hunger around meal times", icon: <Utensils /> },
-                { value: "Feeling Very Hungry", label: "Very Hungry", subtitle: "Constantly craving more food", icon: <Flame /> },
-                { value: "Low / No Appetite", label: "Low Appetite", subtitle: "Forcing meals down", icon: <Battery /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 9: Digestion */}
+        {/* STEP 8: Q8 */}
         {step === 8 && (
           <QuestionWrapper
-            title="How is your digestion feeling?"
-            subtitle="Check for bloating or stomach distress."
+            title="How is your appetite/hunger? Feeling hungry or full?"
+            subtitle="Appetite reflects metabolic rate and caloric deficit adaptation."
           >
-            <ImageCardPicker
-              selectedValue={form.d3_digestion}
-              onChange={(val) => set("d3_digestion", val)}
-              options={[
-                { value: "Excellent", label: "Excellent", subtitle: "Light & comfortable", icon: <Sparkles /> },
-                { value: "Normal", label: "Normal", subtitle: "No issues", icon: <Check /> },
-                { value: "Bloated / Gas", label: "Bloated / Gas", subtitle: "Feeling heavy after meals", icon: <AlertTriangle /> },
-                { value: "Poor / Acidity", label: "Poor / Acidity", subtitle: "Frequent acid reflux / pain", icon: <ShieldAlert /> },
-              ]}
+            <TextAreaDark
+              value={form.d2_appetite}
+              onChange={(val) => set("d2_appetite", val)}
+              rows={4}
+              placeholder="e.g. Feeling satisfied after meals, slight craving before bedtime..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 10: Constipation */}
+        {/* STEP 9: Q9 */}
         {step === 9 && (
           <QuestionWrapper
-            title="Stool frequency & constipation signs?"
-            subtitle="Gut health is key for progress tracking."
+            title="How is your digestion?"
+            subtitle="Check for bloating, gas, or stomach discomfort after meals."
           >
-            <ChipSingleSelect
-              options={["Regular (1-2x daily)", "Mild Constipation", "Severe Constipation", "Irregular Stool"]}
-              selectedValue={form.d4_constipation}
-              onChange={(val) => set("d4_constipation", val)}
+            <TextAreaDark
+              value={form.d3_digestion}
+              onChange={(val) => set("d3_digestion", val)}
+              rows={4}
+              placeholder="e.g. Digestion is light and comfortable, no bloating..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 11: Diet Changes Wanted */}
+        {/* STEP 10: Q10 */}
         {step === 10 && (
           <QuestionWrapper
-            title="Any specific changes you want in your diet?"
-            subtitle="Be specific with meal replacements or food preferences."
+            title="Any signs of constipation? Stool Frequency?"
+            subtitle="Gut motility is crucial for nutrient absorption & fat loss tracking."
+          >
+            <TextAreaDark
+              value={form.d4_constipation}
+              onChange={(val) => set("d4_constipation", val)}
+              rows={4}
+              placeholder="e.g. Regular 1-2 times daily, no constipation..."
+            />
+          </QuestionWrapper>
+        )}
+
+        {/* STEP 11: Q11 */}
+        {step === 11 && (
+          <QuestionWrapper
+            title="Any specific change you want in your diet? Be specific!"
+            subtitle="Tell your coach exact meal replacements or food adjustments."
           >
             <TextAreaDark
               value={form.d5_diet_changes_wanted}
               onChange={(val) => set("d5_diet_changes_wanted", val)}
+              rows={4}
               placeholder="e.g. Please replace oats with eggs in breakfast if possible..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 12: Food Add/Remove */}
-        {step === 11 && (
+        {/* STEP 12: Q12 */}
+        {step === 12 && (
           <QuestionWrapper
-            title="Any specific food items to add or remove?"
-            subtitle="Tell your coach your current taste preferences."
+            title="Any food item you want to add or remove?"
+            subtitle="Describe any ingredients you want included or removed from your plan."
           >
             <TextAreaDark
               value={form.d6_food_add_remove}
               onChange={(val) => set("d6_food_add_remove", val)}
+              rows={4}
               placeholder="e.g. Remove broccoli, add spinach or paneer..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 13: Daily Energy */}
-        {step === 12 && (
-          <QuestionWrapper
-            title="Rate your overall daily energy levels."
-            subtitle="Outside of workouts, how energetic did you feel?"
-          >
-            <GoldSlider
-              value={parseFloat(form.g1_day_energy) || 8}
-              onChange={(val) => set("g1_day_energy", val.toString())}
-              min={1}
-              max={10}
-              labels={{ min: "1 (Constant Fatigue)", max: "10 (High Energy All Day)" }}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 14: Sleep Quality */}
+        {/* STEP 13: Q13 */}
         {step === 13 && (
           <QuestionWrapper
-            title="Rate your sleep quality & recovery."
-            subtitle="Did you wake up feeling refreshed?"
+            title="How are your energy levels during the day?"
+            subtitle="Outside of workouts, describe your overall energy and alertness."
           >
-            <GoldSlider
-              value={parseFloat(form.g2_sleep_quality) || 8}
-              onChange={(val) => set("g2_sleep_quality", val.toString())}
-              min={1}
-              max={10}
-              labels={{ min: "1 (Restless / Broken)", max: "10 (Deep 8h Sleep)" }}
+            <TextAreaDark
+              value={form.g1_day_energy}
+              onChange={(val) => set("g1_day_energy", val)}
+              rows={4}
+              placeholder="e.g. High energy all day, slight afternoon slump around 4 PM..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 15: Water Intake */}
+        {/* STEP 14: Q14 */}
         {step === 14 && (
           <QuestionWrapper
-            title="What was your average daily water intake?"
-            subtitle="Drag slider to select liters per day."
+            title="How is your sleep quality & duration?"
+            subtitle="Restful sleep supports muscle recovery, BMR, & hormonal balance."
           >
-            <GoldSlider
-              value={parseFloat(form.g3_water_intake) || 3.5}
-              onChange={(val) => set("g3_water_intake", val.toString())}
-              min={1.0}
-              max={6.0}
-              step={0.5}
-              unit="L"
-              labels={{ min: "1.0 L", max: "6.0 L" }}
+            <TextAreaDark
+              value={form.g2_sleep_quality}
+              onChange={(val) => set("g2_sleep_quality", val)}
+              rows={4}
+              placeholder="e.g. 7.5 hours per night, deep uninterrupted sleep..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 16: Urine Color */}
+        {/* STEP 15: Q15 */}
         {step === 15 && (
           <QuestionWrapper
-            title="Average urine color throughout the day?"
-            subtitle="Indicator of daily hydration levels."
+            title="How much is your daily water intake?"
+            subtitle="Approximate liters or bottles consumed daily."
           >
-            <ImageCardPicker
-              selectedValue={form.g4_urine_color}
-              onChange={(val) => set("g4_urine_color", val)}
-              options={[
-                { value: "Clear / Transparent", label: "Clear / Transparent", subtitle: "Well hydrated", icon: <Sparkles /> },
-                { value: "Pale Yellow (Optimal)", label: "Pale Yellow", subtitle: "Optimal hydration", icon: <Check /> },
-                { value: "Dark Yellow", label: "Dark Yellow", subtitle: "Needs more water", icon: <AlertTriangle /> },
-                { value: "Amber / Brownish", label: "Amber / Dehydrated", subtitle: "Severely dehydrated", icon: <ShieldAlert /> },
-              ]}
+            <TextAreaDark
+              value={form.g3_water_intake}
+              onChange={(val) => set("g3_water_intake", val)}
+              rows={4}
+              placeholder="e.g. 3.5 to 4.0 liters daily..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 17: Coaching Feedback */}
+        {/* STEP 16: Q16 */}
         {step === 16 && (
           <QuestionWrapper
-            title="How are you feeling under my coaching till now?"
-            subtitle="Share your honest positive or constructive feedback."
+            title="Urine colour throughout the day?"
+            subtitle="Select the color that best describes your daily urine hydration level."
+          >
+            <ChipSingleSelect
+              options={["Clear", "Light Yellow", "Yellow", "Dark Yellow", "Orange", "Brown"]}
+              selectedValue={form.g4_urine_color}
+              onChange={(val) => set("g4_urine_color", val)}
+            />
+          </QuestionWrapper>
+        )}
+
+        {/* STEP 17: Q17 */}
+        {step === 17 && (
+          <QuestionWrapper
+            title="How are you feeling under my coaching? Any positive/negative feedback?"
+            subtitle="Share your honest thoughts, progress feeling, and feedback for Coach Aman."
           >
             <TextAreaDark
               value={form.g5_coaching_feedback}
               onChange={(val) => set("g5_coaching_feedback", val)}
-              placeholder="e.g. Loving the strength gains! Feeling much lighter..."
+              rows={4}
+              placeholder="e.g. Loving the strength gains! Feeling lighter and more energetic..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 18: Additional Notes */}
-        {step === 17 && (
+        {/* STEP 18: Q18 */}
+        {step === 18 && (
           <QuestionWrapper
-            title="Any extra message or notes for Coach Aman?"
-            subtitle="Anything else you want to bring to Coach's attention."
+            title="If anything else you wish to mention, write it here:"
+            subtitle="Any extra message, travel plans, or upcoming events."
           >
             <TextAreaDark
               value={form.g6_additional_notes}
               onChange={(val) => set("g6_additional_notes", val)}
-              placeholder="Write any extra notes here..."
+              rows={4}
+              placeholder="Write any extra notes for Coach Aman..."
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 19: Body Weight */}
-        {step === 18 && (
+        {/* STEP 19: Q19 */}
+        {step === 19 && (
           <QuestionWrapper
-            title="Current Morning Weight (kg)"
+            title="Your current Weight (kg)"
             subtitle="Measured empty stomach in the morning after getting fresh."
           >
             <NumberStepper
@@ -758,11 +773,11 @@ export default function CheckinFormPage() {
           </QuestionWrapper>
         )}
 
-        {/* STEP 20: Abdomen Measurement */}
-        {step === 19 && (
+        {/* STEP 20: Q20 */}
+        {step === 20 && (
           <QuestionWrapper
-            title="Abdomen Measurement (inches)"
-            subtitle="Measured at navel level."
+            title="Abdomen measurement at navel (inches)"
+            subtitle="Measured horizontally at navel level."
           >
             <NumberStepper
               value={form.w2_abdomen}
@@ -775,10 +790,10 @@ export default function CheckinFormPage() {
           </QuestionWrapper>
         )}
 
-        {/* STEP 21: Hips Measurement */}
-        {step === 20 && (
+        {/* STEP 21: Q21 */}
+        {step === 21 && (
           <QuestionWrapper
-            title="Hips Measurement (inches)"
+            title="Hips measurement (inches)"
             subtitle="Measured around widest part of glutes."
           >
             <NumberStepper
@@ -792,22 +807,22 @@ export default function CheckinFormPage() {
           </QuestionWrapper>
         )}
 
-        {/* STEP 22: Front Photo */}
-        {step === 21 && (
+        {/* STEP 22: Q22 */}
+        {step === 22 && (
           <QuestionWrapper
             title="Front View Progress Photo"
-            subtitle="Morning empty stomach. Clear front lighting."
+            subtitle="Morning empty stomach. Standing straight in clear room lighting."
           >
             <PhotoUploadScreen
               label="FRONT VIEW PHOTO"
               files={form.front_pic}
-              onFilesChange={(f) => set("front_pic", f)}
+              onFilesChange={(files) => set("front_pic", files)}
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 23: Back Photo */}
-        {step === 22 && (
+        {/* STEP 23: Q23 */}
+        {step === 23 && (
           <QuestionWrapper
             title="Back View Progress Photo"
             subtitle="Morning empty stomach. Standing straight."
@@ -815,76 +830,78 @@ export default function CheckinFormPage() {
             <PhotoUploadScreen
               label="BACK VIEW PHOTO"
               files={form.back_pic}
-              onFilesChange={(f) => set("back_pic", f)}
+              onFilesChange={(files) => set("back_pic", files)}
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 24: Left Side Photo */}
-        {step === 23 && (
+        {/* STEP 24: Q24 */}
+        {step === 24 && (
           <QuestionWrapper
             title="Left Side View Progress Photo"
-            subtitle="Morning empty stomach. Profile view."
+            subtitle="Morning empty stomach."
           >
             <PhotoUploadScreen
               label="LEFT SIDE PHOTO"
               files={form.both_side_pic}
-              onFilesChange={(f) => set("both_side_pic", f)}
+              onFilesChange={(files) => set("both_side_pic", files)}
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 25: Right Side Photo */}
-        {step === 24 && (
+        {/* STEP 25: Q25 */}
+        {step === 25 && (
           <QuestionWrapper
             title="Right Side View Progress Photo"
-            subtitle="Morning empty stomach. Profile view."
+            subtitle="Morning empty stomach."
           >
             <PhotoUploadScreen
               label="RIGHT SIDE PHOTO"
               files={form.right_side_pic}
-              onFilesChange={(f) => set("right_side_pic", f)}
+              onFilesChange={(files) => set("right_side_pic", files)}
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 26: Favourite Pose Photo */}
-        {step === 25 && (
+        {/* STEP 26: Q26 */}
+        {step === 26 && (
           <QuestionWrapper
-            title="Favourite Flex Pose Photo (Optional)"
-            subtitle="Show off your favorite flex or physique angle!"
+            title="Favourite Pose (For Guys)"
+            subtitle="Optional flex pose photo. Tap Skip if not uploading."
           >
             <PhotoUploadScreen
               label="FAVOURITE POSE PHOTO"
               files={form.fav_pose_pic}
-              onFilesChange={(f) => set("fav_pose_pic", f)}
+              onFilesChange={(files) => set("fav_pose_pic", files)}
             />
           </QuestionWrapper>
         )}
 
-        {/* STEP 27: Mandatory Pose Photo (Athletes) */}
-        {step === 26 && (
+        {/* STEP 27: Q27 */}
+        {step === 27 && (
           <QuestionWrapper
-            title="Mandatory Athlete Poses (Optional)"
-            subtitle="Only required for competitive bodybuilding clients."
+            title="Mandatory Poses (Only for Competitive Athletes)"
+            subtitle="Optional athlete pose photos. Tap Skip if not applicable."
           >
             <PhotoUploadScreen
-              label="MANDATORY POSES"
-              files={form.mandatory_pose_pic}
-              onFilesChange={(f) => set("mandatory_pose_pic", f)}
+              label="MANDATORY ATHLETE POSES"
               multiple
+              files={form.mandatory_pose_pic}
+              onFilesChange={(files) => set("mandatory_pose_pic", files)}
             />
           </QuestionWrapper>
         )}
       </div>
 
-      <FormFooter
-        onNext={handleNext}
-        isLastStep={step === TOTAL_STEPS - 1}
-        submitting={submitting}
-        showSkip={step >= 21}
-        onSkip={handleNext}
-      />
+      {step > 0 && (
+        <FormFooter
+          onNext={handleNext}
+          isLastStep={step === TOTAL_STEPS}
+          submitting={submitting}
+          showSkip={step === 26 || step === 27}
+          onSkip={handleNext}
+        />
+      )}
     </ClientLayout>
   )
 }

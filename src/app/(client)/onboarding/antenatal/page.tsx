@@ -4,20 +4,15 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
+import { getClientProfile } from "@/lib/store"
 import toast from "react-hot-toast"
-import {
-  User, Dumbbell, Utensils, Activity, Camera, Ruler, Sparkles, Check,
-  Baby, Heart, ShieldAlert, Sun, Moon, Apple, Calendar
-} from "lucide-react"
+import { Sparkles, Heart } from "lucide-react"
 
 import {
   FormHeader,
   ResumeDraftBanner,
   QuestionWrapper,
-  ImageCardPicker,
-  ChipMultiSelect,
   ChipSingleSelect,
-  GoldSlider,
   NumberStepper,
   TextInputDark,
   TextAreaDark,
@@ -25,170 +20,112 @@ import {
   FormFooter,
 } from "@/components/forms/ConversationalFormComponents"
 
-// ─── Types & Defaults ────────────────────────────────────────────────────────
-
-type AntenatalFormData = {
-  // Section 1: Contact
-  full_name: string
-  email: string
-  phone: string
-  address: string
-  alt_phone: string
-
-  // Section 2: General Info
-  dob: string
-  height: string
-  gestational_age: string
-  lmp: string
-  edd: string
-  gravidity: string
-  preg_type: string
-
-  // Section 3: Lifestyle & Equipment
-  wake_time: string
-  sleep_time: string
-  coach_before: string
-  equipment_at_home: string
-  equipment_details: string
-
-  // Section 4: Health History
-  injury_history: string
-  health_issues: string
-  family_history: string
-  palpitation_signs: string
-  surgical_history: string
-  medications: string
-
-  // Section 5: Detailed Health & Menstrual (Before Conception)
-  constipation: string
-  addictions: string
-  urine_color: string
-  sleep_hours: string
-  bleeding_days: string
-  cycle_frequency: string
-  blood_loss: string
-  first_days: string
-
-  // Section 6: Training Before & Present
-  working_status: string
-  exercise_routine: string
-  previous_workout: string
-  daily_steps: string
-  cardio_routine: string
-  workout_preference: string
-
-  // Section 7: Nutritional & Supplements
-  supplements: string
-  supplement_files: string[]
-  whey_preference: string
-  food_allergy: string
-  allergy_files: string[]
-  diet_morning: string
-  diet_breakfast: string
-  diet_mid_day: string
-  diet_lunch: string
-  diet_evening: string
-  diet_dinner: string
-
-  // Section 8: Food & Hydration Preferences
-  water_intake: string
-  food_love: string
-  food_hate: string
-  nausea_foods: string
-  preferred_foods: string
-  seasonal_fruits: string
-  palate_type: string
-  chocolates: string
-  cheat_meal: string
-
-  // Section 9: Diet Type & Timings
-  diet_type: string
-  non_veg_days: string
-  lactose_intolerant: string
-  breakfast_time: string
-  mid_snack_time: string
-  lunch_time: string
-  evening_snack_time: string
-  dinner_time: string
-
-  // Section 10: Pictures Upload
-  pic_front: string
-  pic_back: string
-  pic_left: string
-  pic_right: string
-  old_pictures: string[]
-
-  // Section 11: Overseas Clients
-  grocery_links: string
-  supplement_links: string
-  other_links: string
-
-  // Section 12: Physiological & BP
-  bp_morning: string
-  bp_afternoon: string
-  bp_night: string
-
-  // Section 13: Blood Glucose
-  fasting_glucose: string
-  pp_breakfast: string
-  pp_lunch: string
-  pp_dinner: string
-
-  // Section 14: Health Reports & Resting BPM
-  reports: string[]
-  resting_bpm: string
-  final_notes: string
-
-  // Section 15: Anthropometrics (Weight & Measurements)
-  present_weight: string
-  abdomen_navel: string
-  waist_pelvic: string
-  hips_measure: string
-  avg_weight_before: string
-  maintaining_since: string
-  heaviest_weight: string
-  weight_start_trimester: string
-  weight_end_trimester: string
-  equipment_media: string[]
-}
-
-const defaultAntenatalForm: AntenatalFormData = {
-  full_name: "", email: "", phone: "", address: "", alt_phone: "",
-  dob: "", height: "162", gestational_age: "16", lmp: "", edd: "", gravidity: "1", preg_type: "Singleton",
-  wake_time: "07:00", sleep_time: "22:00", coach_before: "", equipment_at_home: "", equipment_details: "",
-  injury_history: "", health_issues: "", family_history: "", palpitation_signs: "", surgical_history: "", medications: "Folic Acid, Iron, Calcium",
-  constipation: "Regular", addictions: "None", urine_color: "Pale Yellow", sleep_hours: "8", bleeding_days: "4", cycle_frequency: "28", blood_loss: "Moderate", first_days: "",
-  working_status: "Sitting Job", exercise_routine: "Light walking", previous_workout: "", daily_steps: "6000", cardio_routine: "Walking", workout_preference: "Morning",
-  supplements: "Prenatal Multivitamin", supplement_files: [], whey_preference: "Yes", food_allergy: "", allergy_files: [],
-  diet_morning: "", diet_breakfast: "", diet_mid_day: "", diet_lunch: "", diet_evening: "", diet_dinner: "",
-  water_intake: "3.0", food_love: "", food_hate: "", nausea_foods: "", preferred_foods: "", seasonal_fruits: "", palate_type: "Both", chocolates: "", cheat_meal: "",
-  diet_type: "Vegetarian", non_veg_days: "", lactose_intolerant: "No", breakfast_time: "08:30", mid_snack_time: "11:30", lunch_time: "14:00", evening_snack_time: "17:30", dinner_time: "20:30",
-  pic_front: "", pic_back: "", pic_left: "", pic_right: "", old_pictures: [],
-  grocery_links: "", supplement_links: "", other_links: "",
-  bp_morning: "", bp_afternoon: "", bp_night: "",
-  fasting_glucose: "", pp_breakfast: "", pp_lunch: "", pp_dinner: "",
-  reports: [], resting_bpm: "72", final_notes: "",
-  present_weight: "65", abdomen_navel: "33", waist_pelvic: "32", hips_measure: "38", avg_weight_before: "60", maintaining_since: "1 year", heaviest_weight: "68", weight_start_trimester: "60", weight_end_trimester: "63", equipment_media: []
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function AntenatalOnboardingPage() {
   const { user, profile } = useAuth()
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [form, setForm] = useState<AntenatalFormData>(defaultAntenatalForm)
+  const [form, setForm] = useState<Record<string, any>>({
+    q1_name: profile?.name || "",
+    q2_email: user?.email || "",
+    q3_phone: "",
+    q4_address: "",
+    q5_alt_phone: "",
+    q6_dob: "1996-08-15",
+    q6_age: "28",
+    q7_height: "165",
+    q8_gestational_weeks: "18",
+    q9_lmp: "2026-03-10",
+    q10_edd: "2026-12-15",
+    q11_gravidity: "1",
+    q12_pregnancy_type: "Singleton",
+    q13_injuries_pain: "",
+    q14_health_issues: "",
+    q15_family_history: "",
+    q16_palpitation_dizziness: "",
+    q17_surgical_history: "",
+    q18_prescribed_drugs: "",
+    q19_constipation_history: "",
+    q20_addictions: "",
+    q21_urine_color: "",
+    q22_sleep_quality: "",
+    q23_menstrual_duration: "",
+    q23_menstrual_frequency: "",
+    q23_menstrual_blood_loss: "",
+    q23_menstrual_days_1_4: "",
+    q24_work_schedule: "",
+    q25_exercise_history: "",
+    q26_preconception_routine: "",
+    q27_steps_daily: "6000",
+    q28_cardio_regular: "",
+    q29_workout_timings: "",
+    q30_wake_time: "07:00",
+    q30_sleep_time: "22:00",
+    q31_had_coach: "",
+    q32_supplements: "",
+    q32_supplements_pics: [],
+    q33_whey_protein: "",
+    q34_food_allergies: "",
+    q34_allergy_reports: [],
+    q35_diet_morning: "",
+    q35_diet_bf: "",
+    q35_diet_midday: "",
+    q35_diet_lunch: "",
+    q35_diet_eve: "",
+    q35_diet_dinner: "",
+    q36_water_intake: "3.0",
+    q37_food_love: "",
+    q38_food_hate: "",
+    q39_nausea_foods: "",
+    q40_food_want: "",
+    q41_seasonal_fruits: "",
+    q42_palate: "",
+    q43_chocolates: "",
+    q44_cheat_meal: "",
+    q45_diet_preference: "Vegetarian",
+    q46_nonveg_fast_days: "",
+    q47_lactose_intolerant: "",
+    q48_meal_bf: "08:30",
+    q48_meal_midday: "11:30",
+    q48_meal_lunch: "14:00",
+    q48_meal_eve: "17:30",
+    q48_meal_dinner: "20:30",
+    q49_overseas_links: "",
+    q50_bp_morning: "115/75",
+    q50_bp_afternoon: "118/76",
+    q50_bp_night: "112/72",
+    q51_glucose_fasting: "85 mg/dL",
+    q51_glucose_bf: "",
+    q51_glucose_lunch: "",
+    q51_glucose_eve: "",
+    q51_glucose_dinner: "",
+    q52_medical_reports: [],
+    q53_resting_bpm: "72",
+    q54_front_pic: [],
+    q55_back_pic: [],
+    q56_left_pic: [],
+    q57_right_pic: [],
+    q58_preconception_pics: [],
+    q59_weight: "65.0",
+    q60_abdomen: "84",
+    q61_waist_pelvic: "88",
+    q62_hips: "96",
+    q63_preconception_weight: "58.0",
+    q64_preconception_weight_duration: "",
+    q65_heaviest_weight: "68.0",
+    q66_weight_start_trimester1: "59.0",
+    q67_weight_end_trimester1: "62.0",
+    q68_equipment_photos: [],
+    q69_additional_notes: ""
+  })
+
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [showResumeBanner, setShowResumeBanner] = useState(false)
+  const [clientObj, setClientObj] = useState<{ id: string } | null>(null)
 
-  // Touch Swipe Gesture State
-  const touchStartX = useRef<number | null>(null)
-  const touchEndX = useRef<number | null>(null)
+  const TOTAL_STEPS = 69
 
-  const TOTAL_STEPS = 42
-
-  const set = useCallback(<K extends keyof AntenatalFormData>(key: K, val: AntenatalFormData[K]) => {
+  const set = useCallback((key: string, val: any) => {
     setForm(prev => {
       const updated = { ...prev, [key]: val }
       try {
@@ -198,49 +135,23 @@ export default function AntenatalOnboardingPage() {
     })
   }, [user?.id])
 
-  // Pre-fill user profile info
   useEffect(() => {
-    if (profile?.name && !form.full_name) set("full_name", profile.name)
-    if (user?.email && !form.email) set("email", user.email)
-    if (profile?.phone && !form.phone) set("phone", profile.phone)
-  }, [profile, user, form.full_name, form.email, form.phone, set])
+    if (!user?.id) return
+    getClientProfile(user.id).then(c => {
+      if (c) setClientObj({ id: c.id })
+    }).catch(() => {})
+  }, [user?.id])
 
-  // Check draft existence
   useEffect(() => {
     if (!user?.id) return
     try {
       const saved = localStorage.getItem(`draft_antenatal_joining_${user.id}`)
-      if (saved) {
-        setShowResumeBanner(true)
-      }
+      if (saved) setShowResumeBanner(true)
     } catch {}
   }, [user?.id])
 
-  const handleResumeDraft = () => {
-    if (!user?.id) return
-    try {
-      const saved = localStorage.getItem(`draft_antenatal_joining_${user.id}`)
-      if (saved) {
-        setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
-        toast.success("Resumed saved draft!")
-      }
-    } catch {}
-    setShowResumeBanner(false)
-  }
-
-  const handleStartFresh = () => {
-    if (!user?.id) return
-    try {
-      localStorage.removeItem(`draft_antenatal_joining_${user.id}`)
-    } catch {}
-    setForm(defaultAntenatalForm)
-    setShowResumeBanner(false)
-    toast.success("Started fresh form")
-  }
-
-  // Next / Prev Handlers
   const handleNext = () => {
-    if (step < TOTAL_STEPS - 1) {
+    if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
     } else {
@@ -255,37 +166,8 @@ export default function AntenatalOnboardingPage() {
     }
   }
 
-  // Touch Swipe Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return
-    const distance = touchStartX.current - touchEndX.current
-    const isSwipeLeft = distance > 70
-    const isSwipeRight = distance < -70
-
-    if (isSwipeLeft && step < TOTAL_STEPS - 1) {
-      handleNext()
-    } else if (isSwipeRight && step > 0) {
-      handlePrev()
-    }
-
-    touchStartX.current = null
-    touchEndX.current = null
-  }
-
   const handleSubmit = async () => {
-    if (!user?.id) {
-      toast.error("Please login to submit")
-      return
-    }
-
+    if (!user?.id) return
     setSubmitting(true)
     try {
       const res = await fetch("/api/forms/submit", {
@@ -293,22 +175,17 @@ export default function AntenatalOnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
+          clientId: clientObj?.id,
           formType: "antenatal_joining",
           formData: form
         })
       })
-
-      if (!res.ok) throw new Error("Submission failed")
-
-      try {
-        localStorage.removeItem(`draft_antenatal_joining_${user.id}`)
-      } catch {}
-
+      if (!res.ok) throw new Error("Failed to submit")
+      try { localStorage.removeItem(`draft_antenatal_joining_${user.id}`) } catch {}
       setDone(true)
-      toast.success("AN-PN Questionnaire submitted successfully!")
-    } catch (err: unknown) {
-      console.error(err)
-      toast.error("Error submitting form. Please try again.")
+      toast.success("Antenatal questionnaire submitted!")
+    } catch {
+      toast.error("Submission failed")
     } finally {
       setSubmitting(false)
     }
@@ -319,25 +196,14 @@ export default function AntenatalOnboardingPage() {
       <ClientLayout>
         <div className="flex flex-col items-center justify-center min-h-[85vh] text-center px-4 space-y-6">
           <div className="size-20 rounded-full bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/40 animate-bounce">
-            <Baby className="size-10 text-[#FFB800]" />
+            <Heart className="size-10 text-[#FFB800]" />
           </div>
           <div>
-            <span className="text-[#FFB800] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">
-              AN – PN #TeamAKF
-            </span>
-            <h2 className="font-heading text-3xl sm:text-4xl text-white font-extrabold tracking-wide">
-              QUESTIONNAIRE SUBMITTED! 👶
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 max-w-xs mx-auto mt-3 leading-relaxed">
-              Pleased to have you in #teamAKF 😊 Coach Aman will review your pregnancy details and prepare your customized plans within 24 hours.
-            </p>
+            <span className="text-[#FFB800] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">AN-PN #TeamAKF</span>
+            <h2 className="font-heading text-3xl font-extrabold text-white">QUESTIONNAIRE SUBMITTED! 🌸</h2>
+            <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-3">Pleased to have you in #teamAKF 😊 Coach Aman will review your pregnancy details personally within 24 hours.</p>
           </div>
-          <button
-            onClick={() => router.push("/home")}
-            className="px-8 py-4 rounded-2xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black hover:bg-[#FFC82C] transition-all shadow-xl shadow-[#FFB800]/20"
-          >
-            Go to Home
-          </button>
+          <button onClick={() => router.push("/home")} className="w-full max-w-xs py-4 rounded-2xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black font-bold">Go to Home</button>
         </div>
       </ClientLayout>
     )
@@ -346,825 +212,219 @@ export default function AntenatalOnboardingPage() {
   return (
     <ClientLayout>
       {showResumeBanner && (
-        <ResumeDraftBanner onResume={handleResumeDraft} onReset={handleStartFresh} />
+        <ResumeDraftBanner
+          onResume={() => {
+            try {
+              const saved = localStorage.getItem(`draft_antenatal_joining_${user?.id}`)
+              if (saved) setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
+            } catch {}
+            setShowResumeBanner(false)
+          }}
+          onReset={() => {
+            try { localStorage.removeItem(`draft_antenatal_joining_${user?.id}`) } catch {}
+            setShowResumeBanner(false)
+          }}
+        />
       )}
 
-      <FormHeader
-        currentStep={step}
-        totalSteps={TOTAL_STEPS}
-        onBack={handlePrev}
-      />
+      {step > 0 && <FormHeader currentStep={step - 1} totalSteps={TOTAL_STEPS} onBack={handlePrev} />}
 
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4"
-      >
-        {/* STEP 1: Full Name */}
+      <div className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4 max-w-xl mx-auto w-full">
         {step === 0 && (
-          <QuestionWrapper
-            title="What is your full name?"
-            subtitle="As you'd like Coach Aman to address you."
-          >
-            <TextInputDark
-              value={form.full_name}
-              onChange={(val) => set("full_name", val)}
-              placeholder="e.g. Ananya Sharma"
-              required
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 2: Email & Phone */}
-        {step === 1 && (
-          <QuestionWrapper
-            title="What are your primary contact details?"
-            subtitle="Email & Phone for WhatsApp updates and consultation."
-          >
-            <div className="space-y-4">
-              <TextInputDark
-                type="email"
-                value={form.email}
-                onChange={(val) => set("email", val)}
-                placeholder="Email Address"
-                required
-              />
-              <TextInputDark
-                type="tel"
-                value={form.phone}
-                onChange={(val) => set("phone", val)}
-                placeholder="Primary WhatsApp Phone Number"
-                required
-              />
-              <TextInputDark
-                type="tel"
-                value={form.alt_phone}
-                onChange={(val) => set("alt_phone", val)}
-                placeholder="Alternate Contact Number (Optional)"
-              />
+          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FFB800]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
+            <div><span className="inline-block text-xs font-heading font-extrabold text-[#FFB800] uppercase tracking-widest bg-[#FFB800]/10 px-3 py-1 rounded-full border border-[#FFB800]/30">AN-PN #TeamAKF</span></div>
+            <div className="text-6xl sm:text-7xl animate-bounce pt-2">🤱</div>
+            <div>
+              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Welcome, Mama 🌸</h1>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Your safety and your baby's health come first. Coach Aman personally reviews every answer.</p>
             </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 3: Residence Address */}
-        {step === 2 && (
-          <QuestionWrapper
-            title="What is your residence address?"
-            subtitle="Required for client record and billing."
-          >
-            <TextAreaDark
-              value={form.address}
-              onChange={(val) => set("address", val)}
-              placeholder="Full Street Address, City, State..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 4: Date of Birth & Height */}
-        {step === 3 && (
-          <QuestionWrapper
-            title="What is your Date of Birth & Height?"
-            subtitle="Age and height to assess baseline metrics."
-          >
-            <div className="space-y-4">
-              <TextInputDark
-                type="date"
-                value={form.dob}
-                onChange={(val) => set("dob", val)}
-              />
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Height (cm)</label>
-                <NumberStepper
-                  value={form.height}
-                  onChange={(val) => set("height", val)}
-                  min={120}
-                  max={210}
-                  unit="cm"
-                />
-              </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">⏱ ~10 mins</span></div>
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">🔒 Confidential</span></div>
+              <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">💛 No judgment</span></div>
             </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 5: Gestational Age */}
-        {step === 4 && (
-          <QuestionWrapper
-            title="How many weeks pregnant are you?"
-            subtitle="Current gestational age in weeks."
-          >
-            <NumberStepper
-              value={form.gestational_age}
-              onChange={(val) => set("gestational_age", val)}
-              min={1}
-              max={42}
-              unit="weeks"
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 6: LMP & EDD */}
-        {step === 5 && (
-          <QuestionWrapper
-            title="What are your LMP & EDD dates?"
-            subtitle="Last Menstrual Period (LMP) & Expected Date of Delivery (EDD)."
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">LMP (Last Menstrual Period)</label>
-                <TextInputDark
-                  type="date"
-                  value={form.lmp}
-                  onChange={(val) => set("lmp", val)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">EDD (Expected Date of Delivery)</label>
-                <TextInputDark
-                  type="date"
-                  value={form.edd}
-                  onChange={(val) => set("edd", val)}
-                />
-              </div>
+            <div className="bg-[#141414] border-l-4 border-[#FFB800] border-y border-r border-zinc-800 rounded-2xl p-4 text-left">
+              <p className="text-xs sm:text-sm text-zinc-300 italic">"Every pregnancy is unique. Be as detailed as possible — this helps me build the safest plan for you and your baby."</p>
+              <p className="text-xs font-bold text-[#FFB800] text-right mt-1">— Coach Aman Khurana</p>
             </div>
-          </QuestionWrapper>
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FFB800] text-sm font-extrabold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255,184,0,0.4)]">Start My Journey 🌸</button>
+            <p className="text-xs text-zinc-500 font-mono">69 questions • Saves automatically</p>
+          </div>
         )}
 
-        {/* STEP 7: Gravidity & Pregnancy Type */}
+        {/* Q1-Q69 Exact AN-PN Questions */}
+        {step === 1 && <QuestionWrapper title="Full Name" subtitle="Antenatal & Postnatal Specialized Coaching."><TextInputDark value={form.q1_name} onChange={v => set("q1_name", v)} placeholder="e.g. Ananya Sharma" /></QuestionWrapper>}
+        {step === 2 && <QuestionWrapper title="Email ID" subtitle="For WhatsApp updates & client portal login."><TextInputDark type="email" value={form.q2_email} onChange={v => set("q2_email", v)} placeholder="email@example.com" /></QuestionWrapper>}
+        {step === 3 && <QuestionWrapper title="Contact Number" subtitle="Primary WhatsApp phone number."><TextInputDark type="tel" value={form.q3_phone} onChange={v => set("q3_phone", v)} placeholder="+91 98765 43210" /></QuestionWrapper>}
+        {step === 4 && <QuestionWrapper title="Address" subtitle="Residence address for client record."><TextAreaDark value={form.q4_address} onChange={v => set("q4_address", v)} placeholder="Residence address..." /></QuestionWrapper>}
+        {step === 5 && <QuestionWrapper title="Alternate Contact Number" subtitle="Secondary contact number."><TextInputDark type="tel" value={form.q5_alt_phone} onChange={v => set("q5_alt_phone", v)} placeholder="+91 98156 90656" /></QuestionWrapper>}
+
         {step === 6 && (
-          <QuestionWrapper
-            title="Gravidity & Type of Pregnancy"
-            subtitle="Number of pregnancies & singleton vs twin."
-          >
+          <QuestionWrapper title="Age & Date of Birth" subtitle="Age and DOB baseline metrics.">
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Gravidity (Number of Pregnancies)</label>
-                <NumberStepper
-                  value={form.gravidity}
-                  onChange={(val) => set("gravidity", val)}
-                  min={1}
-                  max={10}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Pregnancy Type</label>
-                <ImageCardPicker
-                  selectedValue={form.preg_type}
-                  onChange={(val) => set("preg_type", val)}
-                  options={[
-                    { value: "Singleton", label: "Singleton", subtitle: "Single baby pregnancy", icon: <Baby /> },
-                    { value: "Twin", label: "Twin", subtitle: "Twin pregnancy", icon: <Sparkles /> },
-                    { value: "Other", label: "Other", subtitle: "Multiple / Special care", icon: <Heart /> },
-                  ]}
-                />
-              </div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">DATE OF BIRTH</label><TextInputDark type="date" value={form.q6_dob} onChange={v => set("q6_dob", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">AGE (YEARS)</label><NumberStepper value={form.q6_age} onChange={v => set("q6_age", v)} min={16} max={60} unit="years" /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 8: Daily Sleep & Wake Schedule */}
-        {step === 7 && (
-          <QuestionWrapper
-            title="What is your sleep & wake up schedule?"
-            subtitle="Sleep duration & timing during pregnancy."
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Wake Up</label>
-                  <TextInputDark type="time" value={form.wake_time} onChange={(val) => set("wake_time", val)} />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Bed Time</label>
-                  <TextInputDark type="time" value={form.sleep_time} onChange={(val) => set("sleep_time", val)} />
-                </div>
-              </div>
-              <GoldSlider
-                value={parseFloat(form.sleep_hours) || 8}
-                onChange={(val) => set("sleep_hours", val.toString())}
-                min={4}
-                max={12}
-                unit="hrs"
-                labels={{ min: "4 hrs", max: "12 hrs" }}
-              />
-            </div>
-          </QuestionWrapper>
-        )}
+        {step === 7 && <QuestionWrapper title="Height" subtitle="Baseline height metric."><TextInputDark value={form.q7_height} onChange={v => set("q7_height", v)} placeholder="e.g. 165 cm or 5'5" /></QuestionWrapper>}
+        {step === 8 && <QuestionWrapper title="Gestational Age (how many weeks pregnant?)" subtitle="Current gestational age for trimester exercise alignment."><NumberStepper value={form.q8_gestational_weeks} onChange={v => set("q8_gestational_weeks", v)} min={1} max={42} unit="weeks" /></QuestionWrapper>}
+        {step === 9 && <QuestionWrapper title="LMP (Last Menstrual Period)" subtitle="Date of last menstrual period."><TextInputDark type="date" value={form.q9_lmp} onChange={v => set("q9_lmp", v)} /></QuestionWrapper>}
+        {step === 10 && <QuestionWrapper title="EDD (Expected Date of Delivery)" subtitle="Expected date of delivery."><TextInputDark type="date" value={form.q10_edd} onChange={v => set("q10_edd", v)} /></QuestionWrapper>}
+        {step === 11 && <QuestionWrapper title="Number of Pregnancies (Gravidity)" subtitle="Total number of pregnancies including present."><NumberStepper value={form.q11_gravidity} onChange={v => set("q11_gravidity", v)} min={1} max={10} /></QuestionWrapper>}
+        {step === 12 && <QuestionWrapper title="Type of Pregnancy" subtitle="Single vs twin pregnancy."><ChipSingleSelect options={["Singleton", "Twin", "Other/Not sure"]} selectedValue={form.q12_pregnancy_type} onChange={v => set("q12_pregnancy_type", v)} /></QuestionWrapper>}
 
-        {/* STEP 9: Previous Coach */}
-        {step === 8 && (
-          <QuestionWrapper
-            title="Have you hired a coach or nutritionist before?"
-            subtitle="If yes, share your previous experience."
-          >
-            <TextAreaDark
-              value={form.coach_before}
-              onChange={(val) => set("coach_before", val)}
-              placeholder="e.g. Yes / No (and details)..."
-            />
-          </QuestionWrapper>
-        )}
+        {step === 13 && <QuestionWrapper title="Any injury, pain, stiffness, tightness or joint mobility problem? Surgery history?" subtitle="Helps tailor pelvic floor stability & gentle mobility."><TextAreaDark value={form.q13_injuries_pain} onChange={v => set("q13_injuries_pain", v)} placeholder="Pelvic girdle pain, lower back tightness..." /></QuestionWrapper>}
+        {step === 14 && <QuestionWrapper title="Any health issues or genetic disorders? Present or past?" subtitle="Gestational diabetes, thyroid, high/low BP."><TextAreaDark value={form.q14_health_issues} onChange={v => set("q14_health_issues", v)} placeholder="Thyroid hypo, gestational diabetes..." /></QuestionWrapper>}
+        {step === 15 && <QuestionWrapper title="Family history of diabetes, thyroid, hypertension or hypotension?" subtitle="Hereditary medical history."><TextAreaDark value={form.q15_family_history} onChange={v => set("q15_family_history", v)} placeholder="Maternal diabetes or BP history..." /></QuestionWrapper>}
+        {step === 16 && <QuestionWrapper title="Any signs of sudden palpitation, dizziness, heaviness in head or shortness of breath?" subtitle="Cardiovascular symptoms."><ChipSingleSelect options={["Yes", "No", "Sometimes"]} selectedValue={form.q16_palpitation_dizziness} onChange={v => set("q16_palpitation_dizziness", v)} /></QuestionWrapper>}
+        {step === 17 && <QuestionWrapper title="Any surgical history?" subtitle="Past surgeries or C-section history."><TextAreaDark value={form.q17_surgical_history} onChange={v => set("q17_surgical_history", v)} placeholder="Past C-section or abdominal surgery..." /></QuestionWrapper>}
+        {step === 18 && <QuestionWrapper title="Are you taking any prescribed drugs/medicines? Names/salts?" subtitle="Prenatal vitamins, folic acid, iron, calcium, progesterone."><TextAreaDark value={form.q18_prescribed_drugs} onChange={v => set("q18_prescribed_drugs", v)} placeholder="Folic acid 5mg, Iron, Calcium..." /></QuestionWrapper>}
+        {step === 19 && <QuestionWrapper title="Prone to constipation? Pooping frequency per day/week?" subtitle="Hormonal shifts slow gut motility."><TextAreaDark value={form.q19_constipation_history} onChange={v => set("q19_constipation_history", v)} placeholder="Mild constipation or regular 1x daily..." /></QuestionWrapper>}
+        {step === 20 && <QuestionWrapper title="Addicted to alcohol, smoking, drugs before or during pregnancy? Frequency & amount." subtitle="Lifestyle risk assessment."><TextAreaDark value={form.q20_addictions} onChange={v => set("q20_addictions", v)} placeholder="None..." /></QuestionWrapper>}
+        {step === 21 && <QuestionWrapper title="Average urine colour throughout the day (except early morning)?" subtitle="Hydration status."><ChipSingleSelect options={["Clear", "Light Yellow", "Yellow", "Dark Yellow", "Orange"]} selectedValue={form.q21_urine_color} onChange={v => set("q21_urine_color", v)} /></QuestionWrapper>}
+        {step === 22 && <QuestionWrapper title="Sleep hours at night & day naps? Sleep quality?" subtitle="Restful sleep supports fetal growth."><TextAreaDark value={form.q22_sleep_quality} onChange={v => set("q22_sleep_quality", v)} placeholder="8 hours night sleep + 1 hour afternoon nap..." /></QuestionWrapper>}
 
-        {/* STEP 10: Equipment at Home */}
-        {step === 9 && (
-          <QuestionWrapper
-            title="What exercise equipment do you have at home?"
-            subtitle="Tap all equipment available for safe antenatal exercise."
-          >
-            <ChipMultiSelect
-              options={["Dumbbells (Light)", "Resistance Bands", "Stationary Bike", "Yoga Mat", "Pilates Ball", "None"]}
-              selectedValues={form.equipment_at_home ? form.equipment_at_home.split(", ") : []}
-              onChange={(vals) => set("equipment_at_home", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 11: Work Schedule */}
-        {step === 10 && (
-          <QuestionWrapper
-            title="What is your current work schedule?"
-            subtitle="Sitting vs standing job during pregnancy."
-          >
-            <TextAreaDark
-              value={form.working_status}
-              onChange={(val) => set("working_status", val)}
-              placeholder="e.g. Sitting IT job 8 hours/day WFH..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 12: Current Exercise Routine */}
-        {step === 11 && (
-          <QuestionWrapper
-            title="Current exercise routine during pregnancy"
-            subtitle="Describe walking or physical activity since conceiving."
-          >
-            <TextAreaDark
-              value={form.exercise_routine}
-              onChange={(val) => set("exercise_routine", val)}
-              placeholder="e.g. 30 minutes light morning walk daily..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 13: Workout Routine Before Conceiving */}
-        {step === 12 && (
-          <QuestionWrapper
-            title="Workout routine 3 months before conceiving"
-            subtitle="Helps establish your baseline fitness conditioning."
-          >
-            <TextAreaDark
-              value={form.previous_workout}
-              onChange={(val) => set("previous_workout", val)}
-              placeholder="e.g. Gym weight training 4x a week..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 14: Daily Steps */}
-        {step === 13 && (
-          <QuestionWrapper
-            title="Average daily steps during pregnancy"
-            subtitle="Tracked on smartwatch or phone."
-          >
-            <GoldSlider
-              value={parseFloat(form.daily_steps) || 6000}
-              onChange={(val) => set("daily_steps", val.toString())}
-              min={2000}
-              max={15000}
-              step={500}
-              unit="steps"
-              labels={{ min: "2,000 steps", max: "15,000 steps" }}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 15: Cardio Routine */}
-        {step === 14 && (
-          <QuestionWrapper
-            title="Cardio routine & preferences"
-            subtitle="Select safe cardio formats enjoyed."
-          >
-            <ChipMultiSelect
-              options={["Outdoor Walking", "Treadmill Slow Walk", "Stationary Cycling", "Prenatal Swimming", "None"]}
-              selectedValues={form.cardio_routine ? form.cardio_routine.split(", ") : []}
-              onChange={(vals) => set("cardio_routine", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 16: Preferred Workout Timing */}
-        {step === 15 && (
-          <QuestionWrapper
-            title="Preferred workout timing during pregnancy"
-            subtitle="Select preferred time slot."
-          >
-            <ImageCardPicker
-              selectedValue={form.workout_preference}
-              onChange={(val) => set("workout_preference", val)}
-              options={[
-                { value: "Morning", label: "Morning (7 AM - 10 AM)", icon: <Sun /> },
-                { value: "Afternoon", label: "Afternoon (12 PM - 3 PM)", icon: <Sun /> },
-                { value: "Evening", label: "Evening (5 PM - 8 PM)", icon: <Moon /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 17: Injury & Joint Stiffness */}
-        {step === 16 && (
-          <QuestionWrapper
-            title="Any past injuries, pelvic pain, or back tightness?"
-            subtitle="Essential for customizing safe pelvic floor & strength movements."
-          >
-            <ChipMultiSelect
-              options={["Pelvic Girdle Pain", "Lower Back Tightness", "Knee Discomfort", "Past Surgery", "None"]}
-              selectedValues={form.injury_history ? form.injury_history.split(", ") : []}
-              onChange={(vals) => set("injury_history", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 18: Health Issues & Conditions */}
-        {step === 17 && (
-          <QuestionWrapper
-            title="Any health issues or pregnancy conditions?"
-            subtitle="Tap all that apply."
-          >
-            <ChipMultiSelect
-              options={["Gestational Diabetes", "Thyroid Disorder", "PCOS / PCOD", "High Blood Pressure", "Low BP / Dizziness", "None"]}
-              selectedValues={form.health_issues ? form.health_issues.split(", ") : []}
-              onChange={(vals) => set("health_issues", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 19: Family Health History */}
-        {step === 18 && (
-          <QuestionWrapper
-            title="Family history of diabetes, thyroid, or BP?"
-            subtitle="Family medical context for preventive care."
-          >
-            <TextAreaDark
-              value={form.family_history}
-              onChange={(val) => set("family_history", val)}
-              placeholder="e.g. Mother diabetic, father high BP..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 20: Palpitation & Dizziness Signs */}
-        {step === 19 && (
-          <QuestionWrapper
-            title="Any sudden palpitations, dizziness, or shortness of breath?"
-            subtitle="Describe symptoms if any."
-          >
-            <TextAreaDark
-              value={form.palpitation_signs}
-              onChange={(val) => set("palpitation_signs", val)}
-              placeholder="e.g. Occasional dizziness when standing up quickly..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 21: Prescribed Medications */}
-        {step === 20 && (
-          <QuestionWrapper
-            title="Prescribed pregnancy drugs & supplements"
-            subtitle="Mention Folic Acid, Iron, Calcium, or hormonal supplements."
-          >
-            <TextAreaDark
-              value={form.medications}
-              onChange={(val) => set("medications", val)}
-              placeholder="e.g. Folic Acid 5mg, Iron, Calcium, Progesterone..."
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 22: Constipation & Stool Frequency */}
-        {step === 21 && (
-          <QuestionWrapper
-            title="Stool frequency & constipation history"
-            subtitle="Constipation is common in pregnancy; Coach will adjust fiber & hydration."
-          >
-            <ChipSingleSelect
-              options={["Regular (1-2x daily)", "Mild Constipation", "Severe Constipation", "Irregular"]}
-              selectedValue={form.constipation}
-              onChange={(val) => set("constipation", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 23: Menstrual Health Before Conceiving */}
-        {step === 22 && (
-          <QuestionWrapper
-            title="Menstrual cycle history before conceiving"
-            subtitle="Duration & cycle regularity."
-          >
-            <div className="space-y-4">
-              <TextInputDark
-                value={form.bleeding_days}
-                onChange={(val) => set("bleeding_days", val)}
-                placeholder="Bleeding Duration (e.g. 4 days)"
-              />
-              <TextInputDark
-                value={form.cycle_frequency}
-                onChange={(val) => set("cycle_frequency", val)}
-                placeholder="Cycle Frequency (e.g. 28 days)"
-              />
-              <ChipSingleSelect
-                options={["Light", "Moderate", "Heavy"]}
-                selectedValue={form.blood_loss}
-                onChange={(val) => set("blood_loss", val)}
-              />
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 24: Dietary Preference */}
         {step === 23 && (
-          <QuestionWrapper
-            title="What is your dietary preference?"
-            subtitle="Maternal nutrition plan will strictly follow this."
-          >
-            <ImageCardPicker
-              selectedValue={form.diet_type}
-              onChange={(val) => set("diet_type", val)}
-              options={[
-                { value: "Vegetarian", label: "Vegetarian", subtitle: "Paneer, Dal, Milk, Nuts", icon: <Apple /> },
-                { value: "Non-Veg", label: "Non-Vegetarian", subtitle: "Chicken, Fish, Eggs", icon: <Utensils /> },
-                { value: "Eggetarian", label: "Eggetarian", subtitle: "Vegetarian + Eggs", icon: <Utensils /> },
-                { value: "Vegan", label: "Vegan", subtitle: "Plant-based only", icon: <Apple /> },
-              ]}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 25: Non-Veg Fast Days */}
-        {step === 24 && (
-          <QuestionWrapper
-            title="Any days you avoid Non-Veg foods?"
-            subtitle="Select fast days or religious days."
-          >
-            <ChipMultiSelect
-              options={["Monday", "Tuesday", "Thursday", "Saturday", "None"]}
-              selectedValues={form.non_veg_days ? form.non_veg_days.split(", ") : []}
-              onChange={(vals) => set("non_veg_days", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 26: Lactose Intolerance */}
-        {step === 25 && (
-          <QuestionWrapper
-            title="Are you lactose intolerant?"
-            subtitle="Can you digest milk, curd, and paneer easily?"
-          >
-            <ChipSingleSelect
-              options={["No - Digest Dairy Fine", "Yes - Lactose Intolerant", "Partial Intolerance"]}
-              selectedValue={form.lactose_intolerant}
-              onChange={(val) => set("lactose_intolerant", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 27: Present Meal Timings */}
-        {step === 26 && (
-          <QuestionWrapper
-            title="What are your present meal timings?"
-            subtitle="Select typical times for your main meals."
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Breakfast</label>
-                <TextInputDark type="time" value={form.breakfast_time} onChange={(val) => set("breakfast_time", val)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Lunch</label>
-                <TextInputDark type="time" value={form.lunch_time} onChange={(val) => set("lunch_time", val)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Eve Snack</label>
-                <TextInputDark type="time" value={form.evening_snack_time} onChange={(val) => set("evening_snack_time", val)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Dinner</label>
-                <TextInputDark type="time" value={form.dinner_time} onChange={(val) => set("dinner_time", val)} />
-              </div>
+          <QuestionWrapper title="Menstrual Health (Before Conception)" subtitle="Pre-conception hormonal baseline.">
+            <div className="space-y-4">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BLEEDING DURATION (DAYS)</label><TextInputDark value={form.q23_menstrual_duration} onChange={v => set("q23_menstrual_duration", v)} placeholder="e.g. 4-5 days" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">CYCLE FREQUENCY (DAYS)</label><TextInputDark value={form.q23_menstrual_frequency} onChange={v => set("q23_menstrual_frequency", v)} placeholder="e.g. 28-30 days" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BLOOD LOSS AMOUNT</label><TextInputDark value={form.q23_menstrual_blood_loss} onChange={v => set("q23_menstrual_blood_loss", v)} placeholder="Light / Moderate / Heavy" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">INITIAL 1-4 DAYS SYMPTOMS</label><TextInputDark value={form.q23_menstrual_days_1_4} onChange={v => set("q23_menstrual_days_1_4", v)} placeholder="Cramps, fatigue..." /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 28: Whey Protein Preference */}
-        {step === 27 && (
-          <QuestionWrapper
-            title="Would you mind taking Whey Protein during pregnancy?"
-            subtitle="Safely helps hit clean protein target."
-          >
-            <ChipSingleSelect
-              options={["Yes - Happy to take Whey", "Prefer Whole Foods Only", "Need Guidance from Coach"]}
-              selectedValue={form.whey_preference}
-              onChange={(val) => set("whey_preference", val)}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 29: Food Allergies */}
-        {step === 28 && (
-          <QuestionWrapper
-            title="Any food allergies or intolerances?"
-            subtitle="Tap all that apply."
-          >
-            <ChipMultiSelect
-              options={["Lactose / Dairy", "Gluten", "Nuts", "Eggs", "None"]}
-              selectedValues={form.food_allergy ? form.food_allergy.split(", ") : []}
-              onChange={(vals) => set("food_allergy", vals.join(", "))}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 30: Current Diet Log */}
-        {step === 29 && (
-          <QuestionWrapper
-            title="Log your current diet from morning to night."
-            subtitle="Describe typical food & drink items in a day."
-          >
-            <div className="space-y-3">
-              <TextAreaDark
-                value={form.diet_breakfast}
-                onChange={(val) => set("diet_breakfast", val)}
-                placeholder="Breakfast details (e.g. Oats + milk + banana)..."
-                rows={2}
-              />
-              <TextAreaDark
-                value={form.diet_lunch}
-                onChange={(val) => set("diet_lunch", val)}
-                placeholder="Lunch details (e.g. Roti, sabzi, curd, salad)..."
-                rows={2}
-              />
-              <TextAreaDark
-                value={form.diet_dinner}
-                onChange={(val) => set("diet_dinner", val)}
-                placeholder="Dinner details (e.g. Paneer / chicken, khichdi)..."
-                rows={2}
-              />
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 31: Water Intake */}
+        {step === 24 && <QuestionWrapper title="Working? Sitting or standing job? Hours & timings?" subtitle="NEAT during pregnancy."><TextAreaDark value={form.q24_work_schedule} onChange={v => set("q24_work_schedule", v)} placeholder="Desk job 6 hours daily..." /></QuestionWrapper>}
+        {step === 25 && <QuestionWrapper title="Do you exercise currently? What type & since when?" subtitle="Physical activity since conceiving."><TextAreaDark value={form.q25_exercise_history} onChange={v => set("q25_exercise_history", v)} placeholder="Prenatal walking, gentle stretching..." /></QuestionWrapper>}
+        {step === 26 && <QuestionWrapper title="Workout routine from last 3 months BEFORE conceiving" subtitle="Pre-conception fitness conditioning."><TextAreaDark value={form.q26_preconception_routine} onChange={v => set("q26_preconception_routine", v)} placeholder="Gym lifting 4x/week..." /></QuestionWrapper>}
+        {step === 27 && <QuestionWrapper title="How many steps do you walk daily (average)?" subtitle="Daily step count."><NumberStepper value={form.q27_steps_daily} onChange={v => set("q27_steps_daily", v)} min={0} max={20000} step={500} unit="steps" /></QuestionWrapper>}
+        {step === 28 && <QuestionWrapper title="Cardio regularly? Mins/day or week & type?" subtitle="Safe cardio formats."><TextAreaDark value={form.q28_cardio_regular} onChange={v => set("q28_cardio_regular", v)} placeholder="Slow treadmill walk 20 mins daily..." /></QuestionWrapper>}
+        {step === 29 && <QuestionWrapper title="Morning or evening workouts? Tentative time?" subtitle="Workout scheduling."><TextAreaDark value={form.q29_workout_timings} onChange={v => set("q29_workout_timings", v)} placeholder="Morning 8-9 AM..." /></QuestionWrapper>}
+        
         {step === 30 && (
-          <QuestionWrapper
-            title="Daily water intake during pregnancy"
-            subtitle="Hydration supports amniotic fluid & digestion."
-          >
-            <GoldSlider
-              value={parseFloat(form.water_intake) || 3.0}
-              onChange={(val) => set("water_intake", val.toString())}
-              min={1.0}
-              max={5.0}
-              step={0.5}
-              unit="L"
-              labels={{ min: "1.0 L", max: "5.0 L" }}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 32: Nausea & Pregnancy Cravings */}
-        {step === 31 && (
-          <QuestionWrapper
-            title="Foods causing nausea & foods you LOVE"
-            subtitle="Nausea triggers vs cravings."
-          >
+          <QuestionWrapper title="Wake up time / Sleep time" subtitle="Circadian rhythm.">
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-red-400 uppercase tracking-wider block mb-1">Foods Causing Nausea / Aversion</label>
-                <TextAreaDark
-                  value={form.nausea_foods}
-                  onChange={(val) => set("nausea_foods", val)}
-                  placeholder="e.g. Strong fried smells, raw papaya..."
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Foods Loved / Craved</label>
-                <TextAreaDark
-                  value={form.food_love}
-                  onChange={(val) => set("food_love", val)}
-                  placeholder="e.g. Home curd, kheer, fruits..."
-                />
-              </div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">WAKE UP TIME</label><TextInputDark type="time" value={form.q30_wake_time} onChange={v => set("q30_wake_time", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">SLEEP TIME</label><TextInputDark type="time" value={form.q30_sleep_time} onChange={v => set("q30_sleep_time", v)} /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 33: Palate & Treat Meal */}
+        {step === 31 && <QuestionWrapper title="Had a coach/nutritionist before?" subtitle="Past coaching."><ChipSingleSelect options={["Yes", "No"]} selectedValue={form.q31_had_coach} onChange={v => set("q31_had_coach", v)} /></QuestionWrapper>}
+
         {step === 32 && (
-          <QuestionWrapper
-            title="Palate preference & favorite treat meal"
-            subtitle="Savory vs sweet preferences."
-          >
-            <div className="space-y-4">
-              <ChipSingleSelect
-                options={["Savory", "Sweet", "Both"]}
-                selectedValue={form.palate_type}
-                onChange={(val) => set("palate_type", val)}
-              />
-              <TextInputDark
-                value={form.cheat_meal}
-                onChange={(val) => set("cheat_meal", val)}
-                placeholder="Favorite treat meal (e.g. Dosa, Homemade Kheer)"
-              />
-            </div>
+          <QuestionWrapper title="Supplements currently (or prescribed by gynecologist)? Mention + upload photos." subtitle="Prenatal supplement stack.">
+            <TextAreaDark value={form.q32_supplements} onChange={v => set("q32_supplements", v)} placeholder="Folic acid, Iron, Calcium..." />
+            <div className="pt-3"><PhotoUploadScreen label="UPLOAD SUPPLEMENT PHOTOS" multiple files={form.q32_supplements_pics} onFilesChange={files => set("q32_supplements_pics", files)} /></div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 34: Resting Blood Pressure */}
-        {step === 33 && (
-          <QuestionWrapper
-            title="Resting Blood Pressure Readings"
-            subtitle="Essential for monitoring gestational hypertension risk."
-          >
-            <div className="space-y-3">
-              <TextInputDark
-                value={form.bp_morning}
-                onChange={(val) => set("bp_morning", val)}
-                placeholder="Morning BP (e.g. 115/75 mmHg)"
-              />
-              <TextInputDark
-                value={form.bp_afternoon}
-                onChange={(val) => set("bp_afternoon", val)}
-                placeholder="Afternoon BP"
-              />
-              <TextInputDark
-                value={form.bp_night}
-                onChange={(val) => set("bp_night", val)}
-                placeholder="Night BP"
-              />
-            </div>
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 35: Blood Glucose Monitoring */}
+        {step === 33 && <QuestionWrapper title="Would you take Whey Protein? (Natural, by-product of milk, safe during pregnancy)" subtitle="Clean protein supplementation."><ChipSingleSelect options={["Yes", "No", "Not sure/Need more info"]} selectedValue={form.q33_whey_protein} onChange={v => set("q33_whey_protein", v)} /></QuestionWrapper>}
         {step === 34 && (
-          <QuestionWrapper
-            title="Blood Glucose Readings (if monitored)"
-            subtitle="Check for Gestational Diabetes Mellitus (GDM)."
-          >
-            <div className="space-y-3">
-              <TextInputDark
-                value={form.fasting_glucose}
-                onChange={(val) => set("fasting_glucose", val)}
-                placeholder="Fasting Glucose (e.g. 85 mg/dL)"
-              />
-              <TextInputDark
-                value={form.pp_breakfast}
-                onChange={(val) => set("pp_breakfast", val)}
-                placeholder="Post-Breakfast Glucose (e.g. 110 mg/dL)"
-              />
-            </div>
+          <QuestionWrapper title="Food allergies? Food Intolerance Test report?" subtitle="Allergies & intolerances.">
+            <TextAreaDark value={form.q34_food_allergies} onChange={v => set("q34_food_allergies", v)} placeholder="Lactose, Gluten..." />
+            <div className="pt-3"><PhotoUploadScreen label="UPLOAD ALLERGY TEST REPORT" files={form.q34_allergy_reports} onFilesChange={files => set("q34_allergy_reports", files)} /></div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 36: Resting BPM */}
         {step === 35 && (
-          <QuestionWrapper
-            title="What is your Resting Heart Rate (BPM)?"
-            subtitle="Tracked on smartwatch or manual pulse reading."
-          >
-            <NumberStepper
-              value={form.resting_bpm}
-              onChange={(val) => set("resting_bpm", val)}
-              min={50}
-              max={120}
-              unit="bpm"
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 37: Medical Reports & Ultrasounds Upload */}
-        {step === 36 && (
-          <QuestionWrapper
-            title="Upload Blood Tests, Urine Analysis & Ultrasound Scans"
-            subtitle="Done within last 3 months."
-          >
-            <PhotoUploadScreen
-              label="UPLOAD PREGNANCY / MEDICAL REPORTS"
-              files={form.reports}
-              onFilesChange={(f) => set("reports", f)}
-              multiple
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 38: Present Weight */}
-        {step === 37 && (
-          <QuestionWrapper
-            title="Present Body Weight (kg)"
-            subtitle="Measured empty stomach in morning."
-          >
-            <NumberStepper
-              value={form.present_weight}
-              onChange={(val) => set("present_weight", val)}
-              min={30}
-              max={200}
-              step={0.1}
-              unit="kg"
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 39: Body Measurements */}
-        {step === 38 && (
-          <QuestionWrapper
-            title="Abdomen, Waist & Hips Measurements (inches)"
-            subtitle="Track safe pregnancy weight & body changes."
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Abdomen (at navel)</label>
-                <NumberStepper
-                  value={form.abdomen_navel}
-                  onChange={(val) => set("abdomen_navel", val)}
-                  min={20}
-                  max={70}
-                  step={0.25}
-                  unit="in"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[#FFB800] uppercase tracking-wider block mb-1">Hips</label>
-                <NumberStepper
-                  value={form.hips_measure}
-                  onChange={(val) => set("hips_measure", val)}
-                  min={20}
-                  max={70}
-                  step={0.25}
-                  unit="in"
-                />
-              </div>
+          <QuestionWrapper title="Current daily diet — Morning/Breakfast/Mid-day/Lunch/Evening/Dinner" subtitle="Describe your typical food items during pregnancy.">
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">EARLY MORNING</label><TextAreaDark rows={2} value={form.q35_diet_morning} onChange={v => set("q35_diet_morning", v)} placeholder="Warm water, soaked almonds..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BREAKFAST</label><TextAreaDark rows={2} value={form.q35_diet_bf} onChange={v => set("q35_diet_bf", v)} placeholder="Paneer paratha / eggs..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">MID-DAY</label><TextAreaDark rows={2} value={form.q35_diet_midday} onChange={v => set("q35_diet_midday", v)} placeholder="Coconut water, fruit..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">LUNCH</label><TextAreaDark rows={2} value={form.q35_diet_lunch} onChange={v => set("q35_diet_lunch", v)} placeholder="Rice, dal, sabzi, curd..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">EVENING</label><TextAreaDark rows={2} value={form.q35_diet_eve} onChange={v => set("q35_diet_eve", v)} placeholder="Milk, roasted chana..." /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">DINNER</label><TextAreaDark rows={2} value={form.q35_diet_dinner} onChange={v => set("q35_diet_dinner", v)} placeholder="Roti, paneer/chicken..." /></div>
             </div>
           </QuestionWrapper>
         )}
 
-        {/* STEP 40: Present Photos */}
-        {step === 39 && (
-          <QuestionWrapper
-            title="Present Progress Photo (Front View)"
-            subtitle="Comfortable sportswear or maternity fit."
-          >
-            <PhotoUploadScreen
-              label="PRESENT FRONT PHOTO"
-              files={form.pic_front ? [form.pic_front] : []}
-              onFilesChange={(f) => set("pic_front", f[0] || "")}
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 41: Pre-Conception Photos */}
-        {step === 40 && (
-          <QuestionWrapper
-            title="Photos from 2-3 months before conceiving"
-            subtitle="Helps Coach see baseline body composition (Optional)."
-          >
-            <PhotoUploadScreen
-              label="PRE-CONCEPTION PHOTOS"
-              files={form.old_pictures}
-              onFilesChange={(f) => set("old_pictures", f)}
-              multiple
-            />
-          </QuestionWrapper>
-        )}
-
-        {/* STEP 42: Final Message & Equipment Photos */}
-        {step === 41 && (
-          <QuestionWrapper
-            title="Additional notes & Equipment photos"
-            subtitle="Any final comments or questions for Coach Aman!"
-          >
-            <div className="space-y-4">
-              <TextAreaDark
-                value={form.final_notes}
-                onChange={(val) => set("final_notes", val)}
-                placeholder="Write any extra details for Coach Aman..."
-              />
-              <PhotoUploadScreen
-                label="UPLOAD EXERCISE EQUIPMENT PHOTOS (OPTIONAL)"
-                files={form.equipment_media}
-                onFilesChange={(f) => set("equipment_media", f)}
-                multiple
-              />
+        {step === 36 && <QuestionWrapper title="Water intake (approx. glasses/litres per day)?" subtitle="Hydration supports amniotic fluid & digestion."><NumberStepper value={form.q36_water_intake} onChange={v => set("q36_water_intake", v)} min={0.5} max={6.0} step={0.5} unit="L" /></QuestionWrapper>}
+        {step === 37 && <QuestionWrapper title="Food items you LOVE?" subtitle="Favorite foods."><TextAreaDark value={form.q37_food_love} onChange={v => set("q37_food_love", v)} placeholder="Paneer, fruits, milk, khichdi..." /></QuestionWrapper>}
+        {step === 38 && <QuestionWrapper title="Food items you HATE?" subtitle="Disliked foods."><TextAreaDark value={form.q38_food_hate} onChange={v => set("q38_food_hate", v)} placeholder="Broccoli, raw papaya..." /></QuestionWrapper>}
+        {step === 39 && <QuestionWrapper title="Foods that make you feel more nauseated?" subtitle="Nausea triggers & aversions."><TextAreaDark value={form.q39_nausea_foods} onChange={v => set("q39_nausea_foods", v)} placeholder="Strong fried garlic smell..." /></QuestionWrapper>}
+        {step === 40 && <QuestionWrapper title="Food items you specifically want in your plan?" subtitle="Must-have foods."><TextAreaDark value={form.q40_food_want} onChange={v => set("q40_food_want", v)} placeholder="Dry fruits, paneer, curd..." /></QuestionWrapper>}
+        {step === 41 && <QuestionWrapper title="Seasonal fruits available? Likes/dislikes?" subtitle="Fruit preferences."><TextAreaDark value={form.q41_seasonal_fruits} onChange={v => set("q41_seasonal_fruits", v)} placeholder="Apples, pomegranate, banana..." /></QuestionWrapper>}
+        {step === 42 && <QuestionWrapper title="Savoury or sweet tooth?" subtitle="Flavor profile."><ChipSingleSelect options={["Savoury", "Sweet", "Both"]} selectedValue={form.q42_palate} onChange={v => set("q42_palate", v)} /></QuestionWrapper>}
+        {step === 43 && <QuestionWrapper title="Do you like chocolates?" subtitle="Chocolate cravings."><ChipSingleSelect options={["Yes", "No", "Sometimes"]} selectedValue={form.q43_chocolates} onChange={v => set("q43_chocolates", v)} /></QuestionWrapper>}
+        {step === 44 && <QuestionWrapper title="Favourite cheat/treat meal?" subtitle="Reward meal during pregnancy."><TextInputDark value={form.q44_cheat_meal} onChange={v => set("q44_cheat_meal", v)} placeholder="Ice cream, pasta..." /></QuestionWrapper>}
+        {step === 45 && <QuestionWrapper title="Vegetarian / Vegan / Non-Vegetarian / Eggetarian?" subtitle="Dietary pattern."><ChipSingleSelect options={["Vegetarian", "Vegan", "Non-Vegetarian", "Eggetarian"]} selectedValue={form.q45_diet_preference} onChange={v => set("q45_diet_preference", v)} /></QuestionWrapper>}
+        {step === 46 && <QuestionWrapper title="Specific days you avoid non-veg for religious reasons?" subtitle="Religious fast days."><TextInputDark value={form.q46_nonveg_fast_days} onChange={v => set("q46_nonveg_fast_days", v)} placeholder="Tuesdays, Thursdays..." /></QuestionWrapper>}
+        {step === 47 && <QuestionWrapper title="Lactose intolerant?" subtitle="Dairy tolerance."><ChipSingleSelect options={["Yes", "No", "Partially"]} selectedValue={form.q47_lactose_intolerant} onChange={v => set("q47_lactose_intolerant", v)} /></QuestionWrapper>}
+        
+        {step === 48 && (
+          <QuestionWrapper title="Meal timings (Breakfast/Mid-day/Lunch/Evening/Dinner)" subtitle="Daily meal timing structure.">
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">BREAKFAST</label><TextInputDark type="time" value={form.q48_meal_bf} onChange={v => set("q48_meal_bf", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">MID-DAY SNACK</label><TextInputDark type="time" value={form.q48_meal_midday} onChange={v => set("q48_meal_midday", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">LUNCH</label><TextInputDark type="time" value={form.q48_meal_lunch} onChange={v => set("q48_meal_lunch", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">EVENING SNACK</label><TextInputDark type="time" value={form.q48_meal_eve} onChange={v => set("q48_meal_eve", v)} /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">DINNER</label><TextInputDark type="time" value={form.q48_meal_dinner} onChange={v => set("q48_meal_dinner", v)} /></div>
             </div>
           </QuestionWrapper>
         )}
+
+        {step === 49 && <QuestionWrapper title="Grocery store links / Supplement store / Any other links" subtitle="Overseas client grocery store links."><TextAreaDark value={form.q49_overseas_links} onChange={v => set("q49_overseas_links", v)} placeholder="Store links..." /></QuestionWrapper>}
+
+        {step === 50 && (
+          <QuestionWrapper title="Resting BP — Morning / Afternoon / Night" subtitle="Sit relaxed for 2 mins before checking.">
+            <div className="space-y-4">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">MORNING BP</label><TextInputDark value={form.q50_bp_morning} onChange={v => set("q50_bp_morning", v)} placeholder="115/75 mmHg" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">AFTERNOON BP</label><TextInputDark value={form.q50_bp_afternoon} onChange={v => set("q50_bp_afternoon", v)} placeholder="118/76 mmHg" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">NIGHT BP</label><TextInputDark value={form.q50_bp_night} onChange={v => set("q50_bp_night", v)} placeholder="112/72 mmHg" /></div>
+            </div>
+          </QuestionWrapper>
+        )}
+
+        {step === 51 && (
+          <QuestionWrapper title="Blood Glucose — Fasting / Post Prandial" subtitle="Glucose tracking for GDM management.">
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">FASTING GLUCOSE</label><TextInputDark value={form.q51_glucose_fasting} onChange={v => set("q51_glucose_fasting", v)} placeholder="85 mg/dL" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">POST BREAKFAST (90-120 MINS)</label><TextInputDark value={form.q51_glucose_bf} onChange={v => set("q51_glucose_bf", v)} placeholder="110 mg/dL" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">POST LUNCH (90-120 MINS)</label><TextInputDark value={form.q51_glucose_lunch} onChange={v => set("q51_glucose_lunch", v)} placeholder="115 mg/dL" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">POST EVENING (90-120 MINS)</label><TextInputDark value={form.q51_glucose_eve} onChange={v => set("q51_glucose_eve", v)} placeholder="105 mg/dL" /></div>
+              <div><label className="text-xs font-bold text-zinc-400 block mb-1">POST DINNER (90-120 MINS)</label><TextInputDark value={form.q51_glucose_dinner} onChange={v => set("q51_glucose_dinner", v)} placeholder="108 mg/dL" /></div>
+            </div>
+          </QuestionWrapper>
+        )}
+
+        {step === 52 && <QuestionWrapper title="Upload blood tests, urine analysis, scan reports" subtitle="Attach recent ultrasound scans & blood panel reports."><PhotoUploadScreen label="UPLOAD MEDICAL & ULTRASOUND REPORTS" multiple files={form.q52_medical_reports} onFilesChange={files => set("q52_medical_reports", files)} /></QuestionWrapper>}
+        {step === 53 && <QuestionWrapper title="Resting Heart Rate (BPM)" subtitle="Resting BPM monitoring."><NumberStepper value={form.q53_resting_bpm} onChange={v => set("q53_resting_bpm", v)} min={40} max={120} unit="BPM" /></QuestionWrapper>}
+
+        {step === 54 && <QuestionWrapper title="Present Front photo" subtitle="Maternity or sportswear photo."><PhotoUploadScreen label="PRESENT FRONT PHOTO" files={form.q54_front_pic} onFilesChange={files => set("q54_front_pic", files)} /></QuestionWrapper>}
+        {step === 55 && <QuestionWrapper title="Present Back photo" subtitle="Back progress photo."><PhotoUploadScreen label="PRESENT BACK PHOTO" files={form.q55_back_pic} onFilesChange={files => set("q55_back_pic", files)} /></QuestionWrapper>}
+        {step === 56 && <QuestionWrapper title="Present Left Side photo" subtitle="Left side photo."><PhotoUploadScreen label="PRESENT LEFT SIDE PHOTO" files={form.q56_left_pic} onFilesChange={files => set("q56_left_pic", files)} /></QuestionWrapper>}
+        {step === 57 && <QuestionWrapper title="Present Right Side photo" subtitle="Right side photo."><PhotoUploadScreen label="PRESENT RIGHT SIDE PHOTO" files={form.q57_right_pic} onFilesChange={files => set("q57_right_pic", files)} /></QuestionWrapper>}
+        {step === 58 && <QuestionWrapper title="Pre-conception photos (2–3 months before conceiving)" subtitle="Baseline comparison photos."><PhotoUploadScreen label="PRE-CONCEPTION PHOTOS" multiple files={form.q58_preconception_pics} onFilesChange={files => set("q58_preconception_pics", files)} /></QuestionWrapper>}
+
+        {step === 59 && <QuestionWrapper title="Present Weight (kg)" subtitle="Empty stomach morning weight."><NumberStepper value={form.q59_weight} onChange={v => set("q59_weight", v)} min={30} max={200} step={0.1} unit="kg" /></QuestionWrapper>}
+        {step === 60 && <QuestionWrapper title="Abdomen at navel (cm/inches)" subtitle="Navel level circumference."><NumberStepper value={form.q60_abdomen} onChange={v => set("q60_abdomen", v)} min={30} max={200} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 61 && <QuestionWrapper title="Waist around pelvic bone (cm/inches)" subtitle="Pelvic bone level."><NumberStepper value={form.q61_waist_pelvic} onChange={v => set("q61_waist_pelvic", v)} min={30} max={200} step={0.5} unit="cm" /></QuestionWrapper>}
+        {step === 62 && <QuestionWrapper title="Hips (cm/inches)" subtitle="Widest glute circumference."><NumberStepper value={form.q62_hips} onChange={v => set("q62_hips", v)} min={30} max={200} step={0.5} unit="cm" /></QuestionWrapper>}
+
+        {step === 63 && <QuestionWrapper title="Average weight before conceiving (kg)" subtitle="Pre-pregnancy weight baseline."><NumberStepper value={form.q63_preconception_weight} onChange={v => set("q63_preconception_weight", v)} min={30} max={200} step={0.1} unit="kg" /></QuestionWrapper>}
+        {step === 64 && <QuestionWrapper title="Since how long have you maintained that weight?" subtitle="Weight stability period."><TextInputDark value={form.q64_preconception_weight_duration} onChange={v => set("q64_preconception_weight_duration", v)} placeholder="e.g. 2 years" /></QuestionWrapper>}
+        {step === 65 && <QuestionWrapper title="Heaviest weight till date (kg)" subtitle="Historical weight peak."><NumberStepper value={form.q65_heaviest_weight} onChange={v => set("q65_heaviest_weight", v)} min={30} max={200} step={0.1} unit="kg" /></QuestionWrapper>}
+        {step === 66 && <QuestionWrapper title="Weight at start of 1st trimester (kg)" subtitle="Trimester 1 baseline weight."><NumberStepper value={form.q66_weight_start_trimester1} onChange={v => set("q66_weight_start_trimester1", v)} min={30} max={200} step={0.1} unit="kg" /></QuestionWrapper>}
+        {step === 67 && <QuestionWrapper title="Weight by end of 1st trimester (kg)" subtitle="Trimester 1 ending weight."><NumberStepper value={form.q67_weight_end_trimester1} onChange={v => set("q67_weight_end_trimester1", v)} min={30} max={200} step={0.1} unit="kg" /></QuestionWrapper>}
+        
+        {step === 68 && <QuestionWrapper title="Share home equipment photos/videos" subtitle="Helps Coach see home setup."><PhotoUploadScreen label="UPLOAD EQUIPMENT PHOTOS" multiple files={form.q68_equipment_photos} onFilesChange={files => set("q68_equipment_photos", files)} /></QuestionWrapper>}
+        {step === 69 && <QuestionWrapper title="Anything else you want to mention?" subtitle="Special requests for Coach Aman."><TextAreaDark value={form.q69_additional_notes} onChange={v => set("q69_additional_notes", v)} placeholder="Write any extra notes here..." /></QuestionWrapper>}
       </div>
 
-      <FormFooter
-        onNext={handleNext}
-        isLastStep={step === TOTAL_STEPS - 1}
-        submitting={submitting}
-        showSkip={step >= 36}
-        onSkip={handleNext}
-      />
+      {step > 0 && (
+        <FormFooter
+          onNext={handleNext}
+          isLastStep={step === TOTAL_STEPS}
+          submitting={submitting}
+          showSkip={[4, 5, 17, 18, 20, 24, 28, 34, 46, 49, 52, 58, 68, 69].includes(step)}
+          onSkip={handleNext}
+        />
+      )}
     </ClientLayout>
   )
 }
