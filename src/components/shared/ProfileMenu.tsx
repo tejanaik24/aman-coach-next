@@ -73,32 +73,37 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90]"
             onClick={close}
           />
+          {/* Bottom Sheet Drawer */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 350 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-bg-surface border-t border-border-subtle rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-bg-surface border-t border-border-subtle rounded-t-3xl z-[100] max-h-[85dvh] flex flex-col shadow-2xl overflow-hidden"
           >
+            {/* Grab Bar */}
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
               <div className="w-12 h-1 rounded-full bg-text-muted/30" />
             </div>
 
-            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
-              <h2 className="font-heading font-bold text-lg text-text-primary">Profile</h2>
-              <button onClick={close} className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted cursor-pointer">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0 border-b border-border-subtle/50">
+              <h2 className="font-heading font-bold text-lg text-text-primary">Profile Settings</h2>
+              <button onClick={close} className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted hover:text-white cursor-pointer">
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="px-5 pb-8 space-y-5 overflow-y-auto">
+            {/* Scrollable Body */}
+            <div className="px-5 pt-4 pb-12 space-y-5 overflow-y-auto flex-1 overscroll-contain touch-pan-y scrollbar-thin">
               {/* Avatar + identity */}
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative">
@@ -149,10 +154,10 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
               </div>
 
               {/* Menu options */}
-              <div className="space-y-2">
+              <div className="space-y-2.5 pb-6">
                 <button
                   onClick={() => toast("Notification settings coming soon")}
-                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer"
+                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer hover:border-accent-gold/40 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-bg-primary flex items-center justify-center flex-shrink-0">
                     <Bell className="size-4 text-accent-gold" />
@@ -164,7 +169,7 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                   href={`https://wa.me/${AMAN_WHATSAPP}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer"
+                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer hover:border-accent-gold/40 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-bg-primary flex items-center justify-center flex-shrink-0">
                     <MessageCircle className="size-4 text-accent-gold" />
@@ -175,7 +180,7 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}
-                  className="w-full bg-bg-elevated border border-accent-gold/30 rounded-2xl p-4 flex items-center gap-3 text-left disabled:opacity-60 cursor-pointer"
+                  className="w-full bg-bg-elevated border border-accent-gold/30 rounded-2xl p-4 flex items-center gap-3 text-left disabled:opacity-60 cursor-pointer hover:bg-accent-gold/10 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-accent-gold flex items-center justify-center flex-shrink-0">
                     <LogOut className="size-4 text-bg-primary" />
