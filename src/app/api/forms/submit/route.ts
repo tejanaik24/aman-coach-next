@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { createClient as createServerClient } from "@/lib/supabase/server"
 import { sendCoachSubmissionAlert } from "@/lib/whatsapp"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
@@ -8,11 +9,21 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(req: Request) {
   try {
+    const authSupabase = await createServerClient()
+    const { data: { user } } = await authSupabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
     const { userId, clientId, formType, formData } = body
 
     if (!userId || !formType || !formData) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    if (userId !== user.id) {
+      return NextResponse.json({ error: "Forbidden: User ID mismatch" }, { status: 403 })
     }
 
     // 1. Get client or profile info

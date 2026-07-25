@@ -18,7 +18,11 @@ async function handleReminderTrigger(req: Request) {
   try {
     const authHeader = req.headers.get("authorization")
     const secretParam = new URL(req.url).searchParams.get("secret")
-    const expectedSecret = process.env.AUTOMATION_SECRET || "akcoach-webhook-2026"
+    const expectedSecret = process.env.AUTOMATION_SECRET
+
+    if (!expectedSecret) {
+      throw new Error("AUTOMATION_SECRET environment variable is missing")
+    }
 
     if (secretParam !== expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
       return NextResponse.json({ error: "Unauthorized automation request" }, { status: 401 })

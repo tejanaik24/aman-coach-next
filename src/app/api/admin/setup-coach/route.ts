@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const SETUP_SECRET = process.env.SETUP_SECRET ?? "akcoach-setup-2026"
+const SETUP_SECRET = process.env.SETUP_SECRET
+if (!SETUP_SECRET) {
+  throw new Error("SETUP_SECRET environment variable is missing")
+}
+
 const COACH_EMAIL = "coach@akfitness.in"
 const COACH_PASSWORD = "AmanCoach@2026"
 

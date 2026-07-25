@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { createClient as createServerClient } from "@/lib/supabase/server"
 import { sendClientWelcomeMessage } from "@/lib/whatsapp"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
@@ -8,6 +9,12 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(req: Request) {
   try {
+    const authSupabase = await createServerClient()
+    const { data: { user } } = await authSupabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
     const { name, email, phone, clientType, coachId, notes } = body
 
@@ -43,7 +50,7 @@ export async function POST(req: Request) {
     // 2. Create client record
     const clientRecord = {
       user_id: userId,
-      coach_id: coachId || null,
+      coach_id: coachId || user.id,
       client_type: clientType || "standard",
       status: "active",
       notes: notes || null,
