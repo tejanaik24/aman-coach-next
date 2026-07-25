@@ -1,4 +1,4 @@
-﻿<header class="header" id="header">
+<header class="header" id="header">
   <div class="container nav-container">
     <a href="/" class="logo">
       <span class="logo-main">AMAN KHURANA</span>
@@ -13,14 +13,22 @@
         <li><a href="/ebooks" class="nav-link" data-page="ebooks">E-Books</a></li>
         <li><a href="/contact" class="nav-link" data-page="contact">Contact</a></li>
       </ul>
+      <div class="nav-buttons-mobile">
+        <a href="https://app.amankhuranafitness.com/?branch_id=UzN4eE9JUEUzaUltOERvTTJKVVNGUT09" class="btn btn-primary" target="_blank" rel="noopener">BOOK NOW</a>
+        <a href="/login" class="btn btn-outline" id="loginBtnMobile">CLIENT LOGIN</a>
+      </div>
     </nav>
-    <div class="nav-buttons-mobile">
-      <a href="https://app.amankhuranafitness.com/?branch_id=UzN4eE9JUEUzaUltOERvTTJKVVNGUT09" class="btn btn-primary" target="_blank" rel="noopener">BOOK NOW</a>
-      <a href="/login" class="btn btn-outline" id="loginBtnMobile">CLIENT LOGIN</a>
-    </div>
-    <div class="nav-buttons" id="navButtons">
-      <a href="https://app.amankhuranafitness.com/?branch_id=UzN4eE9JUEUzaUltOERvTTJKVVNGUT09" class="btn btn-primary btn-nav" target="_blank" rel="noopener">BOOK NOW</a>
-      <a href="/login" class="btn btn-outline btn-nav" id="loginBtn">CLIENT LOGIN</a>
+    <div class="nav-right-wrap flex items-center gap-2">
+      <div class="nav-buttons" id="navButtons">
+        <a href="https://app.amankhuranafitness.com/?branch_id=UzN4eE9JUEUzaUltOERvTTJKVVNGUT09" class="btn btn-primary btn-nav" target="_blank" rel="noopener">BOOK NOW</a>
+        <a href="/login" class="btn btn-outline btn-nav" id="loginBtn">CLIENT LOGIN</a>
+      </div>
+      <a href="/login" class="btn btn-outline btn-mobile-header" id="headerLoginBtnMobile">LOGIN</a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
     <script>
       (function() {
@@ -30,15 +38,18 @@
         if (hasCookie) {
           var b1 = document.getElementById('loginBtn');
           var b2 = document.getElementById('loginBtnMobile');
+          var b3 = document.getElementById('headerLoginBtnMobile');
+          var b4 = document.getElementById('stickyLoginBtn');
           if (b1) { b1.textContent = 'MY DASHBOARD'; b1.href = '/dashboard'; }
           if (b2) { b2.textContent = 'DASHBOARD'; b2.href = '/dashboard'; }
+          if (b3) { b3.textContent = 'DASHBOARD'; b3.href = '/dashboard'; }
+          if (b4) { b4.textContent = 'MY DASHBOARD →'; b4.href = '/dashboard'; }
         }
       })();
     </script>
-    <button class="hamburger" id="hamburger" aria-label="Toggle menu">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
   </div>
 </header>
+
+<div class="mobile-sticky-bar">
+  <a href="/login" class="mobile-sticky-btn" id="stickyLoginBtn">CLIENT LOGIN →</a>
+</div>
