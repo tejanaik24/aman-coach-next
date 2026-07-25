@@ -6,17 +6,13 @@ Aman Khurana Fitness is an elite 1-on-1 Fitness, Nutrition & Pregnancy Coaching 
 ---
 
 ## CURRENT STATUS & RECENT ACHIEVEMENTS
-- **Conversational Form Engine Redesign (3 Forms)**: Converted all 3 forms (`/checkin`, `/onboarding`, `/onboarding/antenatal`) into world-class Typeform-style 1-question-per-screen mobile flows with:
-  - Full screen per question (100vh)
-  - Prominent 4px animated gold progress bar (#FFB800) + step counter ("1 of 27")
-  - Dark fitness background images (15-20% opacity) + gold glassmorphic card containers (`card-gold`)
-  - 40px circular gold question icon badges + 28-32px bold question headers + subtitle hints
-  - 4-card dietary pickers (none pre-selected), complete multi-column chip grids, step count sliders, number steppers, photo upload dropzones
-  - Touch swipe left/right gesture navigation
-  - Draft auto-save to `localStorage` + "Continue where you left off?" resume modal banner
-  - 100% field preservation, Supabase submission logic, `/api/forms/submit` POST integration & PDF download.
-- **Standalone HTML Form Exports**: Exported all 3 forms to `C:\Users\user\Downloads\` as offline-compatible standalone HTML files (`form-checkin.html`, `form-onboarding.html`, `form-antenatal.html`).
-- **Production Build**: Verified clean `npm run build` (0 TypeScript errors, 0 warnings, 28/28 routes compiled).
+- **Rebuilt All 3 Forms with Coach Aman's Exact Questions**:
+  - `/checkin` (27 questions): 1-question-per-screen, large textareas for workout/diet feedback, urine color chips, anthropometrics steppers, photo uploads with optional skip.
+  - `/onboarding` (64 questions): 1-question-per-screen, full contact, lifestyle, health, diet, 5 meal time pickers, 6 daily diet textareas, 3 BP inputs, photos & anthropometrics.
+  - `/onboarding/antenatal` (69 questions): 1-question-per-screen, gestational age, LMP/EDD, pre-conception health, 5 glucose inputs, 3 BP inputs, photos & maternity anthropometrics.
+  - Added Step 0 Welcome Screens ("Time to Check In 🔥", "Welcome to #TeamAKF 👊", "Welcome, Mama 🌸") with info pills & coach note.
+- **Standalone HTML Form Exports**: Updated `form-checkin.html`, `form-onboarding.html`, and `form-antenatal.html` in `C:\Users\user\Downloads\` with exact question sequences.
+- **Production Build & Git Deployment**: Passed `npm run build` (0 TypeScript errors, 28/28 routes compiled) and pushed commit `24d2cf8a` to GitHub/Vercel.
 
 ---
 
