@@ -14,7 +14,8 @@ export {
   getAppointments,
   createAppointment,
   updateAppointmentStatus,
-  getAvailableSlots
+  getAvailableSlots,
+  getAllSubmissions
 } from "./supabase-store"
 
 export async function initStore() {

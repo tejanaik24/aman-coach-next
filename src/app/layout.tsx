@@ -39,6 +39,8 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
+import PwaInstallPrompt from "@/components/shared/PwaInstallPrompt"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,6 +60,7 @@ export default function RootLayout({
         <div className="mx-auto max-w-[430px] min-h-screen bg-bg-primary relative">
           {children}
         </div>
+        <PwaInstallPrompt />
         <Toaster
           position="top-center"
           toastOptions={{

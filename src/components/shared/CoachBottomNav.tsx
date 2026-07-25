@@ -2,12 +2,12 @@
 
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "motion/react"
-import { LayoutDashboard, Users, CalendarRange, ClipboardCheck, Wallet } from "lucide-react"
+import { LayoutDashboard, Users, CalendarRange, ClipboardCheck, Wallet, FileText } from "lucide-react"
 
 const tabs = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/clients", label: "Clients", icon: Users },
-  { href: "/plans", label: "Plans", icon: CalendarRange },
+  { href: "/submissions", label: "Forms", icon: FileText },
   { href: "/checkins", label: "Check-ins", icon: ClipboardCheck },
   { href: "/fees", label: "Fees", icon: Wallet },
 ]

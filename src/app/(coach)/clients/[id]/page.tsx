@@ -19,6 +19,8 @@ import { format, differenceInDays } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { useStaggerReveal } from "@/hooks/useStaggerReveal"
+import BadgesGrid from "@/components/client/BadgesGrid"
+import { getClientBadges, type ClientBadge } from "@/lib/badges"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
 
 type Tab = "overview" | "checkins" | "plans" | "fees"
@@ -68,6 +70,7 @@ export default function ClientDetailPage() {
   const [fees, setFees] = useState<Fee[]>([])
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([])
   const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>([])
+  const [clientBadges, setClientBadges] = useState<ClientBadge[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const [expandedCheckin, setExpandedCheckin] = useState<string | null>(null)
@@ -89,17 +92,19 @@ export default function ClientDetailPage() {
     }
     setClient({ ...clientRow, profile })
 
-    const [r1, r2, r3, r4] = await Promise.allSettled([
+    const [r1, r2, r3, r4, badges] = await Promise.allSettled([
       supabase.from("checkins").select("*").eq("client_id", id).order("submitted_at", { ascending: false }),
       supabase.from("fees").select("*").eq("client_id", id).order("due_date", { ascending: false }),
       supabase.from("workout_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       supabase.from("nutrition_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
+      getClientBadges(id)
     ])
 
     if (r1.status === "fulfilled") setCheckins(r1.value.data ?? [])
     if (r2.status === "fulfilled") setFees(r2.value.data ?? [])
     if (r3.status === "fulfilled") setWorkoutPlans(r3.value.data ?? [])
     if (r4.status === "fulfilled") setNutritionPlans(r4.value.data ?? [])
+    if (badges.status === "fulfilled") setClientBadges(badges.value)
     setIsLoading(false)
   }, [id])
 
@@ -268,6 +273,11 @@ export default function ClientDetailPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Client Badges & Achievements */}
+                <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5">
+                  <BadgesGrid unlockedBadges={clientBadges} title="Client Achievements" showAll={true} />
                 </div>
 
                 {activeWorkout ? (

@@ -1,22 +1,21 @@
 {
-  "name": "Aman Khurana Fitness",
-  "short_name": "AK Fitness",
-  "description": "Expert online fitness coaching by Aman Khurana. Contest prep, fat loss, muscle building, and antenatal & postnatal training programs.",
-  "start_url": "/",
+  "name": "Aman Khurana Fitness - Coach Portal & Client PWA",
+  "short_name": "AK Coach",
+  "description": "Custom 1-on-1 Fitness, Nutrition & Pregnancy Coaching PWA by Coach Aman Khurana.",
+  "start_url": "/home",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "background_color": "#0A0A0A",
+  "theme_color": "#FFB800",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/images/aman/aman-01.jpeg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/jpeg"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/images/aman/aman-02.jpeg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

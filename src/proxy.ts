@@ -1,7 +1,7 @@
 import { updateSession } from "@/lib/supabase/middleware"
 import { NextResponse, type NextRequest } from "next/server"
 
-const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule"]
+const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule", "/submissions"]
 const CLIENT_PATHS = ["/home", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding"]
 
 async function getRole(supabase: ReturnType<typeof import("@supabase/ssr").createServerClient>, userId: string): Promise<string> {

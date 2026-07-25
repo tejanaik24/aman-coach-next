@@ -80,34 +80,166 @@ export async function getFees(clientId: string): Promise<Fee[]> {
   return data as Fee[]
 }
 
-export async function saveOnboardingDraft(userId: string, data: Record<string, unknown>, formType = "standard"): Promise<void> {
-  const { error } = await sb()
-    .from("onboarding_forms")
-    .upsert(
+export async function saveOnboardingDraft(userId: string, data: Record<string, unknown>, formType = "standard_joining"): Promise<void> {
+  const supabase = sb()
+  // Save to localStorage as backup
+  try {
+    localStorage.setItem(`draft_${formType}_${userId}`, JSON.stringify(data))
+  } catch {}
+
+  // Attempt insert into form_submissions table
+  try {
+    const { data: client } = await supabase.from("clients").select("id").eq("user_id", userId).maybeSingle()
+    await supabase.from("form_submissions").upsert(
+      { 
+        user_id: userId, 
+        client_id: client?.id || null,
+        form_type: formType, 
+        form_data: data, 
+        status: "draft"
+      },
+      { onConflict: "user_id,form_type" }
+    )
+  } catch {
+    // Graceful fallback to onboarding_forms if form_submissions migration not executed yet
+    await supabase.from("onboarding_forms").upsert(
       { user_id: userId, form_type: formType, data, status: "pending" },
       { onConflict: "user_id" }
-    )
-  if (error) throw error
+    ).catch(() => {})
+  }
 }
 
-export async function submitOnboardingForm(userId: string, data: Record<string, unknown>, formType = "standard"): Promise<void> {
-  const { error } = await sb()
-    .from("onboarding_forms")
-    .upsert(
+export async function submitOnboardingForm(userId: string, data: Record<string, unknown>, formType = "standard_joining"): Promise<void> {
+  const supabase = sb()
+  // Remove draft from localStorage
+  try {
+    localStorage.removeItem(`draft_${formType}_${userId}`)
+  } catch {}
+
+  const { data: client } = await supabase.from("clients").select("id").eq("user_id", userId).maybeSingle()
+  
+  try {
+    const { error } = await supabase.from("form_submissions").insert({ 
+      user_id: userId, 
+      client_id: client?.id || null,
+      form_type: formType, 
+      form_data: data, 
+      status: "submitted", 
+      submitted_at: new Date().toISOString() 
+    })
+    if (error) throw error
+  } catch {
+    // Fallback if form_submissions table missing
+    const { error } = await supabase.from("onboarding_forms").upsert(
       { user_id: userId, form_type: formType, data, status: "submitted", submitted_at: new Date().toISOString() },
       { onConflict: "user_id" }
     )
-  if (error) throw error
+    if (error) throw error
+  }
 }
 
-export async function getOnboardingForm(userId: string): Promise<{ data: Record<string, unknown>; status: string; form_type: string } | null> {
-  const { data, error } = await sb()
+export async function getOnboardingForm(userId: string, formType = "standard_joining"): Promise<{ data: Record<string, unknown>; status: string; form_type: string } | null> {
+  const supabase = sb()
+  // Check localStorage draft first if available
+  try {
+    const cached = localStorage.getItem(`draft_${formType}_${userId}`)
+    if (cached) {
+      return { data: JSON.parse(cached), status: "draft", form_type: formType }
+    }
+  } catch {}
+
+  try {
+    const { data } = await supabase
+      .from("form_submissions")
+      .select("form_data, status, form_type")
+      .eq("user_id", userId)
+      .eq("form_type", formType)
+      .order("submitted_at", { ascending: false })
+      .maybeSingle()
+    if (data) {
+      return { data: data.form_data as Record<string, unknown>, status: data.status, form_type: data.form_type }
+    }
+  } catch {}
+
+  const { data } = await supabase
     .from("onboarding_forms")
     .select("data, status, form_type")
     .eq("user_id", userId)
     .maybeSingle()
-  if (error || !data) return null
+  if (!data) return null
   return data as { data: Record<string, unknown>; status: string; form_type: string }
+}
+
+export async function getAllSubmissions(coachId: string): Promise<{
+  id: string
+  clientId: string
+  clientName: string
+  formType: "standard_joining" | "antenatal_joining" | "checkin"
+  status: string
+  submittedAt: string
+  formData: Record<string, unknown>
+}[]> {
+  const supabase = sb()
+  const results: {
+    id: string
+    clientId: string
+    clientName: string
+    formType: "standard_joining" | "antenatal_joining" | "checkin"
+    status: string
+    submittedAt: string
+    formData: Record<string, unknown>
+  }[] = []
+
+  // 1. Query form_submissions
+  try {
+    const { data: subs } = await supabase
+      .from("form_submissions")
+      .select("*, profiles:user_id(name)")
+      .order("submitted_at", { ascending: false })
+
+    if (subs) {
+      subs.forEach((s: Record<string, unknown>) => {
+        const prof = s.profiles as { name?: string } | null
+        results.push({
+          id: s.id as string,
+          clientId: (s.client_id as string) || (s.user_id as string),
+          clientName: prof?.name || "Client",
+          formType: s.form_type as "standard_joining" | "antenatal_joining" | "checkin",
+          status: (s.status as string) || "submitted",
+          submittedAt: (s.submitted_at as string) || new Date().toISOString(),
+          formData: (s.form_data as Record<string, unknown>) || {}
+        })
+      })
+    }
+  } catch {}
+
+  // 2. Also query checkins for form_data check-in submissions if not in form_submissions
+  try {
+    const { data: checkins } = await supabase
+      .from("checkins")
+      .select("*, clients!inner(id, coach_id, user_id, profiles:user_id(name))")
+      .order("submitted_at", { ascending: false })
+
+    if (checkins) {
+      checkins.forEach((c: Record<string, unknown>) => {
+        const clientObj = c.clients as { id: string; user_id: string; profiles?: { name: string } } | null
+        const exists = results.some(r => r.id === (c.id as string))
+        if (!exists && c.form_data) {
+          results.push({
+            id: c.id as string,
+            clientId: clientObj?.id || "",
+            clientName: clientObj?.profiles?.name || "Client",
+            formType: "checkin",
+            status: c.reviewed_at ? "reviewed" : "submitted",
+            submittedAt: (c.submitted_at as string) || new Date().toISOString(),
+            formData: (c.form_data as Record<string, unknown>) || {}
+          })
+        }
+      })
+    }
+  } catch {}
+
+  return results
 }
 
 export async function getCoachAvailability(coachId: string): Promise<CoachAvailabilitySlot[]> {

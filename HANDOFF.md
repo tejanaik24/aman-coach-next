@@ -1,129 +1,211 @@
-# HANDOFF — Session: Trigger Fix + E2E Verification
-# Date: 2026-07-24
-# Project: aman-coach-next (Aman Khurana Fitness Coach App)
+# AMAN KHURANA FITNESS — PWA PROJECT HANDOFF & MEMORY LOG
 
-## STATUS: ALL CLEAR — Trigger fixed, E2E 4/4 PASS
-
-All auth flows working. Ready for deploy.
+**Last Updated:** July 25, 2026  
+**Production URL:** [https://aman-coach-next.vercel.app](https://aman-coach-next.vercel.app)  
+**Project Location:** `C:\claude code\aman-coach-next`  
 
 ---
 
-## WHAT WAS DONE THIS SESSION
+## 1. COMPLETED PHASES SUMMARY
 
-### 1. Trigger Fixed (via Supabase Dashboard SQL Editor)
-- Dropped old `on_auth_user_created` trigger and `handle_new_user()` function
-- Recreated with `public.profiles` schema prefix
-- Updated trigger to set `must_reset_password=true` for new clients, `false` for coaches
+### ✅ Phase 1 — Core App Upgrade
+- Built modern Dark Gold PWA UI framework with Next.js 16 (App Router), Tailwind CSS, Framer Motion, and GSAP.
+- Client Portal (`/home`, `/workout`, `/nutrition`, `/progress`) & Coach Portal (`/dashboard`, `/clients`, `/plans`, `/fees`, `/checkins`).
+- Authentication via Supabase (`AuthContext`) with automatic role routing (`client` vs `coach`).
 
-**Final trigger SQL (applied):**
-```sql
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP FUNCTION IF EXISTS handle_new_user();
+### ✅ Phase 2 — Forms Upgrade
+- **Form 1: Standard Joining Questionnaire** (`/onboarding`) — 8 multi-step wizard sections matching 100% of Aman's original fields.
+- **Form 2: AN-PN Questionnaire** (`/onboarding/antenatal`) — Pregnancy specific 8+ sections with BP & blood glucose tracking.
+- **Form 3: Weekly Check-in Form** (`/checkin`) — 5 sections, 6 photo slots, 5-day cooldown guard, PDF download via `jsPDF`, and gold confetti.
+- **Form 4: Coach Submissions View** (`/submissions`) — Filterable list of all submissions (client, type, date) with full detail view.
 
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, name, phone, role, must_reset_password)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'name', 'User'),
-    NULLIF(NEW.raw_user_meta_data->>'phone', ''),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'client'),
-    CASE WHEN COALESCE(NEW.raw_user_meta_data->>'role', 'client') = 'client' THEN true ELSE false END
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+### ✅ Phase 3 — WhatsApp + Automation Setup
+- **WAHA Container**: Running on `http://localhost:3000` (`devlikeapro/waha`) with session `aman-coach` (QR scan pending).
+- **n8n Container**: Running on `http://localhost:5678` (`n8nio/n8n`).
+- **WhatsApp Integration Module**: `src/lib/whatsapp.ts` for automated WhatsApp alerts, check-in reminders, and welcome messages.
+- **Automated Webhooks**: `/api/forms/submit`, `/api/webhooks/checkin-reminder`, `/api/clients/create`.
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+### ✅ Phase 4 — Badges & Milestones
+- Database migration `20260725000002_create_badges.sql` created and executed.
+- `src/lib/badges.ts` helper with automated condition checks & canvas gold confetti particle animation.
+- `BadgesGrid.tsx` component mounted on Client Home (`/home`), Progress (`/progress`), and Coach Client Detail View (`/clients/[id]`).
+
+### ✅ Phase 5 — Booking System
+- Database migration `20260725000003_create_bookings.sql` created and executed.
+- `src/lib/bookings.ts` helper for availability config, 30-min slot generation, and call booking management.
+- Client Booking Page (`/schedule`) & Coach Schedule & Calendar View (`/coach/schedule`).
+- Hero "Book Call" button on Client Home page.
+
+### ✅ Phase 6 — Payments System & GST Invoices
+- Database migration `20260725000004_create_payments.sql` created and executed.
+- `src/lib/payments.ts` helper for UPI link generation (`upi://pay?pa=amankhurana@upi...`), official GST Tax Invoice PDF generation (`generateGstInvoicePdf`), and automated payment reminders.
+- Coach Fee Ledger (`/fees`) with overdue highlight in red, pending in gold, paid in green, Monthly Revenue bar chart, UPI link generator, GST Invoice download, and WhatsApp reminders (1 week before, 1 day before, 1 week overdue).
+- Client Payments View (`/payments`).
+
+### ✅ Phase 7 — PWA & Offline Experience
+- `public/manifest.json` with AK Coach branding.
+- Service Worker `public/sw.js` for caching static assets, images, and plans offline.
+- `PwaInstallPrompt.tsx` ("Add to Home Screen" banner) mounted in root layout.
+
+---
+
+## 2. DATABASE MIGRATIONS APPLIED (ALL 4)
+
+1. `20260725000001_create_form_submissions.sql`: Created `form_submissions` table & RLS policies.
+2. `20260725000002_create_badges.sql`: Created `badges` & `client_badges` tables + 8 default seeded badges.
+3. `20260725000003_create_bookings.sql`: Created `availability` & `bookings` tables + RLS policies.
+4. `20260725000004_create_payments.sql`: Created `invoices` & `payments` transaction log tables + RLS policies.
+
+---
+
+## 3. ENVIRONMENT VARIABLES (`.env.local`)
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://muuegtbyaehlrfqjluqz.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1...
+RESEND_API_KEY=
+AUTOMATION_SECRET=akcoach-webhook-2026
+SETUP_SECRET=akcoach-setup-2026
+
+WAHA_URL=http://localhost:3000
+WAHA_SESSION=aman-coach
+WAHA_API_KEY=aman-coach
+AMAN_WHATSAPP=919815690656
+N8N_URL=http://localhost:5678
 ```
 
-### 2. Schema Fix: `clients` table
-- Added `email TEXT` column to `clients` table (was missing, caused e2e test failure)
+---
 
-```sql
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS email TEXT;
+## 4. CONTAINER STATUS & AUTOMATION INFRASTRUCTURE
+
+- **WAHA**: Running on `http://localhost:3000` (ID: `16ed0b15a3ba`). Session `aman-coach` started; QR code saved at `qr.png` (scan pending until tomorrow when Aman wakes up).
+- **n8n**: Running on `http://localhost:5678` (ID: `fada4662d229`). Workflows to be built in next phase.
+
+### WhatsApp Automation Triggers Status:
+- ✅ Form Submission Coach Alert (`/api/forms/submit`) — **BUILT**
+- ✅ New Client Welcome WhatsApp (`/api/clients/create`) — **BUILT**
+- ✅ Weekly Check-in Reminder Webhook (`/api/webhooks/checkin-reminder`) — **BUILT**
+- ✅ Payment Reminders (1 week before, 1 day before, 1 week overdue) — **BUILT**
+- ✅ Badge Unlock WhatsApp Alert — **BUILT**
+- ⏳ Pending: Live QR code scan by Coach Aman on WhatsApp.
+
+---
+
+## 5. ALL 28 GENERATED ROUTES LIST
+
+```
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/admin/setup-coach
+├ ƒ /api/clients/create
+├ ƒ /api/forms/submit
+├ ƒ /api/webhooks/checkin
+├ ƒ /api/webhooks/checkin-reminder
+├ ○ /checkin
+├ ○ /checkins
+├ ○ /clients
+├ ƒ /clients/[id]
+├ ○ /coach/schedule
+├ ○ /dashboard
+├ ○ /diet
+├ ○ /fees
+├ ○ /home
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /nutrition
+├ ○ /onboarding
+├ ○ /onboarding/antenatal
+├ ○ /payments
+├ ○ /plans
+├ ƒ /plans/nutrition/[id]
+├ ƒ /plans/workout/[id]
+├ ○ /progress
+├ ○ /reset-password
+├ ○ /schedule
+├ ○ /submissions
+└ ○ /workout
 ```
 
-### 3. E2E Test Fix
-- `scripts/e2e-fixes.mjs`: Removed invalid `name` and `email` fields from client record insert (clients table doesn't have `name` column, and the real create-client API doesn't insert it)
+---
 
-### 4. Previous Session Work (carried forward)
-- **Auth middleware**: `src/proxy.ts` — must_reset_password check, role protection, login redirect
-- **Login flow**: email+password, checks must_reset_password before role routing
-- **Reset password**: flips flag, redirects coach→/dashboard, client→/home
-- **Coach dashboard**: real Supabase queries, adherence fix
-- **Client home**: fetches real coach name
-- **Client workout**: PDF download with jsPDF
-- **Check-in**: 5-day cooldown
-- **Plan builders**: workout + nutrition CRUD
-- **DB data fix**: client records linked to coach, fee records added
+## 6. DESIGN SYSTEM TOKENS
+
+- **Background Primary**: `#0A0A0A`
+- **Surface / Card**: `#121212` (Border: `#1A1A1A` / `#27272A`)
+- **Accent Gold**: `#FFB800` (Hover: `#FFC82C`, Sheen: `#FFD700`)
+- **Status Colors**: Overdue Red (`#EF4444`), Active Gold (`#FFB800`), Completed Green (`#10B981`)
+- **Typography**: Inter (Body) & Space Grotesk (Headings)
 
 ---
 
-## E2E TEST RESULTS (FINAL)
+## 7. PACKAGE LIST (15 DEPENDENCIES)
 
-| # | Flow | Status |
-|---|------|--------|
-| 1 | Coach creates client → profile auto-created by trigger | ✅ PASS |
-| 2 | Profile has must_reset_password=true | ✅ PASS |
-| 3 | Client login → would redirect to /reset-password | ✅ PASS |
-| 4 | Reset password → flag flips → would redirect to /home | ✅ PASS |
-| 3b | Workout plan created → client sees it | ✅ PASS |
-| 4b | Client check-in → form_data in DB | ✅ PASS |
-| 5 | Coach reviews check-in → feedback | ✅ PASS |
-| 6 | Coach marks fee paid → status=paid | ✅ PASS |
-
-**e2e-fixes.mjs: 4/4 PASS**
-**e2e-test.mjs: 6/6 PASS (expected)**
-
----
-
-## CREDENTIALS
-
-- Coach: coach@akfitness.in / AmanCoach@2026
-- Client: tejasolryder24@gmail.com / Welcome@123
-- Test client (created by e2e): e2e-fix-*@akfitness.in / E2E_Fixed@2026
-- Supabase project: muuegtbyaehlrfqjluqz
-- Supabase URL: https://muuegtbyaehlrfqjluqz.supabase.co
-- Dev port: 3001
-- Live: https://aman-coach-next.vercel.app
-- All secrets in `.env.local`
+1. `next` (v16.2.6)
+2. `react` & `react-dom` (v19)
+3. `@supabase/supabase-js`
+4. `@supabase/ssr`
+5. `motion` (Framer Motion v12)
+6. `gsap`
+7. `jspdf`
+8. `recharts`
+9. `lucide-react`
+10. `date-fns`
+11. `react-hot-toast`
+12. `clsx`
+13. `tailwind-merge`
+14. `tailwindcss`
+15. `typescript`
 
 ---
 
-## KEY FILES
+## 8. BADGE TYPES (ALL 8)
 
-| File | Purpose |
-|------|---------|
-| `src/proxy.ts` | Auth middleware (must_reset_password, role protection) |
-| `src/app/(auth)/login/page.tsx` | Login with must_reset_password check |
-| `src/app/(auth)/reset-password/page.tsx` | Password reset with role-based redirect |
-| `src/app/(coach)/plans/workout/[id]/page.tsx` | Workout plan builder |
-| `src/app/(coach)/plans/nutrition/[id]/page.tsx` | Nutrition plan builder |
-| `src/app/(client)/checkin/page.tsx` | Check-in with 5-day cooldown |
-| `src/app/(client)/workout/page.tsx` | Workout view with PDF download |
-| `scripts/e2e-fixes.mjs` | E2E test for trigger + reset password flow |
-| `supabase/fix-trigger.sql` | SQL fix (applied via dashboard) |
+1. `first_checkin` — **First Check-in**: Submitted first weekly check-in form.
+2. `streak_4w` — **4-Week Streak**: Completed 4 consecutive weekly check-ins.
+3. `streak_8w` — **8-Week Streak**: Completed 8 consecutive weekly check-ins.
+4. `streak_12w` — **12-Week Master**: Completed 12 consecutive weekly check-ins.
+5. `weight_loss_5kg` — **5kg Milestone**: Achieved first 5kg weight loss.
+6. `workout_80` — **Iron Commitment**: Achieved 80%+ workout completion.
+7. `diet_90` — **Nutrition Master**: Maintained 90%+ diet adherence.
+8. `first_plan` — **Plan Activated**: Received custom nutrition or workout plan.
 
 ---
 
-## ARCHITECTURE NOTES
+## 9. ALL CREATED/MODIFIED FILE PATHS
 
-- Next.js 16.2.6 uses `proxy.ts` NOT `middleware.ts` (both present = error)
-- Role always read from `profiles` table, never from `user_metadata`
-- `must_reset_password` on profiles controls forced password reset
-- Trigger sets `must_reset_password=true` for clients, `false` for coaches
-- Default client password: Welcome@123
-- Build passes: `npm run build` ✅
-- Lint has pre-existing warnings (unused vars, img vs Image, React 19 setState-in-effect) — none from our changes
+- `supabase/migrations/20260725000001_create_form_submissions.sql`
+- `supabase/migrations/20260725000002_create_badges.sql`
+- `supabase/migrations/20260725000003_create_bookings.sql`
+- `supabase/migrations/20260725000004_create_payments.sql`
+- `src/lib/whatsapp.ts`
+- `src/lib/badges.ts`
+- `src/lib/bookings.ts`
+- `src/lib/payments.ts`
+- `src/components/client/BadgesGrid.tsx`
+- `src/components/shared/PwaInstallPrompt.tsx`
+- `src/app/(client)/onboarding/page.tsx`
+- `src/app/(client)/onboarding/antenatal/page.tsx`
+- `src/app/(client)/checkin/page.tsx`
+- `src/app/(client)/schedule/page.tsx`
+- `src/app/(client)/payments/page.tsx`
+- `src/app/(coach)/submissions/page.tsx`
+- `src/app/(coach)/coach/schedule/page.tsx`
+- `src/app/(coach)/fees/page.tsx`
+- `src/app/(coach)/clients/[id]/page.tsx`
+- `src/app/(client)/home/page.tsx`
+- `src/app/(client)/progress/page.tsx`
+- `src/app/api/forms/submit/route.ts`
+- `src/app/api/webhooks/checkin-reminder/route.ts`
+- `src/app/api/clients/create/route.ts`
+- `src/proxy.ts`
+- `public/manifest.json`
+- `public/sw.js`
 
 ---
 
-## NEXT STEPS
+## 10. NEXT SESSION START INSTRUCTIONS
 
-1. Deploy to Vercel: `git push` (if repo connected)
-2. Test live login flow on https://aman-coach-next.vercel.app
-3. Verify Resend domain (akfitness.in) for production emails
+1. Have Coach Aman open WhatsApp -> Linked Devices -> Link a Device and scan `qr.png` generated by WAHA.
+2. Verify WAHA session status via `GET http://localhost:3000/api/sessions/aman-coach`.
+3. Construct custom n8n workflows on `http://localhost:5678` for advanced drip notifications.
