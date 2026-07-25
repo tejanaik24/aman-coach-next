@@ -345,15 +345,17 @@ img {
 
 .btn-mobile-header {
   display: none;
-  padding: 0.4rem 0.85rem;
-  font-size: 0.75rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.7rem;
+  border-radius: 6px;
   border: 1px solid var(--gold);
   color: var(--gold);
+  background: rgba(255, 184, 0, 0.15);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
+  box-shadow: 0 0 10px rgba(255, 184, 0, 0.2);
 }
 
 .mobile-sticky-bar {
@@ -362,13 +364,13 @@ img {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 999;
-  padding: 0.75rem 1rem;
+  z-index: 9999;
+  padding: 0.65rem 1rem;
   background: rgba(10, 10, 10, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 184, 0, 0.3);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
 }
 
 .mobile-sticky-btn {
@@ -376,12 +378,12 @@ img {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0.85rem;
+  padding: 0.8rem;
   background: linear-gradient(135deg, var(--gold), var(--gold-dark));
   color: var(--bg-primary);
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   border-radius: var(--radius);
@@ -392,9 +394,6 @@ img {
   .btn-mobile-header {
     display: inline-flex;
   }
-}
-
-@media (max-width: 768px) {
   .mobile-sticky-bar {
     display: block;
   }
