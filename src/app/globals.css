@@ -63,7 +63,7 @@
   }
 }
 
-/* Ghost background — faint editorial photo behind page content, fades to pure black */
+/* Ghost background — editorial photo behind page content, fades to pure black */
 .ghost-bg {
   position: fixed;
   inset: 0;
@@ -71,10 +71,10 @@
   pointer-events: none;
   background-size: cover;
   background-position: center top;
-  opacity: 0.16;
-  filter: grayscale(0.3) contrast(1.1);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
-  mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
+  opacity: 0.4;
+  filter: grayscale(0.15) contrast(1.05);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 95%);
+  mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 95%);
 }
 
 /* Editorial film grain — fixed overlay, sits above content */
