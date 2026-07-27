@@ -177,7 +177,10 @@ export default function PlansPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 space-y-5 pb-8 bg-bg-primary min-h-full">
+    <div className="relative min-h-full bg-bg-primary">
+      <div className="ghost-bg" style={{ backgroundImage: "url(/images/backgrounds/ghost-plans.jpg)" }} />
+      <div className="grain-overlay" />
+      <div className="relative z-10 px-5 pt-2 space-y-5 pb-8">
       <h2 className="font-heading font-bold text-xl text-text-primary tracking-tight">
         Plans Builder
       </h2>
@@ -410,6 +413,7 @@ export default function PlansPage() {
           </>
         )}
       </AnimatePresence>
+      </div>
     </div>
   )
 }

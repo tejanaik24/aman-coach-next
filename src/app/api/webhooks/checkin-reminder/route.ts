@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { sendCheckinReminder } from "@/lib/whatsapp"
+import { withRetry } from "@/lib/db-retry"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -29,10 +30,12 @@ async function handleReminderTrigger(req: Request) {
     }
 
     // 1. Fetch active clients with profile phone numbers
-    const { data: clients, error: clientErr } = await supabase
-      .from("clients")
-      .select("id, user_id, profiles!inner(name, phone)")
-      .eq("status", "active")
+    const { data: clients, error: clientErr } = await withRetry(() =>
+      supabase
+        .from("clients")
+        .select("id, user_id, profiles!user_id(name, phone)")
+        .eq("status", "active")
+    )
 
     if (clientErr) {
       console.error("Error fetching active clients for reminder:", clientErr)
@@ -54,16 +57,51 @@ async function handleReminderTrigger(req: Request) {
       if (!phone) continue
 
       // Check if client submitted check-in in past 7 days
-      const { data: recentCheckin } = await supabase
-        .from("checkins")
-        .select("id, submitted_at")
-        .eq("client_id", client.id)
-        .gte("submitted_at", sevenDaysAgo)
-        .maybeSingle()
+      const { data: recentCheckin } = await withRetry(() =>
+        supabase
+          .from("checkins")
+          .select("id, submitted_at")
+          .eq("client_id", client.id)
+          .gte("submitted_at", sevenDaysAgo)
+          .maybeSingle()
+      )
 
       if (!recentCheckin) {
+        // Skip if a check-in reminder was already sent to this client in the last 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        const { data: recentReminder } = await withRetry(() =>
+          supabase
+            .from("reminder_log")
+            .select("id")
+            .eq("client_id", client.id)
+            .eq("reminder_type", "checkin")
+            .gte("sent_at", twentyFourHoursAgo)
+            .maybeSingle()
+        )
+
+        if (recentReminder) {
+          results.push({
+            clientId: client.id,
+            clientName,
+            status: "reminder_already_sent"
+          })
+          continue
+        }
+
         // Send WhatsApp check-in reminder
         const res = await sendCheckinReminder(phone, clientName)
+
+        if (res.success) {
+          const { error: logError } = await withRetry(() =>
+            supabase
+              .from("reminder_log")
+              .insert({ client_id: client.id, reminder_type: "checkin" })
+          )
+          if (logError) {
+            console.error("Failed to log sent reminder (send already succeeded, not retrying):", logError)
+          }
+        }
+
         results.push({
           clientId: client.id,
           clientName,

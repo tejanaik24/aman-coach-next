@@ -16,7 +16,7 @@ export async function getClientProfile(uid: string): Promise<Client | null> {
 export async function getCoachClients(coachId: string): Promise<ClientWithProfile[]> {
   const { data, error } = await sb()
     .from("clients")
-    .select("*, profile:profiles(*)")
+    .select("*, profile:profiles!user_id(*)")
     .eq("coach_id", coachId)
     .order("created_at", { ascending: false })
   if (error || !data) return []

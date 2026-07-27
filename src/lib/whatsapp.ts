@@ -126,3 +126,28 @@ export async function sendCoachSubmissionAlert(coachPhone: string, clientName: s
     `https://aman-coach-next.vercel.app/submissions`
   return sendWhatsAppText(coachPhone, text)
 }
+
+/**
+ * Template: New Consultation Call Booking Alert for Coach
+ */
+export async function sendConsultationBookingAlert(coachPhone: string, name: string, phone: string, email: string) {
+  const text = `📞 *NEW CONSULTATION CALL BOOKED*\n\n` +
+    `👤 Name: *${name}*\n` +
+    `📱 Phone: ${phone}\n` +
+    `✉️ Email: ${email || "—"}\n` +
+    `📅 Time: ${new Date().toLocaleString("en-IN")}\n\n` +
+    `Payment proof uploaded — review in Coach Portal.`
+  return sendWhatsAppText(coachPhone, text)
+}
+
+/**
+ * Template: New General Enquiry Alert for Coach
+ */
+export async function sendEnquiryAlert(coachPhone: string, name: string, phone: string, interest: string) {
+  const text = `📝 *NEW ENQUIRY*\n\n` +
+    `👤 Name: *${name}*\n` +
+    `📱 Phone: ${phone}\n` +
+    `🎯 Interested In: ${interest || "—"}\n` +
+    `📅 Time: ${new Date().toLocaleString("en-IN")}`
+  return sendWhatsAppText(coachPhone, text)
+}

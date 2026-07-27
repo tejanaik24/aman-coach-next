@@ -142,7 +142,10 @@ export default function ProgressPage() {
   const hasMeasurements = checkins.some((c) => c.form_data?.measurements)
 
   return (
-    <div className="px-5 pt-3 flex flex-col gap-6 bg-bg-primary min-h-screen pb-28 relative">
+    <div className="relative min-h-screen bg-bg-primary">
+      <div className="ghost-bg" style={{ backgroundImage: "url(/images/backgrounds/ghost-progress.jpg)" }} />
+      <div className="grain-overlay" />
+      <div className="relative z-10 px-5 pt-3 flex flex-col gap-6 pb-28">
       {/* Ambient Glow */}
       <div className="radial-gold-ambient top-20 right-0 opacity-40" />
 
@@ -291,6 +294,7 @@ export default function ProgressPage() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   )

@@ -175,7 +175,10 @@ export default function FeesPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 space-y-6 pb-28 bg-bg-primary text-text-primary min-h-screen max-w-6xl mx-auto">
+    <div className="relative min-h-screen bg-bg-primary">
+      <div className="ghost-bg" style={{ backgroundImage: "url(/images/backgrounds/ghost-fees.jpg)" }} />
+      <div className="grain-overlay" />
+      <div className="relative z-10 px-5 pt-2 space-y-6 pb-28 text-text-primary max-w-6xl mx-auto">
 
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-5">
@@ -394,6 +397,7 @@ export default function FeesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   )
 }

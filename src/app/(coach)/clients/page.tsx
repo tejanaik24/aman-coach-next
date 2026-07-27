@@ -42,12 +42,13 @@ export default function ClientsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setIsLoading(false); return }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("clients")
-      .select("*, profile:profiles(*)")
+      .select("*, profile:profiles!user_id(*)")
       .eq("coach_id", user.id)
       .order("created_at", { ascending: false })
 
+    if (error) console.error("fetchClients failed:", error.message)
     setClients((data ?? []) as ClientWithProfile[])
     setIsLoading(false)
   }, [])
@@ -74,7 +75,10 @@ export default function ClientsPage() {
   ]
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-5 bg-bg-primary min-h-full pb-4">
+    <div className="relative min-h-full bg-bg-primary">
+      <div className="ghost-bg" style={{ backgroundImage: "url(/images/backgrounds/ghost-clients.jpg)" }} />
+      <div className="grain-overlay" />
+      <div className="relative z-10 px-5 pt-2 flex flex-col gap-5 pb-4">
       {/* Header */}
       <div className="flex items-center gap-2">
         <h2 className="font-heading font-bold text-xl text-text-primary tracking-tight">
@@ -206,6 +210,7 @@ export default function ClientsPage() {
           fetchClients()
         }}
       />
+      </div>
     </div>
   )
 }

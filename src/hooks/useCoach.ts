@@ -25,10 +25,11 @@ export function useCoach() {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
 
     // 1. Fetch coach's clients (with profile)
-    const { data: clientRows } = await supabase
+    const { data: clientRows, error: clientRowsError } = await supabase
       .from("clients")
-      .select("*, profile:profiles(*)")
+      .select("*, profile:profiles!user_id(*)")
       .eq("coach_id", user.id)
+    if (clientRowsError) console.error("useCoach load failed:", clientRowsError.message)
 
     const coachClients = (clientRows ?? []) as ClientWithProfile[]
     setClients(coachClients)

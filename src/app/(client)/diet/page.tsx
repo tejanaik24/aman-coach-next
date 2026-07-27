@@ -150,14 +150,20 @@ export default function ClientDietPage() {
 
   return (
     <div className="px-5 pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-4">
-      {/* Header */}
-      <div className="flex flex-col">
-        <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
-          Active Nutrition
-        </span>
-        <h2 className="font-heading font-bold text-xl text-text-primary leading-tight mt-0.5">
-          {plan.notes || "Diet Plan"}
-        </h2>
+      {/* Header — photo bleed hero */}
+      <div
+        className="relative rounded-2xl overflow-hidden border border-border-subtle h-36 flex items-end p-4"
+        style={{ backgroundImage: "url(/images/backgrounds/box-nutrition.jpg)", backgroundSize: "cover", backgroundPosition: "center" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+        <div className="relative z-10 flex flex-col">
+          <span className="text-[11px] font-bold text-accent-gold uppercase tracking-widest">
+            Active Nutrition
+          </span>
+          <h2 className="font-heading text-xl text-white leading-tight mt-0.5">
+            {plan.notes || "Diet Plan"}
+          </h2>
+        </div>
       </div>
 
       {/* Macro Bento Grid */}

@@ -199,11 +199,12 @@ export async function getClientBookings(clientId: string): Promise<Booking[]> {
  */
 export async function getCoachBookings(coachId: string): Promise<Booking[]> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("bookings")
-      .select("*, clients(id, user_id, profiles(name, phone))")
+      .select("*, clients(id, user_id, profiles!user_id(name, phone))")
       .eq("coach_id", coachId)
       .order("booking_date", { ascending: true })
+    if (error) console.error("getCoachBookings failed:", error.message)
 
     if (data) {
       return data.map((b: any) => {

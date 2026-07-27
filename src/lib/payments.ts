@@ -43,10 +43,11 @@ export function generateUpiPaymentUrl(amount: number, clientName: string, refId:
  */
 export async function getAllInvoices(): Promise<Invoice[]> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("invoices")
-      .select("*, clients(id, user_id, profiles(name, phone))")
+      .select("*, clients(id, user_id, profiles!user_id(name, phone))")
       .order("due_date", { ascending: false })
+    if (error) console.error("getAllInvoices failed:", error.message)
 
     if (data && data.length > 0) {
       return data.map((inv: any) => {

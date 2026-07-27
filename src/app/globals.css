@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -18,8 +18,8 @@
   --color-success: #00CC66;
   --color-warning: #FFB800;
   --color-danger: #FF4444;
-  --font-heading: 'Syne', 'Space Grotesk', 'Inter', sans-serif;
-  --font-sans: 'Outfit', 'Inter', sans-serif;
+  --font-heading: 'Fraunces', 'Georgia', serif;
+  --font-sans: 'Instrument Sans', 'Inter', sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -41,11 +41,11 @@
   body {
     background: #0A0A0A;
     color: var(--color-text-primary);
-    font-family: 'Outfit', 'Inter', sans-serif;
+    font-family: 'Instrument Sans', 'Inter', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Syne', 'Inter', sans-serif;
-    letter-spacing: -0.02em;
+    font-family: 'Fraunces', 'Georgia', serif;
+    letter-spacing: -0.01em;
   }
   ::-webkit-scrollbar {
     width: 4px;
@@ -61,6 +61,49 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 184, 0, 0.5);
   }
+}
+
+/* Ghost background — faint editorial photo behind page content, fades to pure black */
+.ghost-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.16;
+  filter: grayscale(0.3) contrast(1.1);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
+  mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
+}
+
+/* Editorial film grain — fixed overlay, sits above content */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Editorial ledger — hairline-divided stat strip, no icon bubbles, no card chrome */
+.ledger {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.015);
+}
+.ledger-cell {
+  border-color: var(--color-border-subtle);
+}
+.ledger-cell + .ledger-cell {
+  border-left: 1px solid var(--color-border-subtle);
+}
+@media (max-width: 480px) {
+  .ledger-row { grid-template-columns: 1fr 1fr; }
+  .ledger-cell:nth-child(2) { border-left: 1px solid var(--color-border-subtle); }
+  .ledger-cell:nth-child(3) { border-left: none; border-top: 1px solid var(--color-border-subtle); }
 }
 
 /* Glassmorphism 2.0 */
