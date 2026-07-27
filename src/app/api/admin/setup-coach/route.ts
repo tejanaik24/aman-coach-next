@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const SETUP_SECRET = process.env.SETUP_SECRET
-if (!SETUP_SECRET) {
-  throw new Error("SETUP_SECRET environment variable is missing")
-}
-
 const COACH_EMAIL = "coach@akfitness.in"
 const COACH_PASSWORD = "AmanCoach@2026"
 
 export async function GET(request: Request) {
+  const SETUP_SECRET = process.env.SETUP_SECRET
+  if (!SETUP_SECRET) {
+    return NextResponse.json({ error: "SETUP_SECRET environment variable is missing" }, { status: 500 })
+  }
+
   const { searchParams } = new URL(request.url)
   if (searchParams.get("secret") !== SETUP_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
