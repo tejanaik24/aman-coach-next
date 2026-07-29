@@ -23,7 +23,7 @@ export function FormHeader({
       {/* Top Gold Progress Fill */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-900 overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-[#B28000] via-[#FFB800] to-[#FFE082] transition-all duration-300 ease-out shadow-[0_0_12px_rgba(255,184,0,0.5)]"
+          className="h-full bg-gradient-to-r from-[#C2470A] via-[#FF6A1A] to-[#FFA66B] transition-all duration-300 ease-out shadow-[0_0_12px_rgba(255, 106, 26,0.5)]"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -35,14 +35,14 @@ export function FormHeader({
             onClick={onBack}
             className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
           >
-            <ChevronLeft className="size-4 text-[#FFB800]" /> BACK
+            <ChevronLeft className="size-4 text-[#FF6A1A]" /> BACK
           </button>
         ) : (
           <div className="w-12" />
         )}
 
         <span className="text-xs font-mono font-medium text-zinc-400 tracking-wider">
-          <strong className="text-[#FFB800]">{currentStep + 1}</strong> of {totalSteps}
+          <strong className="text-[#FF6A1A]">{currentStep + 1}</strong> of {totalSteps}
         </span>
       </div>
     </div>
@@ -60,8 +60,8 @@ export function ResumeDraftBanner({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="w-full max-w-sm rounded-2xl bg-[#141414] border border-[#FFB800]/40 p-6 space-y-4 shadow-2xl text-center">
-        <div className="size-12 rounded-full bg-[#FFB800]/10 border border-[#FFB800]/30 flex items-center justify-center mx-auto text-[#FFB800]">
+      <div className="w-full max-w-sm rounded-2xl bg-[#141414] border border-[#FF6A1A]/40 p-6 space-y-4 shadow-2xl text-center">
+        <div className="size-12 rounded-full bg-[#FF6A1A]/10 border border-[#FF6A1A]/30 flex items-center justify-center mx-auto text-[#FF6A1A]">
           <RefreshCw className="size-6 animate-spin-slow" />
         </div>
         <div>
@@ -74,7 +74,7 @@ export function ResumeDraftBanner({
           <button
             type="button"
             onClick={onResume}
-            className="w-full py-3 rounded-xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black hover:bg-[#FFC82C] transition-all shadow-lg shadow-[#FFB800]/10"
+            className="w-full py-3 rounded-xl bg-[#FF6A1A] text-xs font-bold uppercase tracking-wider text-white hover:bg-[#FF8540] transition-all shadow-lg shadow-[#FF6A1A]/10"
           >
             Resume Saved Draft
           </button>
@@ -154,14 +154,14 @@ export function ImageCardPicker({
             onClick={() => onChange(opt.value)}
             className={`flex items-center gap-3.5 p-4 rounded-xl text-left border transition-all duration-200 ${
               isSelected
-                ? "bg-[#FFB800]/15 border-[#FFB800] ring-1 ring-[#FFB800]/50 shadow-[0_0_15px_rgba(255,184,0,0.15)]"
+                ? "bg-[#FF6A1A]/15 border-[#FF6A1A] ring-1 ring-[#FF6A1A]/50 shadow-[0_0_15px_rgba(255, 106, 26,0.15)]"
                 : "bg-[#141414] border-zinc-800 hover:border-zinc-700 hover:bg-[#1A1A1A]"
             }`}
           >
             {opt.icon && (
               <div
                 className={`size-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                  isSelected ? "bg-[#FFB800] text-black" : "bg-zinc-800 text-zinc-400"
+                  isSelected ? "bg-[#FF6A1A] text-white" : "bg-zinc-800 text-zinc-400"
                 }`}
               >
                 {opt.icon}
@@ -169,10 +169,10 @@ export function ImageCardPicker({
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-semibold truncate ${isSelected ? "text-[#FFB800]" : "text-white"}`}>
+                <span className={`text-sm font-semibold truncate ${isSelected ? "text-[#FF6A1A]" : "text-white"}`}>
                   {opt.label}
                 </span>
-                {isSelected && <Check className="size-4 text-[#FFB800] flex-shrink-0 ml-2" />}
+                {isSelected && <Check className="size-4 text-[#FF6A1A] flex-shrink-0 ml-2" />}
               </div>
               {opt.subtitle && <p className="text-xs text-zinc-400 mt-0.5 truncate">{opt.subtitle}</p>}
             </div>
@@ -218,7 +218,7 @@ export function ChipMultiSelect({
             onClick={() => toggle(opt)}
             className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all border ${
               isSelected
-                ? "bg-[#FFB800] text-black border-[#FFB800] shadow-[0_0_12px_rgba(255,184,0,0.3)] scale-105"
+                ? "bg-[#FF6A1A] text-white border-[#FF6A1A] shadow-[0_0_12px_rgba(255, 106, 26,0.3)] scale-105"
                 : "bg-[#141414] text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-[#1A1A1A]"
             }`}
           >
@@ -253,7 +253,7 @@ export function ChipSingleSelect({
             onClick={() => onChange(opt)}
             className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all border ${
               isSelected
-                ? "bg-[#FFB800] text-black border-[#FFB800] shadow-[0_0_12px_rgba(255,184,0,0.3)] scale-105"
+                ? "bg-[#FF6A1A] text-white border-[#FF6A1A] shadow-[0_0_12px_rgba(255, 106, 26,0.3)] scale-105"
                 : "bg-[#141414] text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-[#1A1A1A]"
             }`}
           >
@@ -287,7 +287,7 @@ export function GoldSlider({
   return (
     <div className="space-y-6 bg-[#141414] p-6 rounded-2xl border border-zinc-800">
       <div className="text-center space-y-1">
-        <span className="text-4xl font-extrabold text-[#FFB800] font-heading drop-shadow-[0_0_10px_rgba(255,184,0,0.4)]">
+        <span className="text-4xl font-extrabold text-[#FF6A1A] font-heading drop-shadow-[0_0_10px_rgba(255, 106, 26,0.4)]">
           {value}
           <span className="text-lg text-zinc-400 font-sans ml-1">{unit}</span>
         </span>
@@ -300,7 +300,7 @@ export function GoldSlider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-3 rounded-lg appearance-none cursor-pointer bg-zinc-800 accent-[#FFB800]"
+        className="w-full h-3 rounded-lg appearance-none cursor-pointer bg-zinc-800 accent-[#FF6A1A]"
       />
 
       {labels && (
@@ -350,7 +350,7 @@ export function NumberStepper({
         <button
           type="button"
           onClick={handleDecrement}
-          className="size-14 rounded-2xl bg-zinc-900 border border-zinc-800 text-2xl font-bold text-zinc-300 hover:text-white hover:border-[#FFB800] active:scale-95 transition-all flex items-center justify-center"
+          className="size-14 rounded-2xl bg-zinc-900 border border-zinc-800 text-2xl font-bold text-zinc-300 hover:text-white hover:border-[#FF6A1A] active:scale-95 transition-all flex items-center justify-center"
         >
           -
         </button>
@@ -361,15 +361,15 @@ export function NumberStepper({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-28 text-center text-4xl font-extrabold text-white bg-transparent outline-none border-b border-zinc-700 focus:border-[#FFB800]"
+            className="w-28 text-center text-4xl font-extrabold text-white bg-transparent outline-none border-b border-zinc-700 focus:border-[#FF6A1A]"
           />
-          {unit && <span className="text-sm font-semibold text-[#FFB800]">{unit}</span>}
+          {unit && <span className="text-sm font-semibold text-[#FF6A1A]">{unit}</span>}
         </div>
 
         <button
           type="button"
           onClick={handleIncrement}
-          className="size-14 rounded-2xl bg-zinc-900 border border-zinc-800 text-2xl font-bold text-zinc-300 hover:text-white hover:border-[#FFB800] active:scale-95 transition-all flex items-center justify-center"
+          className="size-14 rounded-2xl bg-zinc-900 border border-zinc-800 text-2xl font-bold text-zinc-300 hover:text-white hover:border-[#FF6A1A] active:scale-95 transition-all flex items-center justify-center"
         >
           +
         </button>
@@ -400,7 +400,7 @@ export function TextInputDark({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       required={required}
-      className="w-full rounded-2xl bg-[#141414] border border-zinc-800 px-5 py-4 text-base text-white placeholder-zinc-600 outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all"
+      className="w-full rounded-2xl bg-[#141414] border border-zinc-800 px-5 py-4 text-base text-white placeholder-zinc-600 outline-none focus:border-[#FF6A1A] focus:ring-2 focus:ring-[#FF6A1A]/20 transition-all"
     />
   )
 }
@@ -424,12 +424,16 @@ export function TextAreaDark({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full rounded-2xl bg-[#141414] border border-zinc-800 px-5 py-4 text-base text-white placeholder-zinc-600 outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 transition-all resize-none"
+      className="w-full rounded-2xl bg-[#141414] border border-zinc-800 px-5 py-4 text-base text-white placeholder-zinc-600 outline-none focus:border-[#FF6A1A] focus:ring-2 focus:ring-[#FF6A1A]/20 transition-all resize-none"
     />
   )
 }
 
 // ─── Photo Upload Screen Component ───────────────────────────────────────────
+
+export function isPhotoPathValue(v: string): boolean {
+  return v.startsWith("data:image") || /^[^/]+\/[^/]+\.(jpe?g|png|webp|gif|heic)$/i.test(v)
+}
 
 export function PhotoUploadScreen({
   label,
@@ -437,59 +441,79 @@ export function PhotoUploadScreen({
   files,
   onFilesChange,
   multiple = false,
+  userId,
 }: {
   label: string
   subtitle?: string
   files: string[]
   onFilesChange: (files: string[]) => void
   multiple?: boolean
+  userId?: string
 }) {
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploaded = Array.from(e.target.files || [])
-    if (!uploaded.length) return
+  const [previews, setPreviews] = useState<Record<number, string>>({})
+  const [uploadingCount, setUploadingCount] = useState(0)
 
-    Promise.all(
-      uploaded.map((file) => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = (ev) => resolve(ev.target?.result as string)
-          reader.readAsDataURL(file)
-        })
-      })
-    ).then((newFiles) => {
-      if (multiple) {
-        onFilesChange([...files, ...newFiles])
-      } else {
-        onFilesChange(newFiles.slice(0, 1))
-      }
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploaded = Array.from(e.target.files || [])
+    if (!uploaded.length || !userId) return
+
+    const startIdx = multiple ? files.length : 0
+    const localPreviews: Record<number, string> = {}
+    uploaded.forEach((file, i) => {
+      localPreviews[startIdx + i] = URL.createObjectURL(file)
     })
+    setPreviews((prev) => ({ ...prev, ...localPreviews }))
+    setUploadingCount((c) => c + uploaded.length)
+
+    try {
+      const uploadedPaths = await Promise.all(
+        uploaded.map(async (file) => {
+          const fd = new FormData()
+          fd.append("file", file)
+          const res = await fetch("/api/checkin/upload-photo", { method: "POST", body: fd })
+          if (!res.ok) return null
+          const data = await res.json()
+          return data.path as string
+        })
+      )
+      const validPaths = uploadedPaths.filter((p): p is string => !!p)
+      if (multiple) {
+        onFilesChange([...files, ...validPaths])
+      } else {
+        onFilesChange(validPaths.slice(0, 1))
+      }
+    } finally {
+      setUploadingCount((c) => Math.max(0, c - uploaded.length))
+    }
   }
 
   return (
     <div className="space-y-4">
-      <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-[#FFB800]/60 rounded-3xl cursor-pointer bg-[#141414] hover:bg-[#1A1A1A] hover:border-[#FFB800] transition-all group p-6">
+      <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-[#FF6A1A]/60 rounded-3xl cursor-pointer bg-[#141414] hover:bg-[#1A1A1A] hover:border-[#FF6A1A] transition-all group p-6">
         <div className="flex flex-col items-center justify-center text-center space-y-3">
-          <div className="size-16 rounded-full bg-[#FFB800]/10 border border-[#FFB800]/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Camera className="size-8 text-[#FFB800]" />
+          <div className="size-16 rounded-full bg-[#FF6A1A]/10 border border-[#FF6A1A]/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Camera className="size-8 text-[#FF6A1A]" />
           </div>
           <div>
             <p className="text-sm font-bold text-white uppercase tracking-wider">{label}</p>
-            <p className="text-xs text-zinc-400 mt-1">{subtitle || "Tap to take photo or choose file"}</p>
+            <p className="text-xs text-zinc-400 mt-1">
+              {uploadingCount > 0 ? "Uploading…" : subtitle || "Tap to take photo or choose file"}
+            </p>
           </div>
         </div>
         <input type="file" multiple={multiple} accept="image/*,application/pdf" onChange={handleUpload} className="hidden" />
       </label>
 
-      {files.length > 0 && (
+      {(files.length > 0 || Object.keys(previews).length > 0) && (
         <div className="grid grid-cols-2 gap-3 pt-2">
           {files.map((f, idx) => (
             <div
               key={idx}
               className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-square flex items-center justify-center p-2 group"
             >
-              {f.startsWith("data:image") ? (
+              {previews[idx] || isPhotoPathValue(f) ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={f} alt="preview" className="w-full h-full object-cover rounded-xl" />
+                <img src={previews[idx] || f} alt="preview" className="w-full h-full object-cover rounded-xl" />
               ) : (
                 <span className="text-xs text-zinc-400 font-mono">Document #{idx + 1}</span>
               )}
@@ -542,7 +566,7 @@ export function FormFooter({
           type="button"
           onClick={onNext}
           disabled={submitting || nextDisabled}
-          className="flex-1 py-4 rounded-2xl bg-[#FFB800] text-sm font-bold uppercase tracking-wider text-black hover:bg-[#FFC82C] shadow-lg shadow-[#FFB800]/20 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="flex-1 py-4 rounded-2xl bg-[#FF6A1A] text-sm font-bold uppercase tracking-wider text-white hover:bg-[#FF8540] shadow-lg shadow-[#FF6A1A]/20 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {submitting ? (
             "SUBMITTING..."

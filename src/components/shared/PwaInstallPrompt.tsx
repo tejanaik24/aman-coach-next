@@ -41,10 +41,10 @@ export default function PwaInstallPrompt() {
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
-          className="fixed bottom-20 left-4 right-4 max-w-sm mx-auto z-50 bg-[#121212] border border-[#FFB800]/50 rounded-2xl p-4 shadow-[0_0_30px_rgba(255,184,0,0.25)] flex items-center justify-between gap-3"
+          className="fixed bottom-20 left-4 right-4 max-w-sm mx-auto z-50 bg-[#121212] border border-[#FF6A1A]/50 rounded-2xl p-4 shadow-[0_0_30px_rgba(255, 106, 26,0.25)] flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3">
-            <div className="size-11 rounded-xl bg-[#FFB800]/20 border border-[#FFB800]/40 flex items-center justify-center text-[#FFB800] flex-shrink-0">
+            <div className="size-11 rounded-xl bg-[#FF6A1A]/20 border border-[#FF6A1A]/40 flex items-center justify-center text-[#FF6A1A] flex-shrink-0">
               <Smartphone className="size-6" />
             </div>
             <div>
@@ -56,7 +56,7 @@ export default function PwaInstallPrompt() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleInstallClick}
-              className="px-3.5 py-2 rounded-full bg-[#FFB800] text-black text-[10px] font-bold uppercase tracking-wider shadow-md hover:bg-[#FFC82C] cursor-pointer whitespace-nowrap"
+              className="px-3.5 py-2 rounded-full bg-[#FF6A1A] text-black text-[10px] font-bold uppercase tracking-wider shadow-md hover:bg-[#FF8540] cursor-pointer whitespace-nowrap"
             >
               Install
             </button>

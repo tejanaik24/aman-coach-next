@@ -12,7 +12,7 @@ interface InvoiceData {
 
 export function generateInvoice(data: InvoiceData): jsPDF {
   const doc = new jsPDF("p", "mm", "a4")
-  const gold = "#FFB800"
+  const gold = "#FF6A1A"
   const orange = "#E8501A"
   const black = "#1a1a1a"
 

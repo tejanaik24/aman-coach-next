@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Space_Grotesk } from "next/font/google"
+import { Inter, Space_Grotesk, Dancing_Script } from "next/font/google"
 import { Toaster } from "react-hot-toast"
 import { AuthProvider } from "@/contexts/AuthContext"
 import "./globals.css"
@@ -14,6 +14,12 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+})
+
+const dancingScript = Dancing_Script({
+  variable: "--font-script",
+  subsets: ["latin"],
+  weight: ["600", "700"],
 })
 
 export const metadata: Metadata = {
@@ -32,7 +38,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#FFB800",
+  themeColor: "#FF6A1A",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -47,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${dancingScript.variable} dark`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="AK Fitness Coach" />
@@ -70,7 +76,7 @@ export default function RootLayout({
               border: "1px solid #1A1A1A",
               borderRadius: "12px",
             },
-            success: { iconTheme: { primary: "#FFB800", secondary: "#0A0A0A" } },
+            success: { iconTheme: { primary: "#FF6A1A", secondary: "#0A0A0A" } },
             error: { iconTheme: { primary: "#F87171", secondary: "#0A0A0A" } },
           }}
         />

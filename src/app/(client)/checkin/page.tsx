@@ -111,7 +111,7 @@ function GoldConfettiCanvas() {
       x: number; y: number; vx: number; vy: number; size: number; color: string; rotation: number; rotSpeed: number
     }[] = []
 
-    const goldColors = ["#FFB800", "#FFD700", "#FFE082", "#D4AF37", "#FFFFFF"]
+    const goldColors = ["#FF6A1A", "#FF8540", "#FFA66B", "#C2470A", "#FFFFFF"]
 
     for (let i = 0; i < 120; i++) {
       particles.push({
@@ -290,7 +290,7 @@ export default function CheckinFormPage() {
     doc.setFillColor(10, 10, 10)
     doc.rect(0, 0, 210, 297, "F")
 
-    doc.setTextColor(255, 184, 0)
+    doc.setTextColor(255, 106, 26)
     doc.setFontSize(18)
     doc.text("AMAN KHURANA FITNESS — WEEKLY CHECK-IN REPORT", 15, 20)
 
@@ -300,7 +300,7 @@ export default function CheckinFormPage() {
 
     let y = 40
     doc.setFontSize(12)
-    doc.setTextColor(255, 184, 0)
+    doc.setTextColor(255, 106, 26)
     doc.text("1. TRAINING FEEDBACK", 15, y); y += 8
     doc.setFontSize(10)
     doc.setTextColor(255, 255, 255)
@@ -312,7 +312,7 @@ export default function CheckinFormPage() {
     doc.text(`Injuries/Pains: ${form.t6_injury_pain || "None"}`, 15, y); y += 12
 
     doc.setFontSize(12)
-    doc.setTextColor(255, 184, 0)
+    doc.setTextColor(255, 106, 26)
     doc.text("2. DIET FEEDBACK", 15, y); y += 8
     doc.setFontSize(10)
     doc.setTextColor(255, 255, 255)
@@ -324,7 +324,7 @@ export default function CheckinFormPage() {
     doc.text(`Food Add/Remove: ${form.d6_food_add_remove || "None"}`, 15, y); y += 12
 
     doc.setFontSize(12)
-    doc.setTextColor(255, 184, 0)
+    doc.setTextColor(255, 106, 26)
     doc.text("3. MEASUREMENTS & ENERGY", 15, y); y += 8
     doc.setFontSize(10)
     doc.setTextColor(255, 255, 255)
@@ -380,7 +380,7 @@ export default function CheckinFormPage() {
           </div>
           <h2 className="font-heading text-2xl text-white mb-2">CHECK-IN COOLDOWN ACTIVE</h2>
           <p className="text-sm text-zinc-400 max-w-xs mb-6">
-            You have already submitted a check-in recently. Your next check-in unlocks in <strong className="text-[#FFB800]">{cooldownDaysLeft} day(s)</strong>.
+            You have already submitted a check-in recently. Your next check-in unlocks in <strong className="text-[#FF6A1A]">{cooldownDaysLeft} day(s)</strong>.
           </p>
           <button
             onClick={() => router.push("/home")}
@@ -399,11 +399,11 @@ export default function CheckinFormPage() {
       <ClientLayout>
         <GoldConfettiCanvas />
         <div className="flex flex-col items-center justify-center min-h-[85vh] text-center px-4 relative z-10 space-y-6">
-          <div className="size-20 rounded-full bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/40 animate-bounce">
-            <Sparkles className="size-10 text-[#FFB800]" />
+          <div className="size-20 rounded-full bg-[#FF6A1A]/20 flex items-center justify-center border border-[#FF6A1A]/40 animate-bounce">
+            <Sparkles className="size-10 text-[#FF6A1A]" />
           </div>
           <div>
-            <span className="text-[#FFB800] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">
+            <span className="text-[#FF6A1A] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">
               #TeamAKF
             </span>
             <h2 className="font-heading text-3xl sm:text-4xl text-white font-extrabold tracking-wide">
@@ -417,13 +417,13 @@ export default function CheckinFormPage() {
           <div className="flex flex-col gap-3 w-full max-w-xs pt-4">
             <button
               onClick={generatePDF}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-[#FFB800] text-[#FFB800] text-xs font-bold uppercase tracking-wider hover:bg-[#FFB800]/10 transition-all"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-[#FF6A1A] text-[#FF6A1A] text-xs font-bold uppercase tracking-wider hover:bg-[#FF6A1A]/10 transition-all"
             >
               <Download className="size-4" /> Download PDF Report
             </button>
             <button
               onClick={() => router.push("/home")}
-              className="w-full py-4 rounded-2xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black hover:bg-[#FFC82C] transition-all shadow-xl shadow-[#FFB800]/20"
+              className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-xs font-bold uppercase tracking-wider text-white hover:bg-[#FF8540] transition-all shadow-xl shadow-[#FF6A1A]/20"
             >
               Go to Home
             </button>
@@ -456,9 +456,9 @@ export default function CheckinFormPage() {
       >
         {/* STEP 0: WELCOME INTRO SCREEN */}
         {step === 0 && (
-          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FFB800]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
+          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FF6A1A]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
             <div>
-              <span className="inline-block text-xs font-heading font-extrabold text-[#FFB800] uppercase tracking-widest bg-[#FFB800]/10 px-3 py-1 rounded-full border border-[#FFB800]/30">
+              <span className="inline-block text-xs font-heading font-extrabold text-[#FF6A1A] uppercase tracking-widest bg-[#FF6A1A]/10 px-3 py-1 rounded-full border border-[#FF6A1A]/30">
                 WEEK CHECK-IN
               </span>
             </div>
@@ -467,7 +467,7 @@ export default function CheckinFormPage() {
               <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Time to Check In 🔥</h1>
               <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Good week or tough week — your coach needs the truth to keep your plan on track.</p>
             </div>
-            <div className="inline-flex items-center gap-2 bg-[#FFB800]/10 border border-[#FFB800]/30 px-4 py-2 rounded-2xl text-xs font-extrabold text-[#FFB800] tracking-wide">
+            <div className="inline-flex items-center gap-2 bg-[#FF6A1A]/10 border border-[#FF6A1A]/30 px-4 py-2 rounded-2xl text-xs font-extrabold text-[#FF6A1A] tracking-wide">
               <span>🔥</span> 7 Day Check-in Streak
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -475,11 +475,11 @@ export default function CheckinFormPage() {
               <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">📸 Photos</span></div>
               <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">💬 Coach reads</span></div>
             </div>
-            <div className="bg-[#141414] border-l-4 border-[#FFB800] border-y border-r border-zinc-800 rounded-2xl p-4 text-left space-y-1">
+            <div className="bg-[#141414] border-l-4 border-[#FF6A1A] border-y border-r border-zinc-800 rounded-2xl p-4 text-left space-y-1">
               <p className="text-xs sm:text-sm text-zinc-300 italic">"Don't sugarcoat it. If you had a bad week, tell me why — that's how we fix it together."</p>
-              <p className="text-xs font-bold text-[#FFB800] text-right">— Coach Aman Khurana</p>
+              <p className="text-xs font-bold text-[#FF6A1A] text-right">— Coach Aman Khurana</p>
             </div>
-            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FFB800] text-sm font-extrabold uppercase tracking-wider text-black hover:bg-[#FFC82C] shadow-[0_0_20px_rgba(255,184,0,0.4)] transition-all">
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-white hover:bg-[#FF8540] shadow-[0_0_20px_rgba(255, 106, 26,0.4)] transition-all">
               Let's Go 💪
             </button>
             <p className="text-xs text-zinc-500 font-mono">27 questions • Your coach will review within 24hrs</p>
@@ -814,6 +814,7 @@ export default function CheckinFormPage() {
             subtitle="Morning empty stomach. Standing straight in clear room lighting."
           >
             <PhotoUploadScreen
+              userId={user?.id}
               label="FRONT VIEW PHOTO"
               files={form.front_pic}
               onFilesChange={(files) => set("front_pic", files)}
@@ -828,6 +829,7 @@ export default function CheckinFormPage() {
             subtitle="Morning empty stomach. Standing straight."
           >
             <PhotoUploadScreen
+              userId={user?.id}
               label="BACK VIEW PHOTO"
               files={form.back_pic}
               onFilesChange={(files) => set("back_pic", files)}
@@ -842,6 +844,7 @@ export default function CheckinFormPage() {
             subtitle="Morning empty stomach."
           >
             <PhotoUploadScreen
+              userId={user?.id}
               label="LEFT SIDE PHOTO"
               files={form.both_side_pic}
               onFilesChange={(files) => set("both_side_pic", files)}
@@ -856,6 +859,7 @@ export default function CheckinFormPage() {
             subtitle="Morning empty stomach."
           >
             <PhotoUploadScreen
+              userId={user?.id}
               label="RIGHT SIDE PHOTO"
               files={form.right_side_pic}
               onFilesChange={(files) => set("right_side_pic", files)}
@@ -870,6 +874,7 @@ export default function CheckinFormPage() {
             subtitle="Optional flex pose photo. Tap Skip if not uploading."
           >
             <PhotoUploadScreen
+              userId={user?.id}
               label="FAVOURITE POSE PHOTO"
               files={form.fav_pose_pic}
               onFilesChange={(files) => set("fav_pose_pic", files)}
@@ -884,6 +889,7 @@ export default function CheckinFormPage() {
             subtitle="Optional athlete pose photos. Tap Skip if not applicable."
           >
             <PhotoUploadScreen
+              userId={user?.id}
               label="MANDATORY ATHLETE POSES"
               multiple
               files={form.mandatory_pose_pic}

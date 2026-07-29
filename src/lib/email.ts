@@ -27,7 +27,7 @@ ${body}
 }
 
 function ctaButton(url: string, label: string) {
-  return `<table cellpadding="0" cellspacing="0" style="margin:20px auto"><tr><td style="background:#FFB800;border-radius:999px;padding:12px 32px;text-align:center">
+  return `<table cellpadding="0" cellspacing="0" style="margin:20px auto"><tr><td style="background:#FF6A1A;border-radius:999px;padding:12px 32px;text-align:center">
 <a href="${url}" style="color:#000;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase">${label}</a>
 </td></tr></table>`
 }

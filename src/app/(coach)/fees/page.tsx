@@ -28,17 +28,20 @@ function getInitials(name: string): string {
 }
 
 function statusBadge(status: string): string {
-  if (status === "paid") return "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold"
-  if (status === "overdue") return "bg-red-500/20 border border-red-500/50 text-red-400 font-bold animate-pulse"
-  return "bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold"
+  if (status === "paid") return "bg-emerald-500/15 border border-emerald-500/40 text-emerald-700 font-bold"
+  if (status === "overdue") return "bg-red-500/15 border border-red-500/50 text-red-700 font-bold animate-pulse"
+  return "bg-amber-500/15 border border-amber-500/40 text-amber-700 font-bold"
 }
 
 function RevenueStat({ label, value, tone }: { label: string; value: number; tone: "gold" | "danger" | "muted" }) {
   const count = useCountUp(value)
-  const toneClass = tone === "gold" ? "text-accent-gold" : tone === "danger" ? "text-red-400" : "text-text-primary"
-  const labelClass = tone === "danger" ? "text-red-400" : "text-text-muted"
+  const toneClass = tone === "gold" ? "text-accent-orange" : tone === "danger" ? "text-red-600" : "text-[#181310]"
+  const labelClass = tone === "danger" ? "text-red-600" : "text-[#8A7F70]"
   return (
-    <div className="reveal-item bg-bg-card border border-border-subtle p-4 rounded-2xl flex flex-col justify-between h-[90px] shadow-md">
+    <div
+      className="reveal-item p-4 rounded-2xl flex flex-col justify-between h-[90px]"
+      style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
+    >
       <span className={`text-[10px] font-bold uppercase tracking-wider ${labelClass}`}>{label}</span>
       <span className={`font-heading font-bold text-xl ${toneClass}`}>₹{count.toLocaleString("en-IN")}</span>
     </div>
@@ -183,7 +186,7 @@ export default function FeesPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-5">
         <div>
-          <span className="text-[10px] font-bold text-accent-gold uppercase tracking-widest">Coach Dashboard</span>
+          <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Coach Dashboard</span>
           <h1 className="font-heading text-3xl text-text-primary tracking-wide">FEE LEDGER &amp; PAYMENTS</h1>
           <p className="text-xs text-text-muted mt-1">Track client subscriptions, overdue fees, UPI links, and GST tax invoices.</p>
         </div>
@@ -204,20 +207,20 @@ export default function FeesPage() {
 
       {/* Monthly Revenue Chart */}
       {!isLoading && (
-        <div className="rounded-2xl border border-border-subtle bg-bg-card p-5 space-y-3 shadow-lg">
+        <div className="rounded-2xl p-5 space-y-3" style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}>
           <div className="flex items-center justify-between">
-            <h3 className="font-heading text-sm text-text-primary uppercase tracking-wider">Monthly Revenue Trend</h3>
-            <span className="text-xs text-accent-gold font-bold">INR (₹)</span>
+            <h3 className="font-heading text-sm text-[#181310] uppercase tracking-wider">Monthly Revenue Trend</h3>
+            <span className="text-xs text-accent-orange font-bold">INR (₹)</span>
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <XAxis dataKey="month" tick={{ fill: "#888888", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#888888", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fill: "#8A7F70", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "#8A7F70", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#1A1A1A", borderColor: "#333", borderRadius: "8px", fontSize: "12px", color: "#FFB800" }}
+                contentStyle={{ backgroundColor: "#FFFFFF", borderColor: "#FF6A1A", borderRadius: "8px", fontSize: "12px", color: "#FF6A1A" }}
                 formatter={(val: any) => [`₹${Number(val).toLocaleString("en-IN")}`, "Revenue"]}
               />
-              <Bar dataKey="revenue" fill="#FFB800" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="revenue" fill="#FF6A1A" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -235,9 +238,9 @@ export default function FeesPage() {
             {Array.from({ length: 3 }).map((_, i) => <div key={i} className="bg-bg-card rounded-2xl h-20 animate-pulse" />)}
           </div>
         ) : fees.length === 0 ? (
-          <div className="bg-bg-card border border-border-subtle rounded-2xl py-16 flex flex-col items-center gap-4 text-center">
-            <IndianRupee className="size-12 text-text-muted/40" />
-            <p className="text-text-primary font-heading font-bold text-sm">No fees recorded</p>
+          <div className="rounded-2xl py-16 flex flex-col items-center gap-4 text-center" style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}>
+            <IndianRupee className="size-12 text-[#181310]/25" />
+            <p className="text-[#181310] font-heading font-bold text-sm">No fees recorded</p>
           </div>
         ) : (
           <div ref={listRef} className="space-y-3">
@@ -246,26 +249,27 @@ export default function FeesPage() {
               return (
                 <div
                   key={f.id}
-                  className={`reveal-item rounded-2xl border bg-bg-card p-5 transition-all shadow-md ${
-                    f.status === "overdue" ? "border-red-500/50 bg-red-950/10" : f.status === "paid" ? "border-emerald-500/30" : "border-border-subtle"
+                  className={`reveal-item rounded-2xl border p-5 transition-all ${
+                    f.status === "overdue" ? "border-red-400" : f.status === "paid" ? "border-emerald-400" : "border-transparent"
                   }`}
+                  style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3.5 min-w-0">
                       {f.clientAvatar ? (
-                        <img src={f.clientAvatar} alt={f.clientName} className="size-11 rounded-full object-cover flex-shrink-0 border border-border-subtle" />
+                        <img src={f.clientAvatar} alt={f.clientName} className="size-11 rounded-full object-cover flex-shrink-0 border border-[#181310]/10" />
                       ) : (
-                        <div className="size-11 rounded-full bg-bg-elevated border border-accent-gold/40 flex items-center justify-center flex-shrink-0 font-heading font-bold text-accent-gold">
+                        <div className="size-11 rounded-full bg-[#181310]/5 border border-accent-orange/40 flex items-center justify-center flex-shrink-0 font-heading font-bold text-accent-orange">
                           {initials}
                         </div>
                       )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-text-primary font-bold text-sm truncate">{f.clientName}</p>
-                          <span className="text-[10px] text-text-muted font-mono">({f.invoiceNumber})</span>
+                          <p className="text-[#181310] font-bold text-sm truncate">{f.clientName}</p>
+                          <span className="text-[10px] text-[#8A7F70] font-mono">({f.invoiceNumber})</span>
                         </div>
-                        <p className="text-xs text-text-muted mt-0.5 font-medium">
-                          Due: <strong className="text-text-primary">{format(new Date(f.dueDate), "d MMM yyyy")}</strong> · Amount: <strong className="text-accent-gold">₹{f.amount.toLocaleString("en-IN")}</strong>
+                        <p className="text-xs text-[#8A7F70] mt-0.5 font-medium">
+                          Due: <strong className="text-[#181310]">{format(new Date(f.dueDate), "d MMM yyyy")}</strong> · Amount: <strong className="text-accent-orange">₹{f.amount.toLocaleString("en-IN")}</strong>
                         </p>
                       </div>
                     </div>
@@ -276,11 +280,11 @@ export default function FeesPage() {
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border-subtle">
+                  <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-[#181310]/[0.08]">
                     {(f.status === "pending" || f.status === "overdue") && (
                       <button
                         onClick={() => handleMarkPaid(f)}
-                        className="py-2 px-4 rounded-xl bg-accent-gold text-bg-primary text-xs font-bold uppercase tracking-wider hover:bg-accent-gold/90 transition-all cursor-pointer"
+                        className="py-2 px-4 rounded-xl bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider hover:bg-accent-orange/90 transition-all cursor-pointer"
                       >
                         Mark Paid
                       </button>
@@ -288,24 +292,24 @@ export default function FeesPage() {
 
                     <button
                       onClick={() => setUpiModalFee(f)}
-                      className="py-2 px-3.5 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-bold text-text-muted hover:text-text-primary flex items-center gap-1.5 cursor-pointer"
+                      className="py-2 px-3.5 rounded-xl bg-[#181310]/5 border border-[#181310]/10 text-xs font-bold text-[#8A7F70] hover:text-[#181310] flex items-center gap-1.5 cursor-pointer"
                     >
-                      <QrCode className="size-3.5 text-accent-gold" /> UPI Link
+                      <QrCode className="size-3.5 text-accent-orange" /> UPI Link
                     </button>
 
                     <button
                       onClick={() => handleDownloadGstInvoice(f)}
-                      className="py-2 px-3.5 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-bold text-text-muted hover:text-text-primary flex items-center gap-1.5 cursor-pointer"
+                      className="py-2 px-3.5 rounded-xl bg-[#181310]/5 border border-[#181310]/10 text-xs font-bold text-[#8A7F70] hover:text-[#181310] flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Download className="size-3.5 text-accent-gold" /> GST Invoice
+                      <Download className="size-3.5 text-accent-orange" /> GST Invoice
                     </button>
 
                     {(f.status === "pending" || f.status === "overdue") && (
                       <button
                         onClick={() => setReminderModalFee(f)}
-                        className="py-2 px-3.5 rounded-xl bg-bg-elevated border border-border-subtle text-xs font-bold text-text-muted hover:text-text-primary flex items-center gap-1.5 cursor-pointer"
+                        className="py-2 px-3.5 rounded-xl bg-[#181310]/5 border border-[#181310]/10 text-xs font-bold text-[#8A7F70] hover:text-[#181310] flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Bell className="size-3.5 text-accent-gold" /> WhatsApp Reminder
+                        <Bell className="size-3.5 text-accent-orange" /> WhatsApp Reminder
                       </button>
                     )}
                   </div>
@@ -320,21 +324,26 @@ export default function FeesPage() {
       <AnimatePresence>
         {upiModalFee && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-card p-6 text-center space-y-4 shadow-2xl relative">
-              <button onClick={() => setUpiModalFee(null)} className="absolute top-4 right-4 size-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary">
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-sm rounded-2xl p-6 text-center space-y-4 relative"
+              style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
+            >
+              <button onClick={() => setUpiModalFee(null)} className="absolute top-4 right-4 size-8 rounded-full bg-[#181310]/5 flex items-center justify-center text-[#8A7F70] hover:text-[#181310]">
                 <X className="size-4" />
               </button>
 
-              <div className="size-14 mx-auto rounded-full bg-accent-gold/15 border border-accent-gold/30 flex items-center justify-center text-accent-gold">
+              <div className="size-14 mx-auto rounded-full bg-accent-orange/15 border border-accent-orange/30 flex items-center justify-center text-accent-orange">
                 <QrCode className="size-7" />
               </div>
 
               <div>
-                <h3 className="font-heading text-xl text-text-primary">UPI Payment Link</h3>
-                <p className="text-xs text-text-muted mt-1">Client: {upiModalFee.clientName} | Amount: ₹{upiModalFee.amount.toLocaleString("en-IN")}</p>
+                <h3 className="font-heading text-xl text-[#181310]">UPI Payment Link</h3>
+                <p className="text-xs text-[#8A7F70] mt-1">Client: {upiModalFee.clientName} | Amount: ₹{upiModalFee.amount.toLocaleString("en-IN")}</p>
               </div>
 
-              <div className="p-3 bg-bg-elevated rounded-xl border border-border-subtle text-xs font-mono text-accent-gold break-all select-all">
+              <div className="p-3 bg-[#181310]/5 rounded-xl border border-[#181310]/10 text-xs font-mono text-accent-orange break-all select-all">
                 {generateUpiPaymentUrl(upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber)}
               </div>
 
@@ -343,7 +352,7 @@ export default function FeesPage() {
                   navigator.clipboard.writeText(generateUpiPaymentUrl(upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber))
                   toast.success("UPI payment link copied!")
                 }}
-                className="w-full py-3 rounded-full bg-accent-gold text-bg-primary text-xs font-bold uppercase tracking-wider"
+                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider"
               >
                 Copy UPI Link
               </button>
@@ -356,41 +365,46 @@ export default function FeesPage() {
       <AnimatePresence>
         {reminderModalFee && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-card p-6 text-center space-y-4 shadow-2xl relative">
-              <button onClick={() => setReminderModalFee(null)} className="absolute top-4 right-4 size-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted hover:text-text-primary">
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-sm rounded-2xl p-6 text-center space-y-4 relative"
+              style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
+            >
+              <button onClick={() => setReminderModalFee(null)} className="absolute top-4 right-4 size-8 rounded-full bg-[#181310]/5 flex items-center justify-center text-[#8A7F70] hover:text-[#181310]">
                 <X className="size-4" />
               </button>
 
-              <div className="size-14 mx-auto rounded-full bg-accent-gold/15 border border-accent-gold/30 flex items-center justify-center text-accent-gold">
+              <div className="size-14 mx-auto rounded-full bg-accent-orange/15 border border-accent-orange/30 flex items-center justify-center text-accent-orange">
                 <Bell className="size-7" />
               </div>
 
               <div>
-                <h3 className="font-heading text-xl text-text-primary">Send Payment Reminder</h3>
-                <p className="text-xs text-text-muted mt-1">Select reminder type for {reminderModalFee.clientName}:</p>
+                <h3 className="font-heading text-xl text-[#181310]">Send Payment Reminder</h3>
+                <p className="text-xs text-[#8A7F70] mt-1">Select reminder type for {reminderModalFee.clientName}:</p>
               </div>
 
               <div className="space-y-2 text-left">
                 <button
                   onClick={() => handleSendReminder(reminderModalFee, "1week_before")}
-                  className="w-full p-3 rounded-xl bg-bg-elevated border border-border-subtle hover:border-accent-gold text-xs text-text-primary font-semibold flex items-center justify-between cursor-pointer transition-colors"
+                  className="w-full p-3 rounded-xl bg-[#181310]/5 border border-[#181310]/10 hover:border-accent-orange text-xs text-[#181310] font-semibold flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <span>1 Week Before Due Date</span>
-                  <Send className="size-3.5 text-accent-gold" />
+                  <Send className="size-3.5 text-accent-orange" />
                 </button>
                 <button
                   onClick={() => handleSendReminder(reminderModalFee, "1day_before")}
-                  className="w-full p-3 rounded-xl bg-bg-elevated border border-border-subtle hover:border-accent-gold text-xs text-text-primary font-semibold flex items-center justify-between cursor-pointer transition-colors"
+                  className="w-full p-3 rounded-xl bg-[#181310]/5 border border-[#181310]/10 hover:border-accent-orange text-xs text-[#181310] font-semibold flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <span>1 Day Before Due Date</span>
-                  <Send className="size-3.5 text-accent-gold" />
+                  <Send className="size-3.5 text-accent-orange" />
                 </button>
                 <button
                   onClick={() => handleSendReminder(reminderModalFee, "1week_overdue")}
-                  className="w-full p-3 rounded-xl bg-red-950/30 border border-red-500/30 hover:border-red-500 text-xs text-red-400 font-semibold flex items-center justify-between cursor-pointer transition-colors"
+                  className="w-full p-3 rounded-xl bg-red-500/10 border border-red-500/30 hover:border-red-500 text-xs text-red-700 font-semibold flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <span>1 Week Overdue Alert</span>
-                  <Send className="size-3.5 text-red-400" />
+                  <Send className="size-3.5 text-red-700" />
                 </button>
               </div>
             </motion.div>

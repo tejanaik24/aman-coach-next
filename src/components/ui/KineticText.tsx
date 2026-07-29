@@ -22,7 +22,7 @@ export default function KineticText({
   useEffect(() => {
     if (!containerRef.current) return;
     const el = containerRef.current;
-    const spans = el.querySelectorAll("span");
+    const spans = el.querySelectorAll<HTMLSpanElement>("span.kinetic-char");
 
     spans.forEach((span, i) => {
       span.style.opacity = "0";
@@ -48,23 +48,30 @@ export default function KineticText({
     return () => observer.disconnect();
   }, [delay, stagger]);
 
+  const words = text.split(" ");
+  let charIndex = 0;
+
   return (
     <div
       ref={containerRef}
       className={`flex flex-wrap ${className}`}
       style={{ fontSize: `${fontSize}px`, lineHeight: 1.1 }}
     >
-      {text.split("").map((char, i) => (
-        <span
-          key={i}
-          className="inline-block"
-          style={{
-            display: char === " " ? "inline" : "inline-block",
-            width: char === " " ? "0.3em" : "auto",
-            transformOrigin: "bottom center",
-          }}
-        >
-          {char === " " ? "\u00A0" : char}
+      {words.map((word, wi) => (
+        <span key={wi} className="inline-flex whitespace-nowrap">
+          {word.split("").map((char) => {
+            const i = charIndex++;
+            return (
+              <span key={i} className="kinetic-char inline-block" style={{ transformOrigin: "bottom center" }}>
+                {char}
+              </span>
+            );
+          })}
+          {wi < words.length - 1 && (
+            <span className="inline-block" style={{ width: "0.3em" }}>
+              {"\u00A0"}
+            </span>
+          )}
         </span>
       ))}
     </div>

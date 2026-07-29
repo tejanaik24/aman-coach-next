@@ -90,7 +90,7 @@ export function generateGstInvoicePdf(inv: Invoice): jsPDF {
   doc.rect(0, 0, 210, 45, "F")
 
   // Brand Name
-  doc.setTextColor(255, 184, 0) // Gold
+  doc.setTextColor(255, 106, 26) // Orange
   doc.setFontSize(20)
   doc.setFont("helvetica", "bold")
   doc.text("AMAN KHURANA FITNESS", 15, 22)
@@ -120,7 +120,7 @@ export function generateGstInvoicePdf(inv: Invoice): jsPDF {
   // Items Table
   doc.setFillColor(10, 10, 10)
   doc.rect(15, 100, 180, 10, "F")
-  doc.setTextColor(255, 184, 0)
+  doc.setTextColor(255, 106, 26)
   doc.setFontSize(9)
   doc.setFont("helvetica", "bold")
   doc.text("DESCRIPTION", 22, 106.5)

@@ -17,7 +17,7 @@ export default function ClientBottomNav() {
   const router = useRouter()
 
   return (
-    <nav className="fixed bottom-4 left-4 right-4 max-w-[398px] mx-auto bg-bg-surface/90 backdrop-blur-xl border border-border-subtle rounded-full p-2 flex justify-between items-center shadow-[0_0_30px_rgba(255,184,0,0.08)] z-50 select-none">
+    <nav className="fixed bottom-4 left-4 right-4 max-w-[398px] mx-auto bg-bg-surface/90 backdrop-blur-xl border border-border-subtle rounded-full p-2 flex justify-between items-center shadow-[0_0_30px_rgba(255,106,26,0.08)] z-50 select-none">
       {tabs.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href || pathname.startsWith(href + "/")
         return (
@@ -29,13 +29,13 @@ export default function ClientBottomNav() {
             {isActive && (
               <motion.div
                 layoutId="client-active-pill"
-                className="absolute inset-0 bg-accent-gold/15 border border-accent-gold/30 rounded-full"
+                className="absolute inset-0 bg-accent-orange/15 border border-accent-orange/30 rounded-full"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <span
               className={`relative z-10 flex flex-col items-center gap-1 transition-colors duration-300 ${
-                isActive ? "text-accent-gold" : "text-text-muted"
+                isActive ? "text-accent-orange" : "text-text-muted"
               }`}
             >
               <Icon className="w-5 h-5" />

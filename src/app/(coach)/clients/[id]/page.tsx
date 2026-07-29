@@ -30,12 +30,12 @@ function getInitials(name: string): string {
 }
 
 function statusBadge(status: string): string {
-  if (status === "active") return "bg-accent-gold text-bg-primary"
+  if (status === "active") return "bg-accent-orange text-bg-primary"
   return "bg-bg-elevated text-text-muted"
 }
 
 function feeStatusBadge(status: string): string {
-  if (status === "paid") return "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold"
+  if (status === "paid") return "bg-accent-orange/15 border border-accent-orange/30 text-accent-orange"
   if (status === "overdue") return "bg-danger/10 border border-danger/30 text-danger"
   return "bg-bg-elevated text-text-muted"
 }
@@ -50,7 +50,7 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
         <span className="text-text-primary font-bold">{value}/10</span>
       </div>
       <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden">
-        <div className="h-full rounded-full bg-accent-gold transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-accent-orange transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
@@ -158,7 +158,7 @@ export default function ClientDetailPage() {
           <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <span className="text-accent-gold font-heading font-bold text-6xl">{name !== "Unknown" ? getInitials(name) : ""}</span>
+            <span className="text-accent-orange font-heading font-bold text-6xl">{name !== "Unknown" ? getInitials(name) : ""}</span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-black/30 to-transparent" />
@@ -202,7 +202,7 @@ export default function ClientDetailPage() {
                 onClick={action}
                 className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-3 flex flex-col items-center gap-1.5 cursor-pointer"
               >
-                <Icon className="size-5 text-accent-gold" />
+                <Icon className="size-5 text-accent-orange" />
                 <span className="text-text-muted text-[10px] font-semibold">{label}</span>
               </motion.button>
             ))}
@@ -233,7 +233,7 @@ export default function ClientDetailPage() {
                 {isSelected && (
                   <motion.div
                     layoutId="detail-active-tab"
-                    className="absolute inset-0 bg-accent-gold rounded-full"
+                    className="absolute inset-0 bg-accent-orange rounded-full"
                     transition={{ type: "spring", stiffness: 350, damping: 28 }}
                   />
                 )}
@@ -248,56 +248,56 @@ export default function ClientDetailPage() {
           <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
             {activeTab === "overview" && (
               <div className="space-y-4">
-                <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5 space-y-3">
-                  <h3 className="font-heading font-bold text-xs text-text-primary uppercase tracking-wider border-b border-border-subtle pb-2 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-accent-gold" />
+                <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 space-y-3">
+                  <h3 className="font-heading font-bold text-xs text-[#181310] uppercase tracking-wider border-b border-[#181310]/[0.08] pb-2 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-accent-orange" />
                     Client Details
                   </h3>
                   {client && (
                     <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
                       <div>
-                        <span className="text-[9px] text-text-muted uppercase">Start Date</span>
-                        <p className="font-heading font-bold text-text-primary mt-0.5">{format(new Date(client.start_date), "d MMM yy")}</p>
+                        <span className="text-[9px] text-[#8A7F70] uppercase">Start Date</span>
+                        <p className="font-heading font-bold text-[#181310] mt-0.5">{format(new Date(client.start_date), "d MMM yy")}</p>
                       </div>
                       <div>
-                        <span className="text-[9px] text-text-muted uppercase">Days Active</span>
-                        <p className="font-heading font-bold text-text-primary mt-0.5">{daysActive}</p>
+                        <span className="text-[9px] text-[#8A7F70] uppercase">Days Active</span>
+                        <p className="font-heading font-bold text-[#181310] mt-0.5">{daysActive}</p>
                       </div>
                       <div>
-                        <span className="text-[9px] text-text-muted uppercase">Package</span>
-                        <p className="font-heading font-bold text-text-primary mt-0.5">{client.package_name ?? "—"}</p>
+                        <span className="text-[9px] text-[#8A7F70] uppercase">Package</span>
+                        <p className="font-heading font-bold text-[#181310] mt-0.5">{client.package_name ?? "—"}</p>
                       </div>
                       <div>
-                        <span className="text-[9px] text-text-muted uppercase">Fee</span>
-                        <p className="font-heading font-bold text-text-primary mt-0.5">₹{Number(client.fee_amount).toLocaleString("en-IN")}/mo</p>
+                        <span className="text-[9px] text-[#8A7F70] uppercase">Fee</span>
+                        <p className="font-heading font-bold text-[#181310] mt-0.5">₹{Number(client.fee_amount).toLocaleString("en-IN")}/mo</p>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Client Badges & Achievements */}
+                {/* Client Badges & Achievements — stays dark, BadgesGrid is built for the dark theme */}
                 <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5">
                   <BadgesGrid unlockedBadges={clientBadges} title="Client Achievements" showAll={true} />
                 </div>
 
                 {activeWorkout ? (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5">
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5">
                     <div className="flex items-center gap-2 mb-3">
-                      <Dumbbell className="size-4 text-accent-gold" />
-                      <span className="text-text-primary text-xs font-bold uppercase tracking-wider">Current Workout Plan</span>
+                      <Dumbbell className="size-4 text-accent-orange" />
+                      <span className="text-[#181310] text-xs font-bold uppercase tracking-wider">Current Workout Plan</span>
                     </div>
-                    <p className="text-text-primary font-heading font-bold">{activeWorkout.name}</p>
-                    <p className="text-text-muted text-xs mt-1">{activeWorkout.weeks} weeks · Created {format(new Date(activeWorkout.created_at), "d MMM yyyy")}</p>
+                    <p className="text-[#181310] font-heading font-bold">{activeWorkout.name}</p>
+                    <p className="text-[#8A7F70] text-xs mt-1">{activeWorkout.weeks} weeks · Created {format(new Date(activeWorkout.created_at), "d MMM yyyy")}</p>
                   </div>
                 ) : (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5 text-center">
-                    <p className="text-text-muted text-sm">No workout plan assigned</p>
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 text-center">
+                    <p className="text-[#8A7F70] text-sm">No workout plan assigned</p>
                   </div>
                 )}
 
                 {activeNutrition && (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5">
-                    <p className="text-text-primary text-xs font-bold uppercase tracking-wider mb-3">Current Nutrition Plan</p>
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5">
+                    <p className="text-[#181310] text-xs font-bold uppercase tracking-wider mb-3">Current Nutrition Plan</p>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       {[
                         { label: "Calories", value: activeNutrition.total_calories },
@@ -305,9 +305,9 @@ export default function ClientDetailPage() {
                         { label: "Carbs", value: activeNutrition.carbs_g },
                         { label: "Fats", value: activeNutrition.fats_g },
                       ].map((m) => (
-                        <div key={m.label} className="bg-bg-elevated rounded-xl p-2">
-                          <p className="text-text-primary text-sm font-heading font-bold">{m.value ?? "—"}</p>
-                          <p className="text-text-muted text-[9px] mt-0.5">{m.label}</p>
+                        <div key={m.label} className="bg-[#181310]/5 rounded-xl p-2">
+                          <p className="text-[#181310] text-sm font-heading font-bold">{m.value ?? "—"}</p>
+                          <p className="text-[#8A7F70] text-[9px] mt-0.5">{m.label}</p>
                         </div>
                       ))}
                     </div>
@@ -316,27 +316,27 @@ export default function ClientDetailPage() {
 
                 {/* Measurements progress table */}
                 {checkins.some((c) => c.form_data?.measurements) && (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4.5 space-y-3.5">
-                    <h3 className="font-heading font-bold text-xs text-text-primary uppercase tracking-wider border-b border-border-subtle pb-2 flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-accent-gold" />
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 space-y-3.5">
+                    <h3 className="font-heading font-bold text-xs text-[#181310] uppercase tracking-wider border-b border-[#181310]/[0.08] pb-2 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-accent-orange" />
                       Check-in Metrics
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs font-semibold">
                         <thead>
-                          <tr className="text-[9px] text-text-muted uppercase tracking-wider border-b border-border-subtle">
+                          <tr className="text-[9px] text-[#8A7F70] uppercase tracking-wider border-b border-[#181310]/[0.08]">
                             <th className="py-1">Week</th>
                             <th className="py-1">Weight</th>
                             <th className="py-1">Abdomen</th>
                             <th className="py-1">Hips</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-border-subtle text-text-primary font-heading">
+                        <tbody className="divide-y divide-[#181310]/[0.08] text-[#181310] font-heading">
                           {[...checkins].reverse().map((c) => {
                             const m = c.form_data?.measurements
                             return (
                               <tr key={c.id}>
-                                <td className="py-2.5 text-text-muted">W{c.week_number ?? "?"}</td>
+                                <td className="py-2.5 text-[#8A7F70]">W{c.week_number ?? "?"}</td>
                                 <td className="py-2.5">{m?.weight ?? c.weight ?? "—"}{(m?.weight ?? c.weight) ? " kg" : ""}</td>
                                 <td className="py-2.5">{m?.abdomen ? `${m.abdomen} cm` : "—"}</td>
                                 <td className="py-2.5">{m?.hips ? `${m.hips} cm` : "—"}</td>
@@ -354,8 +354,8 @@ export default function ClientDetailPage() {
             {activeTab === "checkins" && (
               <div className="space-y-3">
                 {checkins.length === 0 ? (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-10 text-center">
-                    <p className="text-text-muted text-sm">No check-ins yet</p>
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-10 text-center">
+                    <p className="text-[#8A7F70] text-sm">No check-ins yet</p>
                   </div>
                 ) : (
                   checkins.map((c) => {
@@ -364,35 +364,35 @@ export default function ClientDetailPage() {
                       [c.adherence_workout, c.adherence_nutrition].filter((v): v is number => v !== null).reduce((a, b, _, arr) => a + b / arr.length, 0) || null
 
                     return (
-                      <div key={c.id} className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl overflow-hidden">
+                      <div key={c.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden">
                         <button
                           onClick={() => setExpandedCheckin(isExpanded ? null : c.id)}
                           className="w-full flex items-center justify-between p-4 text-left cursor-pointer"
                         >
                           <div>
-                            <p className="text-text-primary text-sm font-bold">Week {c.week_number ?? "—"}</p>
-                            <p className="text-text-muted text-xs mt-0.5">{format(new Date(c.submitted_at), "d MMM yyyy, h:mm a")}</p>
+                            <p className="text-[#181310] text-sm font-bold">Week {c.week_number ?? "—"}</p>
+                            <p className="text-[#8A7F70] text-xs mt-0.5">{format(new Date(c.submitted_at), "d MMM yyyy, h:mm a")}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {c.reviewed_at ? (
-                              <span className="text-[9px] bg-accent-gold/15 border border-accent-gold/30 text-accent-gold px-2 py-0.5 rounded-full flex items-center gap-1 font-bold uppercase">
+                              <span className="text-[9px] bg-accent-orange/15 border border-accent-orange/30 text-accent-orange px-2 py-0.5 rounded-full flex items-center gap-1 font-bold uppercase">
                                 <Check className="size-3" /> Reviewed
                               </span>
                             ) : (
-                              <span className="w-2 h-2 rounded-full bg-accent-gold" />
+                              <span className="w-2 h-2 rounded-full bg-accent-orange" />
                             )}
-                            {avgScore !== null && <span className="text-xs text-text-muted font-bold">{Math.round(avgScore)}/10</span>}
-                            {isExpanded ? <ChevronUp className="size-4 text-text-muted" /> : <ChevronDown className="size-4 text-text-muted" />}
+                            {avgScore !== null && <span className="text-xs text-[#8A7F70] font-bold">{Math.round(avgScore)}/10</span>}
+                            {isExpanded ? <ChevronUp className="size-4 text-[#8A7F70]" /> : <ChevronDown className="size-4 text-[#8A7F70]" />}
                           </div>
                         </button>
 
                         {isExpanded && (
-                          <div className="px-4 pb-4 space-y-3 border-t border-border-subtle pt-3">
+                          <div className="px-4 pb-4 space-y-3 border-t border-[#181310]/[0.08] pt-3">
                             {c.form_data ? (
                               <div className="space-y-2 text-xs">
-                                <p className="text-text-muted"><span className="font-bold text-text-primary">Workout deviation:</span> {c.form_data.training.workout_deviation || "—"}</p>
-                                <p className="text-text-muted"><span className="font-bold text-text-primary">Diet:</span> {c.form_data.diet.diet_deviation}</p>
-                                <p className="text-text-muted"><span className="font-bold text-text-primary">Sleep:</span> {c.form_data.general.sleep_quality || "—"}</p>
+                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Workout deviation:</span> {c.form_data.training.workout_deviation || "—"}</p>
+                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Diet:</span> {c.form_data.diet.diet_deviation}</p>
+                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Sleep:</span> {c.form_data.general.sleep_quality || "—"}</p>
                               </div>
                             ) : null}
                             <div className="space-y-2">
@@ -400,15 +400,15 @@ export default function ClientDetailPage() {
                               <ScoreBar label="Nutrition adherence" value={c.adherence_nutrition} />
                             </div>
                             {c.notes && (
-                              <div className="bg-bg-elevated rounded-xl p-3">
-                                <p className="text-text-muted text-[10px] uppercase font-bold mb-1">Client Note</p>
-                                <p className="text-text-primary text-sm">{c.notes}</p>
+                              <div className="bg-[#181310]/5 rounded-xl p-3">
+                                <p className="text-[#8A7F70] text-[10px] uppercase font-bold mb-1">Client Note</p>
+                                <p className="text-[#181310] text-sm">{c.notes}</p>
                               </div>
                             )}
                             {c.coach_feedback ? (
-                              <div className="bg-accent-gold/10 border border-accent-gold/30 rounded-xl p-3">
-                                <p className="text-accent-gold text-[10px] uppercase font-bold mb-1">Your Feedback</p>
-                                <p className="text-text-primary text-sm">{c.coach_feedback}</p>
+                              <div className="bg-accent-orange/10 border border-accent-orange/30 rounded-xl p-3">
+                                <p className="text-accent-orange text-[10px] uppercase font-bold mb-1">Your Feedback</p>
+                                <p className="text-[#181310] text-sm">{c.coach_feedback}</p>
                               </div>
                             ) : (
                               <div className="space-y-2">
@@ -417,13 +417,13 @@ export default function ClientDetailPage() {
                                   onChange={(e) => setFeedbackDraft((prev) => ({ ...prev, [c.id]: e.target.value }))}
                                   placeholder="Add your feedback..."
                                   rows={2}
-                                  className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl px-3 py-2 text-text-primary text-xs font-semibold outline-none resize-none transition-colors"
+                                  className="w-full bg-[#181310]/5 border border-[#181310]/[0.08] focus:border-accent-orange rounded-xl px-3 py-2 text-[#181310] text-xs font-semibold outline-none resize-none transition-colors"
                                 />
                                 <motion.button
                                   whileTap={{ scale: 0.97 }}
                                   disabled={!feedbackDraft[c.id]?.trim() || savingFeedback === c.id}
                                   onClick={() => handleSaveFeedback(c.id)}
-                                  className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-accent-gold text-bg-primary text-xs font-bold disabled:opacity-50 cursor-pointer"
+                                  className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-accent-orange text-bg-primary text-xs font-bold disabled:opacity-50 cursor-pointer"
                                 >
                                   <MessageSquare className="size-3" />
                                   {savingFeedback === c.id ? "Saving..." : "Add Feedback"}
@@ -444,18 +444,18 @@ export default function ClientDetailPage() {
                 <div>
                   <p className="text-text-muted text-xs font-bold mb-2 uppercase tracking-wider">Workout Plans</p>
                   {workoutPlans.length === 0 ? (
-                    <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-6 text-center">
-                      <p className="text-text-muted text-sm">No workout plans yet</p>
+                    <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-6 text-center">
+                      <p className="text-[#8A7F70] text-sm">No workout plans yet</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {workoutPlans.map((p) => (
-                        <div key={p.id} className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between">
+                        <div key={p.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center justify-between">
                           <div>
-                            <p className="text-text-primary text-sm font-bold">{p.name}</p>
-                            <p className="text-text-muted text-xs mt-0.5">{p.weeks} weeks · {format(new Date(p.created_at), "d MMM yyyy")}</p>
+                            <p className="text-[#181310] text-sm font-bold">{p.name}</p>
+                            <p className="text-[#8A7F70] text-xs mt-0.5">{p.weeks} weeks · {format(new Date(p.created_at), "d MMM yyyy")}</p>
                           </div>
-                          {p.is_active && <span className="text-[9px] bg-accent-gold/15 border border-accent-gold/30 text-accent-gold px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
+                          {p.is_active && <span className="text-[9px] bg-accent-orange/15 border border-accent-orange/30 text-accent-orange px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
                         </div>
                       ))}
                     </div>
@@ -465,18 +465,18 @@ export default function ClientDetailPage() {
                 <div>
                   <p className="text-text-muted text-xs font-bold mb-2 uppercase tracking-wider">Nutrition Plans</p>
                   {nutritionPlans.length === 0 ? (
-                    <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-6 text-center">
-                      <p className="text-text-muted text-sm">No nutrition plans yet</p>
+                    <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-6 text-center">
+                      <p className="text-[#8A7F70] text-sm">No nutrition plans yet</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {nutritionPlans.map((p) => (
-                        <div key={p.id} className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex items-center justify-between">
+                        <div key={p.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center justify-between">
                           <div>
-                            <p className="text-text-primary text-sm font-bold">{p.total_calories ? `${p.total_calories} kcal` : "Nutrition Plan"}</p>
-                            <p className="text-text-muted text-xs mt-0.5">P {p.protein_g}g · C {p.carbs_g}g · F {p.fats_g}g</p>
+                            <p className="text-[#181310] text-sm font-bold">{p.total_calories ? `${p.total_calories} kcal` : "Nutrition Plan"}</p>
+                            <p className="text-[#8A7F70] text-xs mt-0.5">P {p.protein_g}g · C {p.carbs_g}g · F {p.fats_g}g</p>
                           </div>
-                          {p.is_active && <span className="text-[9px] bg-accent-gold/15 border border-accent-gold/30 text-accent-gold px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
+                          {p.is_active && <span className="text-[9px] bg-accent-orange/15 border border-accent-orange/30 text-accent-orange px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
                         </div>
                       ))}
                     </div>
@@ -496,24 +496,24 @@ export default function ClientDetailPage() {
             {activeTab === "fees" && (
               <div className="space-y-3">
                 {fees.length > 0 && (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 flex justify-between items-center">
-                    <span className="text-text-muted text-sm font-semibold">Total Paid</span>
-                    <span className="text-accent-gold font-heading font-bold text-lg">₹{totalPaid.toLocaleString("en-IN")}</span>
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex justify-between items-center">
+                    <span className="text-[#8A7F70] text-sm font-semibold">Total Paid</span>
+                    <span className="text-accent-orange font-heading font-bold text-lg">₹{totalPaid.toLocaleString("en-IN")}</span>
                   </div>
                 )}
 
                 {fees.length === 0 ? (
-                  <div className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-10 text-center">
-                    <p className="text-text-muted text-sm">No fee records yet</p>
+                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-10 text-center">
+                    <p className="text-[#8A7F70] text-sm">No fee records yet</p>
                   </div>
                 ) : (
                   fees.map((f) => (
-                    <div key={f.id} className="bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4">
+                    <div key={f.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-text-primary font-heading font-bold">₹{Number(f.amount).toLocaleString("en-IN")}</p>
-                          <p className="text-text-muted text-xs mt-0.5">Due {format(new Date(f.due_date), "d MMM yyyy")}</p>
-                          {f.paid_date && <p className="text-text-primary text-xs mt-0.5 font-semibold">Paid {format(new Date(f.paid_date), "d MMM yyyy")}</p>}
+                          <p className="text-[#181310] font-heading font-bold">₹{Number(f.amount).toLocaleString("en-IN")}</p>
+                          <p className="text-[#8A7F70] text-xs mt-0.5">Due {format(new Date(f.due_date), "d MMM yyyy")}</p>
+                          {f.paid_date && <p className="text-[#181310] text-xs mt-0.5 font-semibold">Paid {format(new Date(f.paid_date), "d MMM yyyy")}</p>}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${feeStatusBadge(f.status)}`}>{f.status}</span>
@@ -521,14 +521,14 @@ export default function ClientDetailPage() {
                             <motion.button
                               whileTap={{ scale: 0.97 }}
                               onClick={() => handleMarkAsPaid(f.id)}
-                              className="text-[10px] font-bold text-bg-primary bg-accent-gold px-2.5 py-1 rounded-full cursor-pointer"
+                              className="text-[10px] font-bold text-bg-primary bg-accent-orange px-2.5 py-1 rounded-full cursor-pointer"
                             >
                               Mark Paid
                             </motion.button>
                           )}
                         </div>
                       </div>
-                      {f.notes && <p className="text-text-muted text-xs mt-2">{f.notes}</p>}
+                      {f.notes && <p className="text-[#8A7F70] text-xs mt-2">{f.notes}</p>}
                     </div>
                   ))
                 )}

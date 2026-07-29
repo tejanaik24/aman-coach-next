@@ -32,7 +32,7 @@ export default function PackagesPage() {
             </div>
             <Link
               href={pkg.href || `/enquiry?interest=${encodeURIComponent(pkg.name)}`}
-              className="shrink-0 bg-accent-gold text-bg-primary font-heading text-xs px-4 py-2 rounded-full"
+              className="shrink-0 bg-accent-orange text-bg-primary font-heading text-xs px-4 py-2 rounded-full"
             >
               {pkg.cta || "Enquire Now"}
             </Link>

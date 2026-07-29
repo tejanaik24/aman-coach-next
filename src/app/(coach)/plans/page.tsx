@@ -30,7 +30,7 @@ function PlanSkeleton() {
 }
 
 const inputClass =
-  "w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl h-14 px-4 text-text-primary outline-none transition-colors placeholder:text-text-muted/60 text-sm font-semibold"
+  "w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl h-14 px-4 text-text-primary outline-none transition-colors placeholder:text-text-muted/60 text-sm font-semibold"
 
 export default function PlansPage() {
   const router = useRouter()
@@ -192,20 +192,20 @@ export default function PlansPage() {
           onClick={() => openModal("workout")}
           className="relative rounded-2xl bg-bg-card border border-border-subtle backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
         >
-          <Dumbbell className="w-6 h-6 text-accent-gold" />
+          <Dumbbell className="w-6 h-6 text-accent-orange" />
           <span className="font-heading font-bold text-xs text-text-primary uppercase leading-tight">Create<br />Workout Plan</span>
-          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-accent-gold flex items-center justify-center">
+          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-accent-orange flex items-center justify-center">
             <Plus className="w-4 h-4 text-bg-primary" />
           </div>
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => openModal("nutrition")}
-          className="relative rounded-2xl bg-accent-gold/10 border border-accent-gold/40 shadow-[0_0_24px_rgba(255,184,0,0.15)] backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
+          className="relative rounded-2xl bg-accent-orange/10 border border-accent-orange/40 shadow-[0_0_24px_rgba(255, 106, 26,0.15)] backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
         >
-          <Apple className="w-6 h-6 text-accent-gold" />
+          <Apple className="w-6 h-6 text-accent-orange" />
           <span className="font-heading font-bold text-xs text-text-primary uppercase leading-tight">Create<br />Diet Plan</span>
-          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-accent-gold flex items-center justify-center">
+          <div className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-accent-orange flex items-center justify-center">
             <Plus className="w-4 h-4 text-bg-primary" />
           </div>
         </motion.button>
@@ -220,7 +220,7 @@ export default function PlansPage() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`flex-1 h-9 rounded-full text-xs font-heading font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                isSelected ? "bg-accent-gold text-bg-primary" : "text-text-muted"
+                isSelected ? "bg-accent-orange text-bg-primary" : "text-text-muted"
               }`}
             >
               <t.icon className="size-3.5" />
@@ -255,15 +255,15 @@ export default function PlansPage() {
                 onClick={() => router.push(`/plans/workout/${plan.id}`)}
                 className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-4 cursor-pointer flex items-center gap-3"
               >
-                <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-accent-gold/30">
-                  <span className="text-accent-gold text-xs font-heading font-bold">{plan.clientName.slice(0, 2).toUpperCase()}</span>
+                <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-accent-orange/30">
+                  <span className="text-accent-orange text-xs font-heading font-bold">{plan.clientName.slice(0, 2).toUpperCase()}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-text-primary font-heading font-bold text-xs truncate">{plan.name}</p>
                   <p className="text-text-muted text-[10px] mt-0.5">Assigned: {plan.clientName}</p>
                 </div>
                 <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                  plan.is_active ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold" : "bg-bg-elevated text-text-muted"
+                  plan.is_active ? "bg-accent-orange/15 border border-accent-orange/30 text-accent-orange" : "bg-bg-elevated text-text-muted"
                 }`}>
                   {plan.is_active ? "Active" : "Inactive"}
                 </span>
@@ -291,14 +291,14 @@ export default function PlansPage() {
               <div className="flex items-start justify-between gap-2">
                 <p className="text-text-primary font-heading font-bold text-xs">{plan.clientName}</p>
                 <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                  plan.is_active ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold" : "bg-bg-elevated text-text-muted"
+                  plan.is_active ? "bg-accent-orange/15 border border-accent-orange/30 text-accent-orange" : "bg-bg-elevated text-text-muted"
                 }`}>
                   {plan.is_active ? "Active" : "Inactive"}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {plan.total_calories !== null && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-accent-gold/15 text-accent-gold">{plan.total_calories} kcal</span>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-accent-orange/15 text-accent-orange">{plan.total_calories} kcal</span>
                 )}
                 {plan.protein_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-bg-elevated text-text-primary">P {plan.protein_g}g</span>}
                 {plan.carbs_g !== null && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-bg-elevated text-text-primary">C {plan.carbs_g}g</span>}
@@ -400,7 +400,7 @@ export default function PlansPage() {
                   type="submit"
                   disabled={isSubmitting}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full h-14 rounded-full bg-accent-gold text-bg-primary font-heading font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60 mt-2 cursor-pointer"
+                  className="w-full h-14 rounded-full bg-accent-orange text-bg-primary font-heading font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60 mt-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <div className="w-5 h-5 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />

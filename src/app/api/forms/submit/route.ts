@@ -81,12 +81,16 @@ export async function POST(req: Request) {
     // 3. If checkin form, also save to checkins table
     if (formType === "checkin" && targetClientId) {
       try {
+        const photoKeys = ["front_pic", "back_pic", "both_side_pic", "right_side_pic", "fav_pose_pic", "mandatory_pose_pic"]
+        const photos = photoKeys.flatMap((k) => (Array.isArray(formData[k]) ? formData[k] : []))
+
         await withRetry(() =>
           supabase.from("checkins").insert({
             client_id: targetClientId,
             form_data: formData,
             weight: formData.w1_weight || formData.measurements?.weight || null,
             notes: formData.g6_additional_notes || formData.general?.other_notes || null,
+            photos,
             submitted_at: new Date().toISOString(),
           })
         )

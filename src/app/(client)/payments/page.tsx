@@ -67,7 +67,7 @@ export default function ClientPaymentsPage() {
 
       {/* Top Header */}
       <div className="border-b border-border-subtle pb-4">
-        <span className="text-[10px] font-bold text-accent-gold uppercase tracking-widest">Client Portal</span>
+        <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Client Portal</span>
         <h1 className="font-heading text-2xl text-text-primary tracking-wide mt-0.5">PAYMENTS &amp; SUBSCRIPTION</h1>
         <p className="text-xs text-text-muted mt-1">
           View coaching fees, pay via UPI, and download GST tax receipts.
@@ -79,13 +79,13 @@ export default function ClientPaymentsPage() {
         <div className={`rounded-2xl border p-6 space-y-4 shadow-xl ${
           activeInvoice.status === "overdue"
             ? "border-red-500/50 bg-red-950/20"
-            : "border-accent-gold/50 bg-gradient-to-br from-accent-gold/10 to-bg-card"
+            : "border-accent-orange/50 bg-gradient-to-br from-accent-orange/10 to-bg-card"
         }`}>
           <div className="flex items-center justify-between">
             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
               activeInvoice.status === "overdue"
                 ? "bg-red-500/20 text-red-400 border border-red-500/40"
-                : "bg-accent-gold/20 text-accent-gold border border-accent-gold/40"
+                : "bg-accent-orange/20 text-accent-orange border border-accent-orange/40"
             }`}>
               {activeInvoice.status === "overdue" ? "Overdue Fee" : "Payment Due"}
             </span>
@@ -101,7 +101,7 @@ export default function ClientPaymentsPage() {
           <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <a
               href={generateUpiPaymentUrl(activeInvoice.totalAmount, clientName, activeInvoice.invoiceNumber)}
-              className="flex-1 py-3 px-4 rounded-full bg-accent-gold text-bg-primary font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent-gold/20 hover:bg-accent-gold/90 transition-all"
+              className="flex-1 py-3 px-4 rounded-full bg-accent-orange text-bg-primary font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent-orange/20 hover:bg-accent-orange/90 transition-all"
             >
               <QrCode className="size-4" /> Pay via UPI Link
             </a>
@@ -109,7 +109,7 @@ export default function ClientPaymentsPage() {
               onClick={() => handleDownloadInvoice(activeInvoice)}
               className="py-3 px-5 rounded-full bg-bg-elevated border border-border-subtle text-text-muted text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-text-primary transition-colors"
             >
-              <Download className="size-4 text-accent-gold" /> GST Receipt
+              <Download className="size-4 text-accent-orange" /> GST Receipt
             </button>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function ClientPaymentsPage() {
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="size-6 border-2 border-accent-gold border-t-transparent rounded-full animate-spin" />
+            <div className="size-6 border-2 border-accent-orange border-t-transparent rounded-full animate-spin" />
           </div>
         ) : invoices.length === 0 ? (
           <p className="text-xs text-text-muted text-center py-6">No past payment records</p>
@@ -152,7 +152,7 @@ export default function ClientPaymentsPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="font-heading font-bold text-sm text-accent-gold">₹{inv.totalAmount.toLocaleString("en-IN")}</span>
+                  <span className="font-heading font-bold text-sm text-accent-orange">₹{inv.totalAmount.toLocaleString("en-IN")}</span>
                   <button
                     onClick={() => handleDownloadInvoice(inv)}
                     className="p-2 rounded-lg bg-bg-elevated border border-border-subtle text-text-muted hover:text-text-primary transition-colors"

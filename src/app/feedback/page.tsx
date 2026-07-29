@@ -41,7 +41,7 @@ export default function FeedbackPage() {
   if (isDone) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
-        <CheckCircle2 className="size-14 text-accent-gold" />
+        <CheckCircle2 className="size-14 text-accent-orange" />
         <p className="font-heading text-2xl text-text-primary">Thank You</p>
         <p className="text-text-muted text-sm max-w-xs">Your feedback has been received.</p>
       </div>
@@ -56,7 +56,7 @@ export default function FeedbackPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
             required
           />
         </div>
@@ -65,7 +65,7 @@ export default function FeedbackPage() {
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
           />
         </div>
         <div className="space-y-1">
@@ -74,14 +74,14 @@ export default function FeedbackPage() {
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             rows={5}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none resize-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none resize-none"
             required
           />
         </div>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-accent-gold text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
+          className="w-full bg-accent-orange text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
         >
           {isSubmitting ? "Submitting…" : "Submit"}
         </button>

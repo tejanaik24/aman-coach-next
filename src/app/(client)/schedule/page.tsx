@@ -112,7 +112,7 @@ export default function ClientSchedulePage() {
 
       {/* Top Header */}
       <div className="border-b border-border-subtle pb-4">
-        <span className="text-[10px] font-bold text-accent-gold uppercase tracking-widest">Client Portal</span>
+        <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Client Portal</span>
         <h1 className="font-heading text-2xl text-text-primary tracking-wide mt-0.5">BOOK A 1-ON-1 CALL</h1>
         <p className="text-xs text-text-muted mt-1">
           Select an available slot to schedule a strategy and review call with Coach Aman.
@@ -121,12 +121,12 @@ export default function ClientSchedulePage() {
 
       {/* Upcoming Session Banner */}
       {upcomingBookings.length > 0 && (
-        <div className="rounded-2xl border border-accent-gold/40 bg-gradient-to-r from-accent-gold/10 via-bg-card to-bg-card p-5 space-y-3 shadow-lg">
+        <div className="rounded-2xl border border-accent-orange/40 bg-gradient-to-r from-accent-orange/10 via-bg-card to-bg-card p-5 space-y-3 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-accent-gold flex items-center gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-accent-orange flex items-center gap-1.5">
               <PhoneCall className="size-3.5" /> Upcoming Scheduled Call
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-accent-gold/20 text-accent-gold text-[10px] font-bold uppercase border border-accent-gold/30">
+            <span className="px-2.5 py-0.5 rounded-full bg-accent-orange/20 text-accent-orange text-[10px] font-bold uppercase border border-accent-orange/30">
               Confirmed
             </span>
           </div>
@@ -138,7 +138,7 @@ export default function ClientSchedulePage() {
                   {format(new Date(b.bookingDate), "EEEE, d MMMM yyyy")}
                 </h3>
                 <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5 font-medium">
-                  <Clock className="size-3.5 text-accent-gold" /> {b.startTime} - {b.endTime} IST
+                  <Clock className="size-3.5 text-accent-orange" /> {b.startTime} - {b.endTime} IST
                 </p>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function ClientSchedulePage() {
 
         {/* Step 1: Select Date */}
         <div className="space-y-3">
-          <label className="text-xs font-bold uppercase text-accent-gold tracking-wider flex items-center gap-2">
+          <label className="text-xs font-bold uppercase text-accent-orange tracking-wider flex items-center gap-2">
             <Calendar className="size-4" /> 1. Select Date
           </label>
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -164,8 +164,8 @@ export default function ClientSchedulePage() {
                   onClick={() => setSelectedDate(dateStr)}
                   className={`flex-1 min-w-[72px] p-3 rounded-xl border text-center transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-accent-gold text-bg-primary border-accent-gold font-bold shadow-md scale-105"
-                      : "bg-bg-elevated border-border-subtle text-text-muted hover:border-accent-gold/40"
+                      ? "bg-accent-orange text-bg-primary border-accent-orange font-bold shadow-md scale-105"
+                      : "bg-bg-elevated border-border-subtle text-text-muted hover:border-accent-orange/40"
                   }`}
                 >
                   <span className="text-[10px] font-bold uppercase block tracking-wider">{format(d, "EEE")}</span>
@@ -179,13 +179,13 @@ export default function ClientSchedulePage() {
 
         {/* Step 2: Select Time Slot */}
         <div className="space-y-3">
-          <label className="text-xs font-bold uppercase text-accent-gold tracking-wider flex items-center gap-2">
+          <label className="text-xs font-bold uppercase text-accent-orange tracking-wider flex items-center gap-2">
             <Clock className="size-4" /> 2. Select Time Slot (30 Mins)
           </label>
 
           {loadingSlots ? (
             <div className="flex justify-center py-8">
-              <div className="size-6 border-2 border-accent-gold border-t-transparent rounded-full animate-spin" />
+              <div className="size-6 border-2 border-accent-orange border-t-transparent rounded-full animate-spin" />
             </div>
           ) : slots.length === 0 ? (
             <div className="p-4 rounded-xl border border-border-subtle bg-bg-elevated text-center text-xs text-text-muted">
@@ -204,8 +204,8 @@ export default function ClientSchedulePage() {
                       !s.available
                         ? "bg-bg-elevated/50 border-border-subtle text-text-muted line-through cursor-not-allowed"
                         : isSelected
-                        ? "bg-accent-gold text-bg-primary border-accent-gold shadow-lg shadow-accent-gold/20 scale-105"
-                        : "bg-bg-elevated border-border-subtle text-text-primary hover:border-accent-gold/50"
+                        ? "bg-accent-orange text-bg-primary border-accent-orange shadow-lg shadow-accent-orange/20 scale-105"
+                        : "bg-bg-elevated border-border-subtle text-text-primary hover:border-accent-orange/50"
                     }`}
                   >
                     {s.time}
@@ -220,7 +220,7 @@ export default function ClientSchedulePage() {
         {selectedSlot && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 pt-3 border-t border-border-subtle">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-accent-gold tracking-wider">
+              <label className="text-xs font-bold uppercase text-accent-orange tracking-wider">
                 3. Call Topic / Notes for Coach (Optional)
               </label>
               <textarea
@@ -228,14 +228,14 @@ export default function ClientSchedulePage() {
                 onChange={e => setNotes(e.target.value)}
                 placeholder="What would you like to discuss on this call? (e.g. Diet adjustments, injury review, workout technique)"
                 rows={3}
-                className="w-full rounded-xl bg-bg-elevated border border-border-subtle p-3 text-xs text-text-primary placeholder-text-muted outline-none focus:border-accent-gold transition-colors resize-none"
+                className="w-full rounded-xl bg-bg-elevated border border-border-subtle p-3 text-xs text-text-primary placeholder-text-muted outline-none focus:border-accent-orange transition-colors resize-none"
               />
             </div>
 
             <button
               onClick={handleBookSession}
               disabled={submitting}
-              className="w-full py-4 rounded-full bg-accent-gold text-bg-primary font-heading font-bold text-xs uppercase tracking-widest shadow-xl shadow-accent-gold/20 hover:bg-accent-gold/90 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 rounded-full bg-accent-orange text-bg-primary font-heading font-bold text-xs uppercase tracking-widest shadow-xl shadow-accent-orange/20 hover:bg-accent-orange/90 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {submitting ? "Confirming Booking..." : `Confirm Call for ${format(new Date(selectedDate), "d MMM")} at ${selectedSlot.time}`}
               <ChevronRight className="size-4" />
@@ -248,8 +248,8 @@ export default function ClientSchedulePage() {
       <AnimatePresence>
         {successBooking && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm rounded-2xl border border-accent-gold/50 bg-bg-card p-6 text-center space-y-4 shadow-2xl">
-              <div className="size-14 mx-auto rounded-full bg-accent-gold/20 border border-accent-gold flex items-center justify-center text-accent-gold">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm rounded-2xl border border-accent-orange/50 bg-bg-card p-6 text-center space-y-4 shadow-2xl">
+              <div className="size-14 mx-auto rounded-full bg-accent-orange/20 border border-accent-orange flex items-center justify-center text-accent-orange">
                 <CheckCircle2 className="size-8" />
               </div>
               <div>
@@ -260,7 +260,7 @@ export default function ClientSchedulePage() {
               </div>
               <button
                 onClick={() => setSuccessBooking(null)}
-                className="w-full py-3 rounded-full bg-accent-gold text-bg-primary text-xs font-bold uppercase tracking-wider"
+                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider"
               >
                 Great, Done!
               </button>

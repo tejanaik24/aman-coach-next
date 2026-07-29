@@ -141,7 +141,7 @@ export function fireBadgeUnlockConfetti() {
   const ctx = canvas.getContext("2d")
   if (!ctx) return
 
-  const goldColors = ["#FFB800", "#FFD700", "#FFF8DC", "#DAA520", "#FFA500"]
+  const goldColors = ["#FF6A1A", "#FF8540", "#FFF8DC", "#C2470A", "#FFA500"]
   const particles: { x: number; y: number; vx: number; vy: number; radius: number; color: string; alpha: number }[] = []
 
   for (let i = 0; i < 90; i++) {
@@ -178,7 +178,7 @@ export function fireBadgeUnlockConfetti() {
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
         ctx.fillStyle = p.color
         ctx.shadowBlur = 10
-        ctx.shadowColor = "#FFB800"
+        ctx.shadowColor = "#FF6A1A"
         ctx.fill()
         ctx.restore()
       }

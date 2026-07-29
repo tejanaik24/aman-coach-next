@@ -195,15 +195,15 @@ export default function AntenatalOnboardingPage() {
     return (
       <ClientLayout>
         <div className="flex flex-col items-center justify-center min-h-[85vh] text-center px-4 space-y-6">
-          <div className="size-20 rounded-full bg-[#FFB800]/20 flex items-center justify-center border border-[#FFB800]/40 animate-bounce">
-            <Heart className="size-10 text-[#FFB800]" />
+          <div className="size-20 rounded-full bg-[#FF6A1A]/20 flex items-center justify-center border border-[#FF6A1A]/40 animate-bounce">
+            <Heart className="size-10 text-[#FF6A1A]" />
           </div>
           <div>
-            <span className="text-[#FFB800] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">AN-PN #TeamAKF</span>
+            <span className="text-[#FF6A1A] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">AN-PN #TeamAKF</span>
             <h2 className="font-heading text-3xl font-extrabold text-white">QUESTIONNAIRE SUBMITTED! 🌸</h2>
             <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-3">Pleased to have you in #teamAKF 😊 Coach Aman will review your pregnancy details personally within 24 hours.</p>
           </div>
-          <button onClick={() => router.push("/home")} className="w-full max-w-xs py-4 rounded-2xl bg-[#FFB800] text-xs font-bold uppercase tracking-wider text-black font-bold">Go to Home</button>
+          <button onClick={() => router.push("/home")} className="w-full max-w-xs py-4 rounded-2xl bg-[#FF6A1A] text-xs font-bold uppercase tracking-wider text-black font-bold">Go to Home</button>
         </div>
       </ClientLayout>
     )
@@ -231,8 +231,8 @@ export default function AntenatalOnboardingPage() {
 
       <div className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4 max-w-xl mx-auto w-full">
         {step === 0 && (
-          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FFB800]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
-            <div><span className="inline-block text-xs font-heading font-extrabold text-[#FFB800] uppercase tracking-widest bg-[#FFB800]/10 px-3 py-1 rounded-full border border-[#FFB800]/30">AN-PN #TeamAKF</span></div>
+          <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FF6A1A]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
+            <div><span className="inline-block text-xs font-heading font-extrabold text-[#FF6A1A] uppercase tracking-widest bg-[#FF6A1A]/10 px-3 py-1 rounded-full border border-[#FF6A1A]/30">AN-PN #TeamAKF</span></div>
             <div className="text-6xl sm:text-7xl animate-bounce pt-2">🤱</div>
             <div>
               <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Welcome, Mama 🌸</h1>
@@ -243,11 +243,11 @@ export default function AntenatalOnboardingPage() {
               <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">🔒 Confidential</span></div>
               <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">💛 No judgment</span></div>
             </div>
-            <div className="bg-[#141414] border-l-4 border-[#FFB800] border-y border-r border-zinc-800 rounded-2xl p-4 text-left">
+            <div className="bg-[#141414] border-l-4 border-[#FF6A1A] border-y border-r border-zinc-800 rounded-2xl p-4 text-left">
               <p className="text-xs sm:text-sm text-zinc-300 italic">"Every pregnancy is unique. Be as detailed as possible — this helps me build the safest plan for you and your baby."</p>
-              <p className="text-xs font-bold text-[#FFB800] text-right mt-1">— Coach Aman Khurana</p>
+              <p className="text-xs font-bold text-[#FF6A1A] text-right mt-1">— Coach Aman Khurana</p>
             </div>
-            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FFB800] text-sm font-extrabold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255,184,0,0.4)]">Start My Journey 🌸</button>
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255, 106, 26,0.4)]">Start My Journey 🌸</button>
             <p className="text-xs text-zinc-500 font-mono">69 questions • Saves automatically</p>
           </div>
         )}

@@ -50,7 +50,7 @@ export default function GlassCard({
 
   const base =
     variant === "gold"
-      ? "glass-gold"
+      ? "glass-orange"
       : variant === "strong"
       ? "glass-strong"
       : "glass";

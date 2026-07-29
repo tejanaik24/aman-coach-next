@@ -98,7 +98,7 @@ export default function LoginPage() {
       {/* Gold reveal headline over hero */}
       <div ref={goldTextRef} className="relative z-10 px-6 pt-14 shrink-0">
         <div className="overflow-hidden">
-          <p className="reveal-line text-[11px] font-semibold uppercase tracking-[0.25em] text-accent-gold">
+          <p className="reveal-line text-[11px] font-semibold uppercase tracking-[0.25em] text-accent-orange">
             AK Fitness Coach
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function LoginPage() {
           </h1>
         </div>
         <div className="overflow-hidden">
-          <h1 className="reveal-line font-heading font-bold text-3xl text-accent-gold leading-tight">
+          <h1 className="reveal-line font-heading font-bold text-3xl text-accent-orange leading-tight">
             Champion.
           </h1>
         </div>
@@ -118,7 +118,7 @@ export default function LoginPage() {
       <div className="relative z-10 flex-1 px-4 min-h-0">
         <div
           ref={formCardRef}
-          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255,184,0,0.06)]"
+          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255, 106, 26,0.06)]"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
         >
           <div className="field-stagger space-y-1">
@@ -135,7 +135,7 @@ export default function LoginPage() {
                 placeholder="e.g. client@akfitness.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError("") }}
-                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
                 autoFocus
                 required
               />
@@ -150,7 +150,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError("") }}
-                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
                 required
               />
               {error && (
@@ -164,7 +164,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading || !email.trim() || !password}
-                className="w-full bg-accent-gold text-bg-primary font-heading font-bold text-sm py-4 rounded-full transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
+                className="w-full bg-accent-orange text-bg-primary font-heading font-bold text-sm py-4 rounded-full transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
               >
                 {loading
                   ? <div className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />

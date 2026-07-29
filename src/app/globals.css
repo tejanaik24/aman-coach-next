@@ -11,6 +11,8 @@
   --color-bg-elevated: #18181C;
   --color-accent-gold: #FFB800;
   --color-accent-gold-hover: #FFC82C;
+  --color-accent-orange: #FF6A1A;
+  --color-accent-orange-hover: #FF8540;
   --color-text-primary: #FFFFFF;
   --color-text-muted: #9494A0;
   --color-border-subtle: rgba(255, 255, 255, 0.1);
@@ -26,6 +28,7 @@
   --radius-xl: 24px;
 
   --shadow-gold-glow: 0px 0px 30px rgba(255, 184, 0, 0.2);
+  --shadow-orange-glow: 0px 0px 30px rgba(255, 106, 26, 0.25);
   --shadow-bento: 0px 20px 40px rgba(0, 0, 0, 0.6);
 }
 
@@ -151,6 +154,18 @@
     0 0 40px rgba(255, 184, 0, 0.3);
 }
 
+.orange-glow {
+  box-shadow:
+    0 0 20px rgba(255, 106, 26, 0.3),
+    0 0 60px rgba(255, 106, 26, 0.1);
+}
+
+.orange-text-glow {
+  text-shadow:
+    0 0 20px rgba(255, 106, 26, 0.5),
+    0 0 40px rgba(255, 106, 26, 0.3);
+}
+
 /* Metallic Gold Light Sweep Shimmer Animation */
 @keyframes goldShimmer {
   0% {
@@ -172,6 +187,17 @@
   animation: goldShimmer 3.5s infinite linear;
 }
 
+.orange-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 106, 26, 0) 0%,
+    rgba(255, 165, 100, 0.35) 50%,
+    rgba(255, 106, 26, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: goldShimmer 3.5s infinite linear;
+}
+
 /* Ambient Radial Liquid Gold Glow */
 .radial-gold-ambient {
   position: absolute;
@@ -179,6 +205,26 @@
   height: 280px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 184, 0, 0.15) 0%, rgba(255, 184, 0, 0) 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.glass-orange {
+  background: rgba(255, 106, 26, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 106, 26, 0.25);
+  box-shadow:
+    0 8px 32px rgba(255, 106, 26, 0.12),
+    inset 0 1px 0 rgba(255, 106, 26, 0.2);
+}
+
+.radial-orange-ambient {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 106, 26, 0.15) 0%, rgba(255, 106, 26, 0) 70%);
   filter: blur(40px);
   pointer-events: none;
 }
@@ -197,6 +243,14 @@
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 184, 0, 0.35);
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.5), inset 0px 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.glass-card-orange {
+  background: linear-gradient(180deg, rgba(255, 106, 26, 0.12) 0%, rgba(18, 18, 22, 0.8) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 106, 26, 0.35);
   box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.5), inset 0px 1px 1px rgba(255, 255, 255, 0.15);
 }
 
@@ -246,6 +300,30 @@
 
 .animate-float-slow {
   animation: float-slow 8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+.animate-breathe {
+  animation: breathe 7s ease-in-out infinite;
+}
+
+@keyframes haloPulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+.animate-halo-pulse {
+  animation: haloPulse 5s ease-in-out infinite;
+}
+
+@keyframes glassFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-glass-float {
+  animation: glassFloat 6s ease-in-out infinite;
 }
 
 /* Skeleton Pulse */

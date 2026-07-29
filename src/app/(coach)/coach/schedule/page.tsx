@@ -51,7 +51,7 @@ export default function CoachSchedulePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-5">
         <div>
-          <span className="text-[10px] font-bold text-accent-gold uppercase tracking-widest">Coach Dashboard</span>
+          <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Coach Dashboard</span>
           <h1 className="font-heading text-3xl text-text-primary tracking-wide">CALL SCHEDULE &amp; BOOKINGS</h1>
           <p className="text-xs text-text-muted mt-1">Manage 1-on-1 client consultation calls and availability.</p>
         </div>
@@ -68,7 +68,7 @@ export default function CoachSchedulePage() {
         <button
           onClick={() => setFilterDate("all")}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-            filterDate === "all" ? "bg-accent-gold text-bg-primary" : "bg-bg-card border border-border-subtle text-text-muted hover:text-text-primary"
+            filterDate === "all" ? "bg-accent-orange text-bg-primary" : "bg-bg-card border border-border-subtle text-text-muted hover:text-text-primary"
           }`}
         >
           All Dates ({bookings.length})
@@ -84,12 +84,12 @@ export default function CoachSchedulePage() {
               key={dateStr}
               onClick={() => setFilterDate(dateStr)}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-                isSelected ? "bg-accent-gold text-bg-primary" : "bg-bg-card border border-border-subtle text-text-muted hover:text-text-primary"
+                isSelected ? "bg-accent-orange text-bg-primary" : "bg-bg-card border border-border-subtle text-text-muted hover:text-text-primary"
               }`}
             >
               <span>{format(d, "EEE, d MMM")}</span>
               {count > 0 && (
-                <span className="px-1.5 text-[10px] rounded-full bg-accent-gold/20 text-accent-gold font-bold">
+                <span className="px-1.5 text-[10px] rounded-full bg-accent-orange/20 text-accent-orange font-bold">
                   {count}
                 </span>
               )}
@@ -101,7 +101,7 @@ export default function CoachSchedulePage() {
       {/* Bookings List */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="size-8 rounded-full border-2 border-accent-gold border-t-transparent animate-spin" />
+          <div className="size-8 rounded-full border-2 border-accent-orange border-t-transparent animate-spin" />
         </div>
       ) : filteredBookings.length === 0 ? (
         <div className="rounded-2xl border border-border-subtle bg-bg-card p-12 text-center text-text-muted space-y-3">
@@ -115,14 +115,14 @@ export default function CoachSchedulePage() {
             <div
               key={b.id}
               className={`rounded-2xl border bg-bg-card p-5 space-y-4 shadow-lg transition-all ${
-                b.status === "confirmed" ? "border-accent-gold/40" : b.status === "completed" ? "border-emerald-500/30 opacity-80" : "border-red-500/30 opacity-60"
+                b.status === "confirmed" ? "border-accent-orange/40" : b.status === "completed" ? "border-emerald-500/30 opacity-80" : "border-red-500/30 opacity-60"
               }`}
             >
               <div className="flex items-start justify-between">
                 <div>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     b.status === "confirmed"
-                      ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/30"
+                      ? "bg-accent-orange/15 text-accent-orange border border-accent-orange/30"
                       : b.status === "completed"
                       ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                       : "bg-red-500/15 text-red-400 border border-red-500/30"
@@ -131,18 +131,18 @@ export default function CoachSchedulePage() {
                   </span>
                   <h3 className="font-heading font-bold text-lg text-text-primary mt-2">{b.clientName}</h3>
                 </div>
-                <div className="size-10 rounded-full bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center font-heading font-bold text-accent-gold">
+                <div className="size-10 rounded-full bg-accent-orange/10 border border-accent-orange/30 flex items-center justify-center font-heading font-bold text-accent-orange">
                   {b.clientName?.charAt(0)}
                 </div>
               </div>
 
               <div className="space-y-1.5 text-xs text-text-muted border-t border-b border-border-subtle py-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="size-3.5 text-accent-gold" />
+                  <Calendar className="size-3.5 text-accent-orange" />
                   <span>{format(new Date(b.bookingDate), "EEEE, d MMMM yyyy")}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="size-3.5 text-accent-gold" />
+                  <Clock className="size-3.5 text-accent-orange" />
                   <span>{b.startTime} - {b.endTime} IST</span>
                 </div>
                 {b.clientPhone && (
@@ -153,7 +153,7 @@ export default function CoachSchedulePage() {
                 )}
                 {b.notes && (
                   <div className="mt-2 p-2.5 rounded-lg bg-bg-elevated border border-border-subtle text-xs text-text-muted">
-                    <span className="text-[10px] font-bold text-accent-gold uppercase block">Client Topic:</span>
+                    <span className="text-[10px] font-bold text-accent-orange uppercase block">Client Topic:</span>
                     {b.notes}
                   </div>
                 )}

@@ -43,14 +43,14 @@ export default function ContractPage() {
   if (isDone) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
-        <CheckCircle2 className="size-14 text-accent-gold" />
+        <CheckCircle2 className="size-14 text-accent-orange" />
         <p className="font-heading text-2xl text-text-primary">Contract Signed</p>
         <p className="text-text-muted text-sm max-w-xs">Welcome to #teamAKF!</p>
       </div>
     )
   }
 
-  const inputClass = "w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+  const inputClass = "w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
   const labelClass = "text-text-muted text-[11px] font-medium uppercase tracking-wide"
 
   return (
@@ -76,7 +76,7 @@ export default function ContractPage() {
         </p>
 
         <div className="border-t border-border-subtle pt-4">
-          <p className="font-heading italic text-base text-accent-gold mb-2">Nutrition Terms</p>
+          <p className="font-heading italic text-base text-accent-orange mb-2">Nutrition Terms</p>
           <p>
             Although, your Nutrition plans will be custom made post knowing about your lifestyle & health history
             along with detailed discussion in regards to your likings, dislikings, food allergies etc. However as
@@ -90,7 +90,7 @@ export default function ContractPage() {
         </div>
 
         <div className="border-t border-border-subtle pt-4">
-          <p className="font-heading italic text-base text-accent-gold mb-2">Exercise/Training Terms</p>
+          <p className="font-heading italic text-base text-accent-orange mb-2">Exercise/Training Terms</p>
           <p>
             During your exercise program, every effort should be made to assure your safety first by prioritizing
             the provided technical Points & Exercise Execution methods. Although our plans are designed keeping all
@@ -139,7 +139,7 @@ export default function ContractPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-accent-gold text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
+          className="w-full bg-accent-orange text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
         >
           {isSubmitting ? "Submitting…" : "Submit"}
         </button>

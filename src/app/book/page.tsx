@@ -50,12 +50,12 @@ export default function BookConsultationPage() {
   if (isDone) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
-        <CheckCircle2 className="size-14 text-accent-gold" />
+        <CheckCircle2 className="size-14 text-accent-orange" />
         <p className="font-heading text-2xl text-text-primary">Booking Received</p>
         <p className="text-text-muted text-sm max-w-xs">
           You will receive a revert soon on your WhatsApp or Email. Thank you.
         </p>
-        <Link href="/" className="text-accent-gold text-xs font-medium uppercase tracking-widest mt-4">
+        <Link href="/" className="text-accent-orange text-xs font-medium uppercase tracking-widest mt-4">
           ← Back to Home
         </Link>
       </div>
@@ -87,11 +87,11 @@ export default function BookConsultationPage() {
           </div>
           <div className="flex items-baseline justify-between">
             <span className="text-text-muted text-xs">Amount</span>
-            <span className="font-heading text-2xl text-accent-gold">₹{AMOUNT.toLocaleString("en-IN")}.00</span>
+            <span className="font-heading text-2xl text-accent-orange">₹{AMOUNT.toLocaleString("en-IN")}.00</span>
           </div>
           <a
             href={UPI_LINK}
-            className="block w-full text-center bg-accent-gold text-bg-primary font-heading text-sm py-3 rounded-full mt-2"
+            className="block w-full text-center bg-accent-orange text-bg-primary font-heading text-sm py-3 rounded-full mt-2"
           >
             Pay via UPI App
           </a>
@@ -108,7 +108,7 @@ export default function BookConsultationPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
               required
             />
           </div>
@@ -119,7 +119,7 @@ export default function BookConsultationPage() {
               <input
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
-                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
                 required
               />
             </div>
@@ -128,7 +128,7 @@ export default function BookConsultationPage() {
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
                 required
               />
             </div>
@@ -140,7 +140,7 @@ export default function BookConsultationPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
             />
           </div>
 
@@ -157,7 +157,7 @@ export default function BookConsultationPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-accent-gold text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
+            className="w-full bg-accent-orange text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
           >
             {isSubmitting ? "Submitting…" : "Submit"}
           </button>

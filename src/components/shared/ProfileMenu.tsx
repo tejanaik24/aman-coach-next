@@ -111,15 +111,15 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-accent-gold" />
+                    <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-accent-orange" />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-bg-elevated flex items-center justify-center border-2 border-accent-gold">
-                      <span className="text-accent-gold font-heading font-bold text-2xl">{initials}</span>
+                    <div className="w-20 h-20 rounded-full bg-bg-elevated flex items-center justify-center border-2 border-accent-orange">
+                      <span className="text-accent-orange font-heading font-bold text-2xl">{initials}</span>
                     </div>
                   )}
                   <button
                     onClick={() => toast("Photo upload coming soon")}
-                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-accent-gold border-2 border-bg-surface flex items-center justify-center cursor-pointer"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-accent-orange border-2 border-bg-surface flex items-center justify-center cursor-pointer"
                     aria-label="Change photo"
                   >
                     <Camera className="size-3.5 text-bg-primary" />
@@ -133,12 +133,12 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                       value={draftName}
                       onChange={(e) => setDraftName(e.target.value)}
                       autoFocus
-                      className="flex-1 bg-bg-elevated border-2 border-accent-gold rounded-xl px-3 py-2 text-sm font-heading font-bold text-text-primary text-center outline-none"
+                      className="flex-1 bg-bg-elevated border-2 border-accent-orange rounded-xl px-3 py-2 text-sm font-heading font-bold text-text-primary text-center outline-none"
                     />
                     <button
                       onClick={handleSaveName}
                       disabled={isSaving}
-                      className="w-9 h-9 rounded-full bg-accent-gold flex items-center justify-center flex-shrink-0 disabled:opacity-50 cursor-pointer"
+                      className="w-9 h-9 rounded-full bg-accent-orange flex items-center justify-center flex-shrink-0 disabled:opacity-50 cursor-pointer"
                     >
                       <Check className="size-4 text-bg-primary" />
                     </button>
@@ -151,7 +151,7 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                 )}
 
                 {email && <p className="text-xs text-text-muted">{email}</p>}
-                <span className="text-[9px] font-bold text-accent-gold bg-accent-gold/10 border border-accent-gold/30 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                <span className="text-[9px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/30 px-2.5 py-1 rounded-full uppercase tracking-wider">
                   {role === "coach" ? "Coach Account" : "Client Account"}
                 </span>
               </div>
@@ -160,10 +160,10 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
               <div className="space-y-2.5 pb-6">
                 <button
                   onClick={() => toast("Notification settings coming soon")}
-                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer hover:border-accent-gold/40 transition-colors"
+                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer hover:border-accent-orange/40 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-bg-primary flex items-center justify-center flex-shrink-0">
-                    <Bell className="size-4 text-accent-gold" />
+                    <Bell className="size-4 text-accent-orange" />
                   </div>
                   <span className="text-xs font-bold text-text-primary flex-1">Notification Settings</span>
                 </button>
@@ -172,10 +172,10 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                   href={`https://wa.me/${AMAN_WHATSAPP}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer hover:border-accent-gold/40 transition-colors"
+                  className="w-full bg-bg-elevated border border-border-subtle rounded-2xl p-4 flex items-center gap-3 text-left cursor-pointer hover:border-accent-orange/40 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-bg-primary flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="size-4 text-accent-gold" />
+                    <MessageCircle className="size-4 text-accent-orange" />
                   </div>
                   <span className="text-xs font-bold text-text-primary flex-1">Contact Support</span>
                 </a>
@@ -183,12 +183,12 @@ export default function ProfileMenu({ isOpen, onClose, name, email, avatarUrl, r
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}
-                  className="w-full bg-bg-elevated border border-accent-gold/30 rounded-2xl p-4 flex items-center gap-3 text-left disabled:opacity-60 cursor-pointer hover:bg-accent-gold/10 transition-colors"
+                  className="w-full bg-bg-elevated border border-accent-orange/30 rounded-2xl p-4 flex items-center gap-3 text-left disabled:opacity-60 cursor-pointer hover:bg-accent-orange/10 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-full bg-accent-gold flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-accent-orange flex items-center justify-center flex-shrink-0">
                     <LogOut className="size-4 text-bg-primary" />
                   </div>
-                  <span className="text-xs font-bold text-accent-gold flex-1">
+                  <span className="text-xs font-bold text-accent-orange flex-1">
                     {isSigningOut ? "Signing out..." : "Sign Out"}
                   </span>
                 </button>

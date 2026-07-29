@@ -69,7 +69,7 @@ function EnquiryForm() {
   if (isDone) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
-        <CheckCircle2 className="size-14 text-accent-gold" />
+        <CheckCircle2 className="size-14 text-accent-orange" />
         <p className="font-heading text-2xl text-text-primary">Enquiry Received</p>
         <p className="text-text-muted text-sm max-w-xs">
           You will Receive a Revert soon on your WhatsApp OR Email. Thank you.
@@ -90,7 +90,7 @@ function EnquiryForm() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
             required
           />
         </div>
@@ -101,7 +101,7 @@ function EnquiryForm() {
             <input
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
               required
             />
           </div>
@@ -110,7 +110,7 @@ function EnquiryForm() {
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
               required
             />
           </div>
@@ -122,7 +122,7 @@ function EnquiryForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
           />
         </div>
 
@@ -131,7 +131,7 @@ function EnquiryForm() {
           <select
             value={interest}
             onChange={(e) => setInterest(e.target.value)}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
           >
             <option value="">--Select--</option>
             {INTEREST_OPTIONS.map((opt) => (
@@ -145,7 +145,7 @@ function EnquiryForm() {
           <select
             value={heardFrom}
             onChange={(e) => setHeardFrom(e.target.value)}
-            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-gold rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+            className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
           >
             <option value="">--Select--</option>
             {HEARD_FROM_OPTIONS.map((opt) => (
@@ -157,7 +157,7 @@ function EnquiryForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-accent-gold text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
+          className="w-full bg-accent-orange text-bg-primary font-heading text-sm py-3 rounded-full disabled:opacity-60"
         >
           {isSubmitting ? "Submitting…" : "Submit"}
         </button>

@@ -62,7 +62,7 @@ export default function ParticleField() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 184, 0, ${p.alpha})`;
+        ctx.fillStyle = `rgba(255, 106, 26, ${p.alpha})`;
         ctx.fill();
       }
 
