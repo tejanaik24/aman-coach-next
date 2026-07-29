@@ -304,10 +304,7 @@ export default function ClientHomePage() {
                   />
                   <span className="text-accent-orange text-3xl font-extrabold leading-none mb-0.5">.</span>
                 </div>
-                <p className="text-text-muted text-xs font-medium mt-1">
-                  Stronger today, unstoppable tomorrow.
-                </p>
-                <div className="inline-flex items-center gap-2 mt-5 pl-2.5 pr-3.5 py-1.5 rounded-full bg-accent-orange/10 border border-accent-orange/20">
+                <div className="inline-flex items-center gap-2 mt-2 pl-2.5 pr-3.5 py-1.5 rounded-full bg-accent-orange/10 border border-accent-orange/20">
                   <Flame className="w-4 h-4 text-accent-orange fill-accent-orange" />
                   <span className="text-accent-orange text-base font-extrabold leading-none">{streak || 0}</span>
                   <span className="flex flex-col leading-[10px]">
