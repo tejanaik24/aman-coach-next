@@ -173,9 +173,9 @@ export default function ClientHomePage() {
       <GradientMesh />
       <ParticleField />
 
-      <div className="relative z-10 pb-28 max-w-lg mx-auto">
+      <div className="relative z-10 pb-28 w-full">
 
-        <div className="px-5 pt-8 space-y-6">
+        <div className="pt-8 space-y-6">
 
           <ProfileMenu
             isOpen={isProfileOpen}
@@ -192,7 +192,7 @@ export default function ClientHomePage() {
               text/chips float on top of it, they don't share a row with it. */}
           <ScrollReveal delay={0}>
             <div
-              className="relative rounded-[32px] overflow-hidden"
+              className="relative rounded-[32px] overflow-hidden px-5"
               style={{
                 height: "600px",
                 // Base tone now carries a horizontal relationship to the coach (warmer toward
@@ -370,6 +370,9 @@ export default function ClientHomePage() {
               </div>
             </div>
           </ScrollReveal>
+          </div>
+
+          <div className="px-5 space-y-6">
 
           {/* WEEKLY SCORE — white surface card */}
           <ScrollReveal delay={0.15}>
