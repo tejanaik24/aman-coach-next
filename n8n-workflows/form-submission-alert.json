@@ -1,0 +1,94 @@
+{
+  "name": "Form Submission Coach Alert",
+  "nodes": [
+    {
+      "name": "Cron: Every 2 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "ruleData": {
+          "interval": [{ "field": "minutesInterval", "minutesInterval": 2 }]
+        }
+      },
+      "position": [0, 0]
+    },
+    {
+      "name": "Get Pending Alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/pending-alerts",
+        "method": "POST",
+        "sendBody": false,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        },
+        "sendHeaders": true
+      },
+      "position": [200, 0]
+    },
+    {
+      "name": "Extract Alerts to Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const data = items[0].json;\nreturn (data.alerts || []).map((a) => ({ json: { id: a.id, clientName: a.clientName, formType: a.formType, coachPhone: data.coachPhone } }));"
+      },
+      "position": [400, 0]
+    },
+    {
+      "name": "Send Coach Alert via WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.WAHA_API_KEY }}" }
+          ]
+        },
+        "bodyParameters": {
+          "parameters": [
+            { "name": "session", "value": "={{ $env.WAHA_SESSION }}" },
+            { "name": "chatId", "value": "={{ $json.coachPhone }}@c.us" },
+            { "name": "text", "value": "={{ \"🚨 *NEW FORM SUBMISSION*\\n\\n👤 Client: *\" + $json.clientName + \"*\\n📋 Form: *\" + $json.formType + \"*\\n\\n📝 Review Submission in Coach Portal:\\n\" + $env.APP_URL + \"/submissions\" }}" }
+          ]
+        }
+      },
+      "position": [500, 0]
+    },
+    {
+      "name": "Mark Alert Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "parameters": {
+        "url": "={{ $env.APP_URL }}/api/automation/mark-alert-sent",
+        "method": "POST",
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "id", "value": "={{ $('Extract Alerts to Items').item.json.id }}" }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
+          ]
+        }
+      },
+      "position": [700, 0]
+    }
+  ],
+  "connections": {
+    "Cron: Every 2 minutes": { "main": [[ { "node": "Get Pending Alerts", "type": "main", "index": 0 } ]] },
+    "Get Pending Alerts": { "main": [[ { "node": "Extract Alerts to Items", "type": "main", "index": 0 } ]] },
+    "Extract Alerts to Items": { "main": [[ { "node": "Send Coach Alert via WAHA", "type": "main", "index": 0 } ]] },
+    "Send Coach Alert via WAHA": { "main": [[ { "node": "Mark Alert Sent", "type": "main", "index": 0 } ]] }
+  },
+  "settings": {},
+  "staticData": null
+}

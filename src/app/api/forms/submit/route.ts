@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createClient as createServerClient } from "@/lib/supabase/server"
-import { sendCoachSubmissionAlert } from "@/lib/whatsapp"
 import { withRetry } from "@/lib/db-retry"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
@@ -99,14 +98,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Send WhatsApp Notification to Coach via WAHA
-    const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
-    if (!coachPhone) {
-      console.error("AMAN_WHATSAPP/COACH_WHATSAPP_NUMBER not set; skipping coach WhatsApp alert")
-    } else {
-      sendCoachSubmissionAlert(coachPhone, clientName, formType)
-        .catch(e => console.error("WAHA alert error:", e))
-    }
+    // 4. WhatsApp coach alert is sent by the local n8n worker (outbox pattern):
+    // it polls /api/automation/pending-alerts and sends via WAHA, then marks
+    // coach_alert_sent_at. Vercel cannot reach the local WAHA instance, so the
+    // alert is intentionally queued in the DB instead of sent here.
 
     return NextResponse.json({
       success: true,
