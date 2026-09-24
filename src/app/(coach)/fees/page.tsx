@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import { useCountUp } from "@/hooks/useCountUp"
 import { generateGstInvoicePdf, generateUpiPaymentUrl, markInvoicePaid, sendPaymentReminderWhatsApp, type Invoice } from "@/lib/payments"
+import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 
 interface FeeWithClient {
@@ -282,12 +283,26 @@ export default function FeesPage() {
                   {/* Actions Bar */}
                   <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-[#181310]/[0.08]">
                     {(f.status === "pending" || f.status === "overdue") && (
-                      <button
-                        onClick={() => handleMarkPaid(f)}
-                        className="py-2 px-4 rounded-xl bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider hover:bg-accent-orange/90 transition-all cursor-pointer"
-                      >
-                        Mark Paid
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleMarkPaid(f)}
+                          className="py-2 px-4 rounded-xl bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider hover:bg-accent-orange/90 transition-all cursor-pointer"
+                        >
+                          Mark Paid
+                        </button>
+
+                        <RazorpayCheckoutButton
+                          amount={f.amount}
+                          feeId={f.id}
+                          clientName={f.clientName}
+                          clientPhone={f.clientPhone}
+                          buttonText="Collect via Razorpay"
+                          className="py-2 px-3.5 text-xs font-bold rounded-xl"
+                          onSuccess={() => {
+                            setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "paid" } : item)))
+                          }}
+                        />
+                      </>
                     )}
 
                     <button

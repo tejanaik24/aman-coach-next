@@ -1,0 +1,87 @@
+{
+  "name": "Automation Failure Notifier",
+  "nodes": [
+    {
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "name": "Notify by Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [220, 0],
+      "parameters": {
+        "url": "https://api.resend.com/emails",
+        "method": "POST",
+        "sendHeaders": true,
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.RESEND_API_KEY }}" }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ from: 'AK Fitness <noreply@amankhuranafitness.com>', to: ['aman.khurana.1460@gmail.com', 'vyzmaai.in@gmail.com'], subject: 'AK FITNESS AUTOMATION ERROR - ' + $json.workflow.name, html: '<h2>AK Fitness Automation Failed</h2><p>Workflow: <b>' + $json.workflow.name + '</b></p><p>Error: ' + ($json.execution.error ? $json.execution.error.message : 'unknown') + '</p><p>Execution: <a href=\"' + $json.execution.url + '\">view</a></p>' }) }}"
+      }
+    },
+    {
+      "name": "Notify on WhatsApp (8886720908)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [440, 0],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendHeaders": true,
+        "sendBody": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.WAHA_API_KEY }}" }
+          ]
+        },
+        "bodyParameters": {
+          "parameters": [
+            { "name": "session", "value": "={{ $env.WAHA_SESSION }}" },
+            { "name": "chatId", "value": "8886720908@c.us" },
+            { "name": "text", "value": "={{ \"🚨 *AK FITNESS AUTOMATION CRASHED*\\n\\nWorkflow: *\" + $json.workflow.name + \"*\\nError: \" + ($json.execution.error ? $json.execution.error.message : 'unknown') + \"\\n\" + $json.execution.url }}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Notify on WhatsApp (919815690656)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [660, 0],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sendText",
+        "method": "POST",
+        "sendHeaders": true,
+        "sendBody": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.WAHA_API_KEY }}" }
+          ]
+        },
+        "bodyParameters": {
+          "parameters": [
+            { "name": "session", "value": "={{ $env.WAHA_SESSION }}" },
+            { "name": "chatId", "value": "919815690656@c.us" },
+            { "name": "text", "value": "={{ \"🚨 *AK FITNESS AUTOMATION CRASHED*\\n\\nWorkflow: *\" + $json.workflow.name + \"*\\nError: \" + ($json.execution.error ? $json.execution.error.message : 'unknown') + \"\\n\" + $json.execution.url }}" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": { "main": [[ { "node": "Notify by Email", "type": "main", "index": 0 } ]] },
+    "Notify by Email": { "main": [[ { "node": "Notify on WhatsApp (8886720908)", "type": "main", "index": 0 } ]] },
+    "Notify on WhatsApp (8886720908)": { "main": [[ { "node": "Notify on WhatsApp (919815690656)", "type": "main", "index": 0 } ]] }
+  },
+  "settings": {}
+}

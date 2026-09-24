@@ -1,4 +1,4 @@
--- Add role column to users table for coach/client/admin differentiation
-
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'client'
+-- Profiles are the application's user table; auth.users remains managed by Supabase.
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+ALTER TABLE profiles ADD CONSTRAINT profiles_role_check
   CHECK (role IN ('client', 'coach', 'admin'));

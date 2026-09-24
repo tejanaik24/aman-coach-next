@@ -1,6 +1,6 @@
 import { Resend } from "resend"
 
-const FROM = "AK Fitness <onboarding@resend.dev>"
+const FROM = "AK Fitness <noreply@amankhuranafitness.com>"
 
 function getResend() {
   if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured")
@@ -87,6 +87,22 @@ export async function sendPaymentReminderEmail(to: string, name: string, amount:
     ${ctaButton("https://aman-coach-next.vercel.app/client/payments", "Make Payment")}
   `)
   return getResend().emails.send({ from: FROM, to, subject: "Payment Reminder — AK Fitness", html })
+}
+
+export async function sendEnquiryAlertEmail(name: string, phone: string, email: string, interest: string) {
+  const to = process.env.SETUP_COACH_EMAIL || process.env.COACH_EMAIL
+  if (!to) throw new Error("SETUP_COACH_EMAIL/COACH_EMAIL not configured")
+  const html = layout(`
+    <h2 style="color:#fff;font-size:20px;margin:0 0 12px">New Enquiry 📝</h2>
+    <table cellpadding="0" cellspacing="0" style="margin:0 0 16px">
+      <tr><td style="color:#52525b;font-size:13px;padding:4px 20px 4px 0">Name</td><td style="color:#fff;font-size:14px">${name}</td></tr>
+      <tr><td style="color:#52525b;font-size:13px;padding:4px 20px 4px 0">Phone</td><td style="color:#fff;font-size:14px">${phone}</td></tr>
+      <tr><td style="color:#52525b;font-size:13px;padding:4px 20px 4px 0">Email</td><td style="color:#fff;font-size:14px">${email || "—"}</td></tr>
+      <tr><td style="color:#52525b;font-size:13px;padding:4px 20px 4px 0">Interested In</td><td style="color:#fff;font-size:14px">${interest || "—"}</td></tr>
+    </table>
+    ${ctaButton("https://aman-coach-next.vercel.app/submissions", "Review in Coach Portal")}
+  `)
+  return getResend().emails.send({ from: FROM, to, subject: `New Enquiry — ${name}`, html })
 }
 
 export async function sendPlanExpiryEmail(to: string, name: string, expiryDate: string, daysLeft: number) {

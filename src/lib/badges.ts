@@ -114,10 +114,13 @@ export async function checkAndUnlockBadges(clientId: string, clientName: string,
 
       newUnlockedBadges.push(badgeObj)
 
-      // Send WhatsApp Notification to Coach / Client placeholder
-      const coachPhone = process.env.AMAN_WHATSAPP || "919815690656"
-      sendCoachSubmissionAlert(coachPhone, clientName, `Badge Unlocked: 🏆 ${badgeObj.title}`)
-        .catch(err => console.error("Badge WhatsApp alert note:", err))
+      // The unlock itself is durable; the notification is best-effort and must
+      // never undo a successfully earned badge.
+      const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
+      if (coachPhone) {
+        sendCoachSubmissionAlert(coachPhone, clientName, `Badge Unlocked: 🏆 ${badgeObj.title}`)
+          .catch((err) => console.error("Badge WhatsApp alert failed:", err))
+      }
     }
   }
 

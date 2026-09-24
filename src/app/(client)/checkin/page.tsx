@@ -93,6 +93,25 @@ const defaultCheckinForm: CheckinFormData = {
   mandatory_pose_pic: []
 }
 
+// ─── Skeleton (matches ProgressSkeleton style) ─────────────────────────────
+
+function CheckinSkeleton() {
+  return (
+    <div className="px-5 pt-16 pb-24 space-y-5 bg-bg-primary min-h-screen">
+      <div className="h-7 w-40 mx-auto bg-bg-card rounded-2xl skeleton-pulse" />
+      <div className="h-20 w-20 mx-auto bg-bg-card rounded-full skeleton-pulse" />
+      <div className="h-8 w-56 mx-auto bg-bg-card rounded-2xl skeleton-pulse" />
+      <div className="grid grid-cols-3 gap-2.5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-9 bg-bg-card rounded-full skeleton-pulse" />
+        ))}
+      </div>
+      <div className="bg-bg-card rounded-2xl h-24 skeleton-pulse" />
+      <div className="bg-bg-card rounded-full h-14 skeleton-pulse" />
+    </div>
+  )
+}
+
 // ─── Gold Confetti Canvas ───────────────────────────────────────────────────
 
 function GoldConfettiCanvas() {
@@ -164,7 +183,7 @@ function GoldConfettiCanvas() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CheckinFormPage() {
-  const { user, profile } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<CheckinFormData>(defaultCheckinForm)
@@ -173,6 +192,7 @@ export default function CheckinFormPage() {
   const [cooldownDaysLeft, setCooldownDaysLeft] = useState<number | null>(null)
   const [clientObj, setClientObj] = useState<{ id: string } | null>(null)
   const [showResumeBanner, setShowResumeBanner] = useState(false)
+  const [checkinDataLoading, setCheckinDataLoading] = useState(true)
 
   // Touch Swipe Gesture State
   const touchStartX = useRef<number | null>(null)
@@ -192,7 +212,10 @@ export default function CheckinFormPage() {
 
   // Check 5-day cooldown guard
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id) {
+      if (!authLoading) setCheckinDataLoading(false)
+      return
+    }
     getClientProfile(user.id).then(async clientData => {
       if (!clientData) return
       setClientObj({ id: clientData.id })
@@ -207,8 +230,8 @@ export default function CheckinFormPage() {
           setCooldownDaysLeft(Math.ceil(5 - daysAgo))
         }
       }
-    }).catch(() => {})
-  }, [user?.id])
+    }).catch(() => {}).finally(() => setCheckinDataLoading(false))
+  }, [user?.id, authLoading])
 
   // Check existing draft
   useEffect(() => {
@@ -370,6 +393,14 @@ export default function CheckinFormPage() {
     }
   }
 
+  if (authLoading || checkinDataLoading) {
+    return (
+      <ClientLayout>
+        <CheckinSkeleton />
+      </ClientLayout>
+    )
+  }
+
   // Cooldown Guard View
   if (cooldownDaysLeft !== null) {
     return (
@@ -452,7 +483,7 @@ export default function CheckinFormPage() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4 max-w-xl mx-auto w-full"
+        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center max-w-xl mx-auto w-full"
       >
         {/* STEP 0: WELCOME INTRO SCREEN */}
         {step === 0 && (

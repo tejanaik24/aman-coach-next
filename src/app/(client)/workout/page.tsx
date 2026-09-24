@@ -134,7 +134,7 @@ export default function WorkoutPage() {
   const planNameFontSize = plan.name.length <= 10 ? 26 : plan.name.length <= 16 ? 22 : plan.name.length <= 24 ? 18 : 15
 
   return (
-    <div className="relative px-5 pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-4">
+    <div className="relative pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-16">
       {/* HERO — same cinematic language as the home hero: warm charcoal/brown base,
           single orange halo, bloom-spill, grain, coach photo as background layer. */}
       <div

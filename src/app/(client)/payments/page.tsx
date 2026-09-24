@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { IndianRupee, QrCode, Download, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generateUpiPaymentUrl, generateGstInvoicePdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
+import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 import toast from "react-hot-toast"
 
 export default function ClientPaymentsPage() {
@@ -14,44 +15,50 @@ export default function ClientPaymentsPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [clientName, setClientName] = useState("")
+  const [clientEmail, setClientEmail] = useState("")
+  const [clientPhone, setClientPhone] = useState("")
+
+  const fetchPayments = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    if (user.email) setClientEmail(user.email)
+
+    const { data: profile } = await supabase.from("profiles").select("name, phone").eq("id", user.id).single()
+    if (profile?.name) setClientName(profile.name)
+    if (profile?.phone) setClientPhone(profile.phone)
+
+    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
+    if (!client) { setLoading(false); return }
+
+    const { data: invRows } = await supabase
+      .from("invoices")
+      .select("*")
+      .eq("client_id", client.id)
+      .order("due_date", { ascending: false })
+
+    if (invRows) {
+      setInvoices(invRows.map((inv: any) => ({
+        id: inv.id,
+        clientId: inv.client_id,
+        invoiceNumber: inv.invoice_number,
+        amount: Number(inv.amount),
+        gstRate: Number(inv.gst_rate || 18),
+        gstAmount: Number(inv.gst_amount || 0),
+        totalAmount: Number(inv.total_amount),
+        upiId: inv.upi_id || DEFAULT_UPI_ID,
+        status: inv.status,
+        dueDate: inv.due_date,
+        paidAt: inv.paid_at,
+        clientName: profile?.name || "Client",
+        createdAt: inv.created_at
+      })))
+    }
+    setLoading(false)
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single()
-      if (profile?.name) setClientName(profile.name)
-
-      const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
-      if (!client) { setLoading(false); return }
-
-      const { data: invRows } = await supabase
-        .from("invoices")
-        .select("*")
-        .eq("client_id", client.id)
-        .order("due_date", { ascending: false })
-
-      if (invRows) {
-        setInvoices(invRows.map((inv: any) => ({
-          id: inv.id,
-          clientId: inv.client_id,
-          invoiceNumber: inv.invoice_number,
-          amount: Number(inv.amount),
-          gstRate: Number(inv.gst_rate || 18),
-          gstAmount: Number(inv.gst_amount || 0),
-          totalAmount: Number(inv.total_amount),
-          upiId: inv.upi_id || DEFAULT_UPI_ID,
-          status: inv.status,
-          dueDate: inv.due_date,
-          paidAt: inv.paid_at,
-          clientName: profile?.name || "Client",
-          createdAt: inv.created_at
-        })))
-      }
-      setLoading(false)
-    }
-    fetchData()
+    fetchPayments()
   }, [])
 
   function handleDownloadInvoice(inv: Invoice) {
@@ -70,7 +77,7 @@ export default function ClientPaymentsPage() {
         <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Client Portal</span>
         <h1 className="font-heading text-2xl text-text-primary tracking-wide mt-0.5">PAYMENTS &amp; SUBSCRIPTION</h1>
         <p className="text-xs text-text-muted mt-1">
-          View coaching fees, pay via UPI, and download GST tax receipts.
+          View coaching fees, pay online via Razorpay or UPI, and download GST tax receipts.
         </p>
       </div>
 
@@ -99,15 +106,24 @@ export default function ClientPaymentsPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <RazorpayCheckoutButton
+              invoiceId={activeInvoice.id}
+              clientName={clientName}
+              clientEmail={clientEmail}
+              clientPhone={clientPhone}
+              buttonText="Pay Online (Razorpay)"
+              className="flex-1"
+              onSuccess={fetchPayments}
+            />
             <a
               href={generateUpiPaymentUrl(activeInvoice.totalAmount, clientName, activeInvoice.invoiceNumber)}
-              className="flex-1 py-3 px-4 rounded-full bg-accent-orange text-bg-primary font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-accent-orange/20 hover:bg-accent-orange/90 transition-all"
+              className="py-3 px-4 rounded-full bg-bg-elevated border border-border-subtle text-text-primary font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:border-accent-orange transition-all"
             >
-              <QrCode className="size-4" /> Pay via UPI Link
+              <QrCode className="size-4 text-accent-orange" /> Pay via UPI Link
             </a>
             <button
               onClick={() => handleDownloadInvoice(activeInvoice)}
-              className="py-3 px-5 rounded-full bg-bg-elevated border border-border-subtle text-text-muted text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-text-primary transition-colors"
+              className="py-3 px-4 rounded-full bg-bg-elevated border border-border-subtle text-text-muted text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-text-primary transition-colors"
             >
               <Download className="size-4 text-accent-orange" /> GST Receipt
             </button>

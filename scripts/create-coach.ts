@@ -37,9 +37,13 @@ if (!supabaseUrl || !serviceRoleKey) {
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
 async function main() {
-  const email = "aman@akfitness.in"
-  const password = "AmanCoach@2024"
-  const displayName = "Aman Khurana"
+  const email = process.env.SETUP_COACH_EMAIL
+  const password = process.env.SETUP_COACH_PASSWORD
+  const displayName = process.env.SETUP_COACH_NAME || "Aman Khurana"
+  if (!email || !password) {
+    console.error("Set SETUP_COACH_EMAIL and SETUP_COACH_PASSWORD in .env.local before running this script.")
+    process.exit(1)
+  }
 
   console.log(`Creating coach account: ${email}...`)
 
@@ -87,7 +91,6 @@ async function main() {
 
   console.log(`Coach account created successfully!`)
   console.log(`Email: ${email}`)
-  console.log(`Password: ${password}`)
 }
 
 main().catch((err) => {

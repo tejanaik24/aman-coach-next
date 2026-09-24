@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aman Khurana — Official WhatsApp API Setup Guide</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #171717; background: #f7f4ed; font: 10.2pt/1.55 Arial, Helvetica, sans-serif; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2 { letter-spacing: -0.03em; }
+    h1 { font-size: 37pt; line-height: .98; margin: 11mm 0 5mm; }
+    h2 { font-size: 21pt; line-height: 1.08; margin-bottom: 4mm; color: #151515; }
+    h3 { margin: 5mm 0 2mm; font-size: 11pt; text-transform: uppercase; letter-spacing: .1em; color: #8a6719; }
+    p { margin-bottom: 3.2mm; }
+    a { color: #795a12; overflow-wrap: anywhere; }
+    .cover { min-height: 267mm; padding: 16mm; color: #fff; background: linear-gradient(145deg, #050505 0%, #16120a 62%, #3d2f10 100%); position: relative; overflow: hidden; }
+    .cover:after { content: ""; position: absolute; width: 220mm; height: 220mm; right: -125mm; bottom: -120mm; border: 1px solid #d4a72c; border-radius: 50%; opacity: .55; }
+    .eyebrow { color: #e3ba4d; text-transform: uppercase; font-weight: 700; letter-spacing: .18em; font-size: 8.5pt; }
+    .cover h1 { position: relative; z-index: 1; max-width: 145mm; }
+    .cover h1 span { color: #e3ba4d; }
+    .cover .subtitle { position: relative; z-index: 1; max-width: 132mm; color: #ded8cc; font-size: 13pt; }
+    .cover .bar { width: 45mm; height: 2px; background: #e3ba4d; margin: 13mm 0; }
+    .cover .footer { position: absolute; z-index: 1; bottom: 18mm; color: #cfc6b5; font-size: 9pt; }
+    .page { background: #fffdf8; padding: 8mm 10mm 8mm; min-height: 270mm; }
+    .page + .page { break-before: page; }
+    .intro { font-size: 12pt; max-width: 155mm; }
+    .notice, .stop, .owner, .vyzma { padding: 4.5mm 5mm; margin: 5mm 0; border-radius: 3mm; }
+    .notice { background: #fff8df; border-left: 4px solid #d7a424; }
+    .stop { background: #fff1ed; border-left: 4px solid #bb5034; }
+    .owner { background: #f0f7f3; border-left: 4px solid #4e8b67; }
+    .vyzma { background: #f0f3fb; border-left: 4px solid #516aa4; }
+    .label { display: block; font-size: 8.3pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 1mm; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+    .card { border: 1px solid #e7dfcf; border-radius: 3mm; padding: 4.5mm; background: #fff; }
+    .card strong { color: #715310; display: block; margin-bottom: 1mm; }
+    .steps { counter-reset: step; list-style: none; padding: 0; margin: 4mm 0 0; }
+    .steps > li { position: relative; padding: 0 0 5mm 14mm; counter-increment: step; }
+    .steps > li:before { content: counter(step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 8mm; height: 8mm; border-radius: 50%; background: #171717; color: #e7bc49; font-size: 8.5pt; font-weight: 700; }
+    .checklist { list-style: none; padding: 0; margin: 3mm 0; }
+    .checklist li { padding-left: 6mm; margin: 2.3mm 0; position: relative; }
+    .checklist li:before { content: "✓"; position: absolute; left: 0; color: #8d6916; font-weight: 700; }
+    .quote { margin: 4mm 0; padding: 4mm 5mm; border-radius: 2mm; background: #f5f1e8; color: #453819; font-style: italic; }
+    .flow { display: flex; flex-wrap: wrap; gap: 2mm; align-items: center; margin: 4mm 0 6mm; }
+    .flow span { border-radius: 99px; padding: 2.2mm 3.5mm; background: #1b1b1b; color: #f4d57a; font-size: 8.8pt; font-weight: 700; }
+    .flow i { color: #a27b20; font-style: normal; font-size: 14pt; }
+    .small { font-size: 8.8pt; color: #5f5a52; }
+    .links li { margin: 2.2mm 0; }
+    .end { border-top: 2px solid #d4a72c; margin-top: 8mm; padding-top: 5mm; }
+    @media print { body { background: #fff; } .page { min-height: auto; } }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="eyebrow">A simple, owner-friendly setup guide</div>
+    <h1>Get the <span>Official</span><br>WhatsApp API</h1>
+    <p class="subtitle">A clear, step-by-step guide for Aman Khurana to set up Meta's official WhatsApp Business Platform safely.</p>
+    <div class="bar"></div>
+    <p class="subtitle">For client reminders, check-ins, payment updates, booking messages and reliable coaching communication.</p>
+    <div class="footer">Prepared for Aman Khurana &nbsp;•&nbsp; 12 August 2026</div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Before you begin</div>
+    <h2>What this setup does</h2>
+    <p class="intro">This replaces an unofficial WhatsApp connection with Meta's official WhatsApp Business Platform, also called the Cloud API. It is the right route for reliable business messaging.</p>
+    <div class="notice"><span class="label">Keep control of your account</span>You do not need to be technical. Complete only the items labelled <strong>Aman to do</strong>. Never share your Facebook password, one-time verification code, API token or recovery code with anyone.</div>
+    <h3>Keep these ready</h3>
+    <div class="grid">
+      <div class="card"><strong>1. Your own Facebook account</strong>It should belong to Aman and have two-factor authentication enabled.</div>
+      <div class="card"><strong>2. Legal business information</strong>Business name, address, email, website/social profile and phone number, matching official documents.</div>
+      <div class="card"><strong>3. A supporting document</strong>Meta may request a GST, registration, tax, utility or bank document. Use exactly what Meta asks for.</div>
+      <div class="card"><strong>4. A working phone number</strong>A number that can receive an SMS or phone call during setup.</div>
+      <div class="card"><strong>5. A business email</strong>An email Aman checks himself and can use for Meta verification.</div>
+      <div class="card"><strong>6. Billing access</strong>A payment method may be needed for Meta's messaging charges.</div>
+    </div>
+    <h3>Choose the number carefully</h3>
+    <p>For the smoothest setup, use a new Aman Khurana business number that is not currently being used in personal WhatsApp, WhatsApp Business or the old WAHA setup.</p>
+    <div class="stop"><span class="label">Stop before migrating an existing number</span>If Aman wants to use his existing coaching number, do not remove or transfer it yet. Send Vyzma a screenshot first so we can confirm the safe Meta route.</div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">The full route</div>
+    <h2>Eight simple stages</h2>
+    <div class="flow"><span>Business portfolio</span><i>→</i><span>Verification</span><i>→</i><span>Meta app</span><i>→</i><span>Phone number</span><i>→</i><span>Secure access</span><i>→</i><span>Templates</span><i>→</i><span>Testing</span></div>
+    <h3>Step 1 — Create the Meta Business Portfolio</h3>
+    <div class="owner"><span class="label">Aman to do</span>Open <a href="https://business.facebook.com/">business.facebook.com</a> on a computer and sign in with your own Facebook account.</div>
+    <ol class="steps">
+      <li>Choose <strong>Create business portfolio</strong> if one does not already exist.</li>
+      <li>Enter the business name as <strong>Aman Khurana</strong>, or the exact registered business name.</li>
+      <li>Enter your real name and a business email you check regularly.</li>
+      <li>Open <strong>Business settings</strong> and confirm Aman is an admin with full control.</li>
+      <li>Enable two-factor authentication if Meta asks.</li>
+    </ol>
+    <div class="stop"><span class="label">Then send Vyzma</span>A screenshot showing the Business Portfolio name and Aman as an admin. Hide any personal email address if you prefer.</div>
+    <h3>Step 2 — Add correct business details</h3>
+    <ol class="steps">
+      <li>In Business settings, find <strong>Security Center</strong>, <strong>Business info</strong> or <strong>Business verification</strong>. Meta sometimes changes these labels.</li>
+      <li>Enter the legal business name, address, website, phone and email exactly as they appear on the supporting document.</li>
+      <li>Start Business verification if the button is available. Upload only the document Meta requests.</li>
+      <li>Complete any email, SMS or phone confirmation directly on Meta.</li>
+    </ol>
+    <div class="notice"><span class="label">Good to know</span>Meta makes the approval decision. If verification is rejected, do not repeatedly change details. Send Vyzma the rejection screenshot so we can identify what does not match.</div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Create the official connection</div>
+    <h2>Meta app and phone number</h2>
+    <h3>Step 3 — Create the official WhatsApp app</h3>
+    <div class="owner"><span class="label">Aman to do</span>Open <a href="https://developers.facebook.com/apps/">developers.facebook.com/apps</a> using the same Facebook account.</div>
+    <ol class="steps">
+      <li>Select <strong>Create App</strong>.</li>
+      <li>Choose the option for a <strong>Business</strong> app. If Meta asks for a use case first, choose the closest option to <strong>Other</strong> or <strong>Business</strong>.</li>
+      <li>Name it <strong>Aman Khurana WhatsApp</strong>.</li>
+      <li>Select the Aman Khurana Business Portfolio created earlier.</li>
+      <li>After creation, find <strong>Add products</strong> and add <strong>WhatsApp</strong>.</li>
+      <li>Open WhatsApp <strong>API Setup</strong> or <strong>Getting Started</strong>. The test number and temporary token shown there are only for testing.</li>
+    </ol>
+    <div class="stop"><span class="label">Then send Vyzma</span>A screenshot of the WhatsApp API Setup page. Do not include the access token in the screenshot.</div>
+    <h3>Step 4 — Add the real business number</h3>
+    <ol class="steps">
+      <li>Select <strong>Add phone number</strong> on the WhatsApp API Setup page.</li>
+      <li>Enter the Aman Khurana business number and its country code.</li>
+      <li>Enter business profile information truthfully.</li>
+      <li>Use <strong>Aman Khurana</strong> as the display name clients will see.</li>
+      <li>Choose SMS or phone-call verification and type the code only into Meta.</li>
+      <li>Wait for Meta to confirm the number and review the display name.</li>
+    </ol>
+    <div class="notice"><span class="label">Never share the code</span>Vyzma will never ask for the SMS or call-verification code. It belongs only on Meta's verification screen.</div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Keep ownership with Aman</div>
+    <h2>Safe access and messaging rules</h2>
+    <h3>Step 5 — Invite Vyzma securely</h3>
+    <ol class="steps">
+      <li>Go to Business settings.</li>
+      <li>Open <strong>Users</strong> or <strong>People</strong>, then choose <strong>Invite people</strong>.</li>
+      <li>Invite the Vyzma email address supplied by Teja.</li>
+      <li>Give only the permissions Vyzma confirms are needed. Aman remains the owner and full admin.</li>
+      <li>Do not share your Facebook password, two-factor code or recovery codes.</li>
+    </ol>
+    <div class="vyzma"><span class="label">What Vyzma does after access is granted</span>
+      <ul class="checklist"><li>Create a secure long-lived server token.</li><li>Store secrets in protected app settings, never in chats or browser code.</li><li>Set up and secure the webhook for replies and delivery status.</li><li>Create approved message templates and test everything before launch.</li></ul>
+    </div>
+    <h3>Step 6 — Consent, templates and pricing</h3>
+    <p>Meta charges for some business-initiated WhatsApp messages. Prices depend on destination, category and Meta's current policy. Review the current rate in Meta Business Manager before sending campaigns.</p>
+    <p>Before sending proactive reminders, record that each client agreed to receive WhatsApp messages from Aman Khurana. A suitable consent line is:</p>
+    <div class="quote">“I agree to receive coaching updates, appointment reminders and payment reminders from Aman Khurana on WhatsApp. I can opt out by replying STOP.”</div>
+    <p>Free-form replies are allowed only during Meta's 24-hour customer-service window after a client messages you. Outside that window, Aman must use a Meta-approved message template. Vyzma will submit the reminder templates before activating automation.</p>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">Go live only after proof</div>
+    <h2>Final test and hand-off</h2>
+    <h3>Step 7 — Test in this order</h3>
+    <ul class="checklist">
+      <li>Aman receives one test message on his own phone.</li>
+      <li>A test client receives one approved template message.</li>
+      <li>The client replies and the response reaches the coaching system.</li>
+      <li>A test check-in creates a coach alert.</li>
+      <li>A payment-status test does not create duplicate messages.</li>
+      <li>Aman confirms the display name, phone number and wording are correct.</li>
+    </ul>
+    <div class="notice"><span class="label">Only then</span>We switch on client automation after every test above passes.</div>
+    <h3>Message to send Teja/Vyzma after Steps 1–4</h3>
+    <div class="quote">Hi Teja, I have created the Aman Khurana Meta Business Portfolio and the WhatsApp app. The business phone number has been added/verified. Please send me the Vyzma email address to invite in Business Settings. I have not shared any password, access token or verification code.</div>
+    <h3>Official Meta links</h3>
+    <ul class="links">
+      <li><a href="https://business.facebook.com/">Meta Business Suite</a></li>
+      <li><a href="https://developers.facebook.com/apps/">Meta for Developers — Apps</a></li>
+      <li><a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started">WhatsApp Cloud API — Getting Started</a></li>
+      <li><a href="https://developers.facebook.com/docs/whatsapp/phone-numbers">WhatsApp phone numbers and display names</a></li>
+      <li><a href="https://developers.facebook.com/docs/whatsapp/overview/getting-opt-in/">WhatsApp opt-in guidance</a></li>
+      <li><a href="https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates/">WhatsApp message templates</a></li>
+      <li><a href="https://developers.facebook.com/docs/whatsapp/pricing/">WhatsApp pricing</a></li>
+    </ul>
+    <div class="end small">Last updated: 12 August 2026. Meta can change button names and review requirements. If a Meta screen does not match this guide, send Vyzma a screenshot before continuing.</div>
+  </section>
+</body>
+</html>

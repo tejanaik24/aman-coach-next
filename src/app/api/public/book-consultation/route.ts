@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { sendConsultationBookingAlert } from "@/lib/whatsapp"
 import { withRetry } from "@/lib/db-retry"
+import { isAllowedImage, isRateLimited } from "@/lib/request-guards"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -9,6 +9,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(request: Request) {
   try {
+    if (isRateLimited(request, "consultation")) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+    }
     const formData = await request.formData()
     const name = String(formData.get("name") || "").trim()
     const countryCode = String(formData.get("countryCode") || "+91").trim()
@@ -22,7 +25,10 @@ export async function POST(request: Request) {
 
     let screenshotUrl: string | null = null
     if (screenshot && screenshot.size > 0) {
-      const ext = screenshot.name.split(".").pop() || "jpg"
+      if (!isAllowedImage(screenshot)) {
+        return NextResponse.json({ error: "Upload a JPG, PNG, or WebP image no larger than 5 MB" }, { status: 400 })
+      }
+      const ext = screenshot.type === "image/png" ? "png" : screenshot.type === "image/webp" ? "webp" : "jpg"
       const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from("consultation-proofs")
@@ -51,15 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to save booking" }, { status: 500 })
     }
 
-    const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
-    if (coachPhone) {
-      sendConsultationBookingAlert(coachPhone, name, `${countryCode}${phone}`, email)
-        .catch((e) => console.error("Consultation WhatsApp alert error:", e))
-    } else {
-      console.error("AMAN_WHATSAPP/COACH_WHATSAPP_NUMBER not set; skipping coach WhatsApp alert")
-    }
-
-    return NextResponse.json({ success: true, message: "Consultation call booking submitted" })
+    return NextResponse.json({ success: true, message: "Consultation call booking submitted and queued for coach review" })
   } catch (err: unknown) {
     console.error("Book consultation API error:", err)
     return NextResponse.json(

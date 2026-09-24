@@ -1,68 +1,13 @@
 {
-  "name": "New Client Welcome",
+  "name": "Client Welcome and Feedback Delivery",
   "nodes": [
-    {
-      "name": "Webhook Trigger",
-      "type": "n8n-nodes-base.webhook",
-      "parameters": {
-        "path": "new-client-welcome",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "position": [0, 0]
-    },
-    {
-      "name": "Send WhatsApp Welcome",
-      "type": "n8n-nodes-base.httpRequest",
-      "parameters": {
-        "url": "={{ $env.WAHA_URL }}/api/sendText",
-        "method": "POST",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "chatId", "value": "={{ $json.phone }}@c.us" },
-            { "name": "text", "value": "={{ 'Welcome to AK Fitness! 🎉\nHi ' + $json.display_name + ', your account is ready.\nLogin here: ' + $env.APP_URL + '/auth/login\nYour coach Aman will assign your plan shortly.' }}" }
-          ]
-        }
-      },
-      "position": [200, 0]
-    },
-    {
-      "name": "Send Welcome Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "parameters": {
-        "url": "={{ $env.APP_URL }}/api/automation/send-email",
-        "method": "POST",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "type", "value": "welcome" },
-            { "name": "to", "value": "={{ $json.email }}" },
-            { "name": "name", "value": "={{ $json.display_name }}" },
-            { "name": "loginUrl", "value": "={{ $env.APP_URL }}/auth/login" }
-          ]
-        },
-        "headerParameters": {
-          "parameters": [
-            { "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }
-          ]
-        }
-      },
-      "position": [400, 0]
-    },
-    {
-      "name": "Respond OK",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true }) }}"
-      },
-      "position": [600, 0]
-    }
+    { "name": "Webhook Trigger", "type": "n8n-nodes-base.webhook", "parameters": { "path": "new-client-welcome", "responseMode": "responseNode", "options": {} }, "position": [0, 0] },
+    { "name": "Validate and Build Message", "type": "n8n-nodes-base.code", "typeVersion": 2, "parameters": { "jsCode": "if ($json.automationSecret !== $env.AUTOMATION_SECRET) throw new Error('Unauthorized event'); const p = $json.payload; if (!p?.phone || !['new_client_welcome','coach_feedback'].includes($json.eventType)) throw new Error('Invalid client event'); if ($json.eventType === 'new_client_welcome' && !p.email) throw new Error('Welcome email missing'); const text = $json.eventType === 'new_client_welcome' ? 'Welcome to AK Fitness! 🎉\\nHi ' + p.display_name + ', set your password here: ' + p.setupUrl + '\\nThen complete your joining form: ' + p.onboardingUrl : 'Hi ' + p.clientName + ' 👋\\n\\nCoach Aman has reviewed your check-in.\\n\\nFeedback: ' + p.feedback; return [{ json: { ...p, deliveryId: $json.deliveryId, eventType: $json.eventType, text, emailType: $json.eventType === 'new_client_welcome' ? 'welcome' : 'noop' } }];" }, "position": [240, 0] },
+    { "name": "Send WhatsApp", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4, "parameters": { "url": "={{ $env.WAHA_URL }}/api/sendText", "method": "POST", "sendHeaders": true, "sendBody": true, "headerParameters": { "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.WAHA_API_KEY }}" }] }, "bodyParameters": { "parameters": [{ "name": "session", "value": "={{ $env.WAHA_SESSION }}" }, { "name": "chatId", "value": "={{ $json.phone }}@c.us" }, { "name": "text", "value": "={{ $json.text }}" }] } }, "position": [480, 0] },
+    { "name": "Send Welcome Email", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4, "parameters": { "url": "={{ $env.APP_URL }}/api/automation/send-email", "method": "POST", "sendHeaders": true, "sendBody": true, "headerParameters": { "parameters": [{ "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }] }, "bodyParameters": { "parameters": [{ "name": "type", "value": "={{ $('Validate and Build Message').item.json.emailType }}" }, { "name": "to", "value": "={{ $('Validate and Build Message').item.json.email }}" }, { "name": "name", "value": "={{ $('Validate and Build Message').item.json.display_name }}" }, { "name": "loginUrl", "value": "={{ $('Validate and Build Message').item.json.setupUrl }}" }] } }, "position": [720, 0] },
+    { "name": "Acknowledge Delivery", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4, "parameters": { "url": "={{ $env.APP_URL }}/api/automation/ack-webhook", "method": "POST", "sendHeaders": true, "sendBody": true, "headerParameters": { "parameters": [{ "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }] }, "bodyParameters": { "parameters": [{ "name": "delivery_id", "value": "={{ $('Validate and Build Message').item.json.deliveryId }}" }] } }, "position": [960, 0] },
+    { "name": "Respond OK", "type": "n8n-nodes-base.respondToWebhook", "parameters": { "respondWith": "json", "responseBody": "={{ JSON.stringify({ success: true }) }}" }, "position": [1200, 0] }
   ],
-  "connections": {
-    "Webhook Trigger": { "main": [[ { "node": "Send WhatsApp Welcome", "type": "main", "index": 0 } ]] },
-    "Send WhatsApp Welcome": { "main": [[ { "node": "Send Welcome Email", "type": "main", "index": 0 } ]] },
-    "Send Welcome Email": { "main": [[ { "node": "Respond OK", "type": "main", "index": 0 } ]] }
-  }
+  "connections": { "Webhook Trigger": { "main": [[{ "node": "Validate and Build Message", "type": "main", "index": 0 }]] }, "Validate and Build Message": { "main": [[{ "node": "Send WhatsApp", "type": "main", "index": 0 }]] }, "Send WhatsApp": { "main": [[{ "node": "Send Welcome Email", "type": "main", "index": 0 }]] }, "Send Welcome Email": { "main": [[{ "node": "Acknowledge Delivery", "type": "main", "index": 0 }]] }, "Acknowledge Delivery": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] } },
+  "settings": { "timezone": "Asia/Kolkata" }
 }

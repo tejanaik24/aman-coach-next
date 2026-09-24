@@ -153,7 +153,7 @@ export default function ClientDietPage() {
   const planLabelFontSize = planLabel.length <= 10 ? 26 : planLabel.length <= 16 ? 22 : planLabel.length <= 24 ? 18 : 15
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-4">
+    <div className="pt-2 flex flex-col gap-6 bg-bg-primary min-h-full pb-4">
       {/* HERO — same cinematic language as home/workout: warm charcoal/brown base,
           single orange halo, bloom-spill, grain, full-bleed photo layer. */}
       <div

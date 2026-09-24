@@ -26,7 +26,7 @@ export type Invoice = {
   createdAt: string
 }
 
-export const DEFAULT_UPI_ID = "amankhurana@upi"
+export const DEFAULT_UPI_ID = "9815690656@upi"
 
 /**
  * Generate a standard UPI payment URL link

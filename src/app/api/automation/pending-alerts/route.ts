@@ -6,7 +6,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-const ALERTABLE_FORM_TYPES = ["standard_joining", "antenatal_joining", "checkin"]
+const ALERTABLE_FORM_TYPES = [
+  "standard_joining",
+  "antenatal_joining",
+  "checkin",
+  "feedback",
+  "coaching_contract",
+  "par_q",
+  "consultation_booking",
+]
 
 export async function GET(req: Request) {
   return handlePendingAlerts(req)
@@ -52,7 +60,10 @@ async function handlePendingAlerts(req: Request) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 })
   }
 
-  const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER || "919815690656"
+  const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
+  if (!coachPhoneRaw) {
+    return NextResponse.json({ error: "Coach WhatsApp number is not configured" }, { status: 500 })
+  }
   const coachPhone = coachPhoneRaw.replace(/\D/g, "")
 
   return NextResponse.json({

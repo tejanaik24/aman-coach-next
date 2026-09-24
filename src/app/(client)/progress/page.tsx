@@ -144,7 +144,7 @@ export default function ProgressPage() {
   return (
     <div className="relative min-h-screen bg-bg-primary">
       <div className="grain-overlay" />
-      <div className="relative z-10 px-5 pt-3 flex flex-col gap-6 pb-28">
+      <div className="relative z-10 pt-3 flex flex-col gap-6 pb-28">
       {/* HERO — same cinematic language as home/workout/diet, full-bleed photo. */}
       <div
         className="relative rounded-[32px] overflow-hidden"

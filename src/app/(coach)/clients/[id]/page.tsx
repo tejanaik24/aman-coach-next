@@ -125,11 +125,14 @@ export default function ClientDetailPage() {
     const feedback = feedbackDraft[checkinId]
     if (!feedback?.trim()) return
     setSavingFeedback(checkinId)
-    const supabase = createClient()
-    const now = new Date().toISOString()
-    const { error } = await supabase.from("checkins").update({ coach_feedback: feedback.trim(), reviewed_at: now }).eq("id", checkinId)
+    const response = await fetch(`/api/coach/checkins/${checkinId}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback: feedback.trim() }),
+    })
     setSavingFeedback(null)
-    if (error) { toast.error("Failed to save feedback"); return }
+    if (!response.ok) { toast.error("Failed to save feedback"); return }
+    const now = new Date().toISOString()
     setCheckins((prev) => prev.map((c) => (c.id === checkinId ? { ...c, coach_feedback: feedback.trim(), reviewed_at: now } : c)))
     setFeedbackDraft((prev) => ({ ...prev, [checkinId]: "" }))
     toast.success("Feedback saved")

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "motion/react"
 import dynamic from "next/dynamic"
-import { ChevronRight, Calendar, Flame, Trophy, Zap, Phone, Star, Sparkles, BadgeCheck } from "lucide-react"
+import { getISOWeek, getISOWeekYear, startOfISOWeek, subWeeks } from "date-fns"
+import { ChevronRight, Calendar, Flame, Trophy, Zap, Phone, Star, Sparkles, BadgeCheck, Bell, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { getAppointments } from "@/lib/supabase-store"
 import { getDailyTip, ACTIVE_OFFER } from "@/lib/dailyTip"
@@ -14,6 +15,7 @@ import GlassCard from "@/components/ui/GlassCard"
 import KineticText from "@/components/ui/KineticText"
 import ScrollReveal from "@/components/ui/ScrollReveal"
 import { useCountUp } from "@/hooks/useCountUp"
+import { usePushNotifications } from "@/hooks/usePushNotifications"
 import { getClientBadges, checkAndUnlockBadges, fireBadgeUnlockConfetti, type ClientBadge } from "@/lib/badges"
 import type { Client, WorkoutPlan, NutritionPlan, Checkin, Profile, Appointment } from "@/types"
 
@@ -67,10 +69,14 @@ export default function ClientHomePage() {
   const [clientBadges, setClientBadges] = useState<ClientBadge[]>([])
   const [nextAppointment, setNextAppointment] = useState<Appointment | null>(null)
   const [totalWorkoutsThisWeek, setTotalWorkoutsThisWeek] = useState(0)
+  const [streak, setStreak] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [coachName, setCoachName] = useState<string | null>(null)
+  const [dismissPushBanner, setDismissPushBanner] = useState(false)
+  const { permission, subscribe } = usePushNotifications()
+  const showPushBanner = permission === "default" && !dismissPushBanner
 
   useEffect(() => {
     async function fetchData() {
@@ -101,7 +107,7 @@ export default function ClientHomePage() {
         const [workoutRes, nutritionRes, checkinsRes] = await Promise.all([
           supabase.from("workout_plans").select("*").eq("client_id", client.id).eq("is_active", true).single(),
           supabase.from("nutrition_plans").select("*").eq("client_id", client.id).eq("is_active", true).single(),
-          supabase.from("checkins").select("*").eq("client_id", client.id).order("submitted_at", { ascending: false }).limit(2),
+          supabase.from("checkins").select("*").eq("client_id", client.id).order("submitted_at", { ascending: false }).limit(52),
         ])
 
         if (!workoutRes.error && workoutRes.data) setWorkoutPlan(workoutRes.data as WorkoutPlan)
@@ -131,6 +137,23 @@ export default function ClientHomePage() {
           (a) => a.status === "completed" && new Date(a.date) >= weekStart
         ).length
         setTotalWorkoutsThisWeek(thisWeekCount)
+
+        const sorted = [...checkins].sort(
+          (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
+        )
+        const checkinWeekSet = new Set(
+          sorted.map(c => {
+            const d = new Date(c.submitted_at)
+            return `${getISOWeekYear(d)}-${getISOWeek(d)}`
+          })
+        )
+        let streakCount = 0
+        let cursor = startOfISOWeek(new Date())
+        while (checkinWeekSet.has(`${getISOWeekYear(cursor)}-${getISOWeek(cursor)}`)) {
+          streakCount++
+          cursor = subWeeks(cursor, 1)
+        }
+        setStreak(streakCount)
 
         const checkinCount = checkins.length
         const newlyUnlocked = await checkAndUnlockBadges(client.id, profileData?.name || "Client", {
@@ -162,7 +185,6 @@ export default function ClientHomePage() {
   const ringCircumference = 2 * Math.PI * 80
   const ringOffset = ringCircumference - (ringCircumference * adherencePct) / 100
 
-  const streak = clientBadges.filter((b) => b.unlockedAt).length > 0 ? (latestCheckin ? (latestCheckin.week_number ?? 1) * 4 : 0) : 0
   const workoutsToNextMilestone = Math.max(0, 3 - totalWorkoutsThisWeek)
   const motivationLine = workoutsToNextMilestone > 0
     ? `You're ${workoutsToNextMilestone} workout${workoutsToNextMilestone === 1 ? "" : "s"} away from becoming unstoppable.`
@@ -370,6 +392,31 @@ export default function ClientHomePage() {
           </div>
 
           <div className="px-5 space-y-6">
+
+          {showPushBanner && (
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 flex items-center gap-3 border border-white/10">
+              <div className="size-10 rounded-full bg-accent-orange/15 border border-accent-orange/30 flex items-center justify-center shrink-0">
+                <Bell className="w-5 h-5 text-accent-orange" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs font-bold font-heading">Enable workout reminders</p>
+                <p className="text-text-muted text-[10px] mt-0.5">Get notified when it&apos;s time to check in</p>
+              </div>
+              <button
+                onClick={() => { subscribe(); setDismissPushBanner(true) }}
+                className="bg-accent-orange text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-full whitespace-nowrap cursor-pointer hover:bg-accent-orange/90 transition-colors"
+              >
+                Enable
+              </button>
+              <button
+                onClick={() => { setDismissPushBanner(true); try { sessionStorage.setItem("push_dismissed", "1") } catch {} }}
+                className="text-white/30 hover:text-white/60 transition-colors cursor-pointer shrink-0"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* WEEKLY SCORE — white surface card */}
           <ScrollReveal delay={0.15}>

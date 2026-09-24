@@ -32,7 +32,7 @@ export default async function proxy(request: NextRequest) {
   const isResetPath = pathname === "/reset-password"
 
   // Unauthenticated → redirect to login
-  if (!user && (isCoachPath || isClientPath || isResetPath)) {
+  if (!user && (isCoachPath || isClientPath)) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     return NextResponse.redirect(url)

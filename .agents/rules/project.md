@@ -1,0 +1,11 @@
+# Aman Coach PWA — Project Rules
+- Stack: Next.js 16, TypeScript, Tailwind v4, Supabase, GSAP, Framer Motion, jsPDF
+- Colors: #0A0A0A background, #FFB800 gold accent
+- Fonts: Space Grotesk + Inter
+- Supabase project: muuegtbyaehlrfqjluqz
+- Coach login: coach@akfitness.in
+- SACRED — NEVER rename: src/proxy.ts (must never become middleware.ts)
+- WAHA port: 3001, session: default
+- n8n port: 5678
+- Vercel project: aman-coach-next
+- Pending: WAHA QR scan by Aman, Resend domain verification, payments audit

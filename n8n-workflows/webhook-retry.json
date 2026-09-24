@@ -1,0 +1,9 @@
+{
+  "name": "Automation Outbox Retry",
+  "nodes": [
+    { "name": "Every 5 Minutes", "type": "n8n-nodes-base.scheduleTrigger", "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] } }, "position": [0, 0] },
+    { "name": "Retry Pending Events", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4, "parameters": { "url": "={{ $env.APP_URL }}/api/cron/retry-webhooks", "method": "POST", "sendHeaders": true, "headerParameters": { "parameters": [{ "name": "x-automation-secret", "value": "={{ $env.AUTOMATION_SECRET }}" }] } }, "position": [240, 0] }
+  ],
+  "connections": { "Every 5 Minutes": { "main": [[{ "node": "Retry Pending Events", "type": "main", "index": 0 }]] } },
+  "settings": { "timezone": "Asia/Kolkata" }
+}

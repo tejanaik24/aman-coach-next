@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { isAllowedImage } from "./request-guards"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -7,7 +8,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 const CHECKIN_BUCKET = "checkin-photos"
 
 export async function uploadCheckinPhoto(file: File, userId: string): Promise<string | null> {
-  const ext = file.name.split(".").pop() || "jpg"
+  if (!isAllowedImage(file)) return null
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
   const { error } = await supabase.storage

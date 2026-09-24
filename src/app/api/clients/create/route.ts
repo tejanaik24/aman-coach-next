@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient as createServerClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { withRetry } from "@/lib/db-retry"
+import { randomBytes } from "crypto"
+import { queueWebhook } from "@/lib/webhook-queue"
 
 function calculateFirstDueDate(feeDueDay: number, startDate: string): string {
   const d = new Date(startDate)
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, email, phone, goal, packageName, endDate, clientType, feeAmount, feeDueDay, startDate, notes } = body
 
-    if (!name || !email || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
+    if (!name || !email || !phone || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -65,11 +67,11 @@ export async function POST(request: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const defaultPassword = "Welcome@123"
+    const initialPassword = randomBytes(18).toString("base64url")
 
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email,
-      password: defaultPassword,
+      password: initialPassword,
       email_confirm: true,
       user_metadata: { name, role: "client", phone: phone ?? null },
     })
@@ -87,6 +89,16 @@ export async function POST(request: Request) {
     }
 
     const newUserId = authData.user.id
+
+    const { data: recoveryData, error: recoveryError } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: "https://aman-coach-next.vercel.app/reset-password" },
+    })
+    if (recoveryError || !recoveryData.properties.action_link) {
+      await admin.auth.admin.deleteUser(newUserId)
+      return NextResponse.json({ error: "Failed to create secure account setup link" }, { status: 500 })
+    }
 
     const { data: clientData, error: clientError } = await withRetry(() =>
       supabase
@@ -131,7 +143,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create fee record" }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, clientId: clientData.id, password: defaultPassword }, { status: 201 })
+    await queueWebhook("new_client_welcome", {
+      clientId: clientData.id,
+      display_name: name,
+      email,
+      phone: typeof phone === "string" ? phone.replace(/\D/g, "") : "",
+      clientType,
+      onboardingUrl: clientType === "antenatal"
+        ? "https://aman-coach-next.vercel.app/onboarding/antenatal"
+        : "https://aman-coach-next.vercel.app/onboarding",
+      setupUrl: recoveryData.properties.action_link,
+    }).catch((webhookError) => {
+      console.error("New client welcome queued for retry:", webhookError)
+    })
+
+    return NextResponse.json({ success: true, clientId: clientData.id, password: initialPassword }, { status: 201 })
   } catch (err: unknown) {
     console.error("Client creation API error:", err)
     return NextResponse.json(

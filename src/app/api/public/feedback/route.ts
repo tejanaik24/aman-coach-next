@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { sendCoachSubmissionAlert } from "@/lib/whatsapp"
 import { withRetry } from "@/lib/db-retry"
+import { isRateLimited } from "@/lib/request-guards"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -10,6 +10,9 @@ const supabase = createClient(
 
 export async function POST(request: Request) {
   try {
+    if (isRateLimited(request, "feedback")) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+    }
     const body = await request.json()
     const name = String(body.name || "").trim()
     const phone = String(body.phone || "").trim()
@@ -35,16 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to save feedback" }, { status: 500 })
     }
 
-    const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
-    if (coachPhone) {
-      sendCoachSubmissionAlert(coachPhone, name, "feedback").catch((e) =>
-        console.error("Feedback WhatsApp alert error:", e)
-      )
-    } else {
-      console.error("AMAN_WHATSAPP/COACH_WHATSAPP_NUMBER not set; skipping coach WhatsApp alert")
-    }
-
-    return NextResponse.json({ success: true, message: "Feedback submitted" })
+    return NextResponse.json({ success: true, message: "Feedback submitted and queued for coach review" })
   } catch (err: unknown) {
     console.error("Feedback API error:", err)
     return NextResponse.json(

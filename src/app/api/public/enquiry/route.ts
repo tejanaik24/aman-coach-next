@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { sendEnquiryAlertEmail } from "@/lib/email"
 import { sendEnquiryAlert } from "@/lib/whatsapp"
 import { withRetry } from "@/lib/db-retry"
+import { isRateLimited } from "@/lib/request-guards"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -10,6 +12,9 @@ const supabase = createClient(
 
 export async function POST(request: Request) {
   try {
+    if (isRateLimited(request, "enquiry")) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
+    }
     const body = await request.json()
     const name = String(body.name || "").trim()
     const countryCode = String(body.countryCode || "+91").trim()
@@ -38,12 +43,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to save enquiry" }, { status: 500 })
     }
 
+    sendEnquiryAlertEmail(name, `${countryCode}${phone}`, email, interest)
+      .catch((e) => console.error("Enquiry email alert error:", e))
+
     const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
     if (coachPhone) {
       sendEnquiryAlert(coachPhone, name, `${countryCode}${phone}`, interest)
         .catch((e) => console.error("Enquiry WhatsApp alert error:", e))
-    } else {
-      console.error("AMAN_WHATSAPP/COACH_WHATSAPP_NUMBER not set; skipping coach WhatsApp alert")
     }
 
     return NextResponse.json({ success: true, message: "Enquiry submitted" })

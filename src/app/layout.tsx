@@ -46,6 +46,7 @@ export const viewport: Viewport = {
 }
 
 import PwaInstallPrompt from "@/components/shared/PwaInstallPrompt"
+import { DevAnnotations } from "@/components/shared/DevAnnotations"
 
 export default function RootLayout({
   children,
@@ -67,6 +68,7 @@ export default function RootLayout({
           {children}
         </div>
         <PwaInstallPrompt />
+        <DevAnnotations />
         <Toaster
           position="top-center"
           toastOptions={{

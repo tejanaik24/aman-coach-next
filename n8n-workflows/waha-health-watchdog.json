@@ -1,0 +1,115 @@
+{
+  "name": "WAHA Health Watchdog",
+  "nodes": [
+    {
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Check WAHA Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [220, 0],
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sessions",
+        "method": "GET",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.WAHA_API_KEY }}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Session Working?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "wa-health-1",
+              "leftValue": "={{ ($json.sessions || []).find(s => s.name === $env.WAHA_SESSION)?.status || 'MISSING' }}",
+              "rightValue": "WORKING",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Restart Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [660, 200],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "={{ $env.WAHA_URL }}/api/sessions/{{ $env.WAHA_SESSION }}/restart",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.WAHA_API_KEY }}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Notify by Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [880, 200],
+      "parameters": {
+        "url": "https://api.resend.com/emails",
+        "method": "POST",
+        "sendHeaders": true,
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.RESEND_API_KEY }}" }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ from: 'AK Fitness <noreply@amankhuranafitness.com>', to: ['aman.khurana.1460@gmail.com', 'vyzmaai.in@gmail.com'], subject: '⚠️ AK FITNESS WHATSAPP SESSION DOWN - auto-restart attempted', html: '<h2>WhatsApp session lost</h2><p>The WAHA session <b>' + $env.WAHA_SESSION + '</b> was not WORKING.</p><p>Auto-restart attempted. If this repeats, Aman must re-link the device (pairing code).</p><p>Current status: <b>' + (($json.sessions || []).find(s => s.name === $env.WAHA_SESSION)?.status || 'MISSING') + '</b></p>' }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[ { "node": "Check WAHA Session", "type": "main", "index": 0 } ]] },
+    "Check WAHA Session": { "main": [[ { "node": "Session Working?", "type": "main", "index": 0 } ]] },
+    "Session Working?": {
+      "main": [
+        [],
+        [ { "node": "Restart Session", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Restart Session": { "main": [[ { "node": "Notify by Email", "type": "main", "index": 0 } ]] }
+  },
+  "settings": {}
+}
