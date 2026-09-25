@@ -159,9 +159,11 @@ mm.add('(min-width: 769px)', () => {
   });
 
   /* ---- TRANSFORMATIONS GRID ---- */
-  gsap.from('.transform-card', {
-    y: 40, opacity: 0, stagger: 0.08, duration: 0.6, ease: 'power2.out',
-    scrollTrigger: { trigger: '.transform-grid', start: 'top 85%' },
+  gsap.utils.toArray('.transform-card').forEach((card) => {
+    gsap.from(card, {
+      y: 40, opacity: 0, duration: 0.5, ease: 'power2.out',
+      scrollTrigger: { trigger: card, start: 'top 92%' },
+    });
   });
 
   /* ---- CONTACT PAGE ---- */
@@ -268,7 +270,7 @@ mm.add('(min-width: 769px)', () => {
   var currentIdx = 0;
 
   items.forEach(function(item, itemIndex) {
-    item.addEventListener('mouseenter', function() {
+    function activate() {
       var idx = parseInt(item.dataset.index);
       if (idx === currentIdx) return;
 
@@ -304,7 +306,10 @@ mm.add('(min-width: 769px)', () => {
           });
         }
       });
-    });
+    }
+
+    item.addEventListener('mouseenter', activate);
+    item.addEventListener('click', activate);
   });
 })();
 

@@ -87,6 +87,15 @@ img {
   padding: 6rem 0;
 }
 
+@media (max-width: 768px) {
+  .section {
+    padding: 3rem 0;
+  }
+  .section-header {
+    margin-bottom: 2rem;
+  }
+}
+
 .gold-text {
   color: var(--gold);
 }
@@ -237,6 +246,8 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  max-width: 1360px;
+  gap: 1.5rem;
 }
 
 .logo {
@@ -244,6 +255,7 @@ img {
   flex-direction: column;
   line-height: 1;
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .logo-main {
@@ -269,7 +281,7 @@ img {
 .nav-list {
   display: flex;
   list-style: none;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .nav-link {
@@ -282,6 +294,7 @@ img {
   position: relative;
   padding: 0.25rem 0;
   transition: var(--transition);
+  white-space: nowrap;
 }
 
 .nav-link:focus-visible {
@@ -341,6 +354,7 @@ img {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .btn-mobile-header {
@@ -2666,7 +2680,7 @@ body, p, span, a, li, input, textarea, select, button {
   padding: 6rem 0 2rem;
   position: relative;
   overflow: hidden;
-  background: url('../images/aman-hero-1.png') center center / contain no-repeat;
+  background: url('../images/aman-hero-1.webp') center center / contain no-repeat;
   background-color: #000;
 }
 
@@ -2786,6 +2800,11 @@ body, p, span, a, li, input, textarea, select, button {
 /* ===== RESPONSIVE SPLIT HERO ===== */
 
 @media (max-width: 968px) {
+  .hero-split {
+    min-height: auto;
+    align-items: flex-start;
+    padding-top: 7rem;
+  }
   .hero-split-grid {
     grid-template-columns: 1fr;
     gap: 2.5rem;
@@ -2827,6 +2846,15 @@ body, p, span, a, li, input, textarea, select, button {
   background: #000;
   padding: 4rem 0 6rem;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .results-gallery {
+    padding: 2.5rem 0 3rem;
+  }
+  .results-header {
+    margin-bottom: 1.75rem;
+  }
 }
 
 .results-header {
@@ -3000,6 +3028,12 @@ body, p, span, a, li, input, textarea, select, button {
   .hover-slider-item {
     font-size: 1.3rem;
   }
+  .hover-slider {
+    padding: 3rem 0;
+  }
+  .hover-slider-header {
+    margin-bottom: 2rem;
+  }
   .hover-slider-images {
     aspect-ratio: 3/4;
     max-width: 400px;
@@ -3015,6 +3049,15 @@ body, p, span, a, li, input, textarea, select, button {
 
 .diag-header {
   margin-bottom: 3rem;
+}
+
+@media (max-width: 768px) {
+  .diagnostic-suite {
+    padding: 3rem 0;
+  }
+  .diag-header {
+    margin-bottom: 1.75rem;
+  }
 }
 
 .diag-heading {

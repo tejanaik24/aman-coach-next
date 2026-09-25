@@ -7,9 +7,9 @@ const OFFLINE_URLS = [
   "/progress",
   "/checkin",
   "/manifest.json",
-  "/images/aman/aman-01.jpeg",
-  "/images/aman/aman-02.jpeg",
-  "/images/aman/aman-03.jpeg"
+  "/images/aman/aman-01.webp",
+  "/images/aman/aman-02.webp",
+  "/images/aman/aman-03.webp"
 ]
 
 self.addEventListener("install", (event) => {
