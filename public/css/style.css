@@ -2804,6 +2804,7 @@ body, p, span, a, li, input, textarea, select, button {
     min-height: auto;
     align-items: flex-start;
     padding-top: 7rem;
+    background-position: center top;
   }
   .hero-split-grid {
     grid-template-columns: 1fr;
