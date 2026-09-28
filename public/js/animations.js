@@ -239,9 +239,13 @@ mm.add('(min-width: 769px)', () => {
   var images = document.querySelectorAll('.hover-slider-img');
   if (!items.length || !images.length) return;
 
-  // Set initial image state: first visible, rest hidden
-  gsap.set(images, { clipPath: 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)' });
-  gsap.set(images[0], { clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' });
+  // Set initial image state: first visible, rest hidden.
+  // Plain CSS opacity + .active class, not GSAP: clip-path tweens (and,
+  // intermittently, other GSAP CSS-plugin properties) silently fail to
+  // ever apply an inline style on this page in production, leaving whichever
+  // image is last in DOM order visibly on top regardless of the active tab.
+  // A CSS transition can't have that failure mode.
+  images.forEach(function(img, i) { img.classList.toggle('active', i === 0); });
 
   // Split each item's text into character spans for stagger animation
   items.forEach(function(item) {
@@ -272,40 +276,33 @@ mm.add('(min-width: 769px)', () => {
   items.forEach(function(item, itemIndex) {
     function activate() {
       var idx = parseInt(item.dataset.index);
-      if (idx === currentIdx) return;
+      currentIdx = idx;
 
-      // Update text colors
+      // Update text colors — synchronous, always correct regardless of any tween state
       items.forEach(function(el) { el.style.color = ''; });
       item.style.color = 'var(--gold)';
 
-      // Deactivate previous item's characters (animate back to default)
-      var prevOut = items[currentIdx].querySelectorAll('.hover-char-out');
-      var prevIn = items[currentIdx].querySelectorAll('.hover-char-in');
-      gsap.to(prevOut, { y: '0%', duration: 0.3, stagger: 0.025, ease: 'power2.out' });
-      gsap.to(prevIn, { y: '110%', duration: 0.3, stagger: 0.025, ease: 'power2.out' });
-
-      // Activate current item's characters (out up, in from below)
-      var curOut = item.querySelectorAll('.hover-char-out');
-      var curIn = item.querySelectorAll('.hover-char-in');
-      gsap.to(curOut, { y: '-110%', duration: 0.3, stagger: 0.025, ease: 'power2.out' });
-      gsap.to(curIn, { y: '0%', duration: 0.3, stagger: 0.025, ease: 'power2.out' });
-
-      currentIdx = idx;
-
-      // Switch images via clip-path
-      images.forEach(function(img, i) {
-        if (i === idx) {
-          gsap.to(img, {
-            clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-            duration: 0.6, ease: 'power2.inOut',
-          });
-        } else {
-          gsap.to(img, {
-            clipPath: 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
-            duration: 0.4, ease: 'power2.inOut',
-          });
-        }
+      items.forEach(function(el) {
+        var isActive = parseInt(el.dataset.index) === idx;
+        var out = el.querySelectorAll('.hover-char-out');
+        var inn = el.querySelectorAll('.hover-char-in');
+        gsap.killTweensOf(out);
+        gsap.killTweensOf(inn);
+        gsap.to(out, {
+          y: isActive ? '-110%' : '0%', duration: 0.3, stagger: 0.025, ease: 'power2.out',
+          overwrite: true,
+          onComplete: (function (o, v) { return function () { gsap.set(o, { y: v }); }; })(out, isActive ? '-110%' : '0%'),
+        });
+        gsap.to(inn, {
+          y: isActive ? '0%' : '110%', duration: 0.3, stagger: 0.025, ease: 'power2.out',
+          overwrite: true,
+          onComplete: (function (i, v) { return function () { gsap.set(i, { y: v }); }; })(inn, isActive ? '0%' : '110%'),
+        });
       });
+
+      // Switch images with a plain CSS class + transition (see note above on
+      // why this isn't a GSAP tween).
+      images.forEach(function(img, i) { img.classList.toggle('active', i === idx); });
     }
 
     item.addEventListener('mouseenter', activate);
@@ -323,3 +320,48 @@ mm.add('(max-width: 768px)', () => {
     scrollTrigger: { trigger: '[data-aos]', start: 'top 90%' },
   });
 });
+
+/* ---- VISIBILITY SAFETY NET ---- */
+/* GSAP's scroll-triggered fade-ins on this page can leave a section stuck at
+   its pre-animation opacity: 0 — seen when the GSAP/ScrollTrigger CDN load
+   is slow or interrupted, and occasionally even after they load fine (the
+   tween reports progress 1 internally but never paints). An
+   IntersectionObserver-based one-shot check missed cases where an element's
+   first intersection fires before it's meaningfully in view, so this polls
+   instead: every 400ms, for the first 10s, force any watched element that's
+   in the viewport and still invisible to show. Never overrides an animation
+   that already worked — it only acts on elements stuck below the opacity
+   floor. */
+(function () {
+  var watched = document.querySelectorAll(
+    '.testimonial-card, .cert-card, .membership-card, .service-card, ' +
+    '.transformation-card, .ebook-cover-frame, .ebook-content-col, [data-aos]'
+  );
+  if (!watched.length) return;
+
+  function isInViewport(el) {
+    var r = el.getBoundingClientRect();
+    return r.bottom > 0 && r.top < (window.innerHeight || document.documentElement.clientHeight);
+  }
+
+  function sweep() {
+    watched.forEach(function (el) {
+      if (parseFloat(getComputedStyle(el).opacity) < 0.05 && isInViewport(el)) {
+        el.style.setProperty('opacity', '1', 'important');
+        el.style.setProperty('transition', 'opacity 0.25s ease', 'important');
+        el.style.setProperty('transform', 'none', 'important');
+      }
+    });
+  }
+
+  var ticks = 0;
+  var maxTicks = 25; // ~10s at 400ms
+  var interval = setInterval(function () {
+    sweep();
+    ticks++;
+    if (ticks >= maxTicks) clearInterval(interval);
+  }, 400);
+
+  window.addEventListener('scroll', sweep, { passive: true });
+})();
+

@@ -5,7 +5,7 @@ import { motion } from "motion/react"
 import { format } from "date-fns"
 import { IndianRupee, QrCode, Download, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { generateUpiPaymentUrl, generateGstInvoicePdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
+import { generateUpiPaymentUrl, generatePaymentReceiptPdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
 import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 import toast from "react-hot-toast"
 
@@ -61,10 +61,10 @@ export default function ClientPaymentsPage() {
     fetchPayments()
   }, [])
 
-  function handleDownloadInvoice(inv: Invoice) {
-    const doc = generateGstInvoicePdf(inv)
-    doc.save(`GST_Tax_Invoice_${inv.invoiceNumber}.pdf`)
-    toast.success("GST Tax Invoice downloaded!")
+  async function handleDownloadInvoice(inv: Invoice) {
+    const doc = await generatePaymentReceiptPdf(inv)
+    doc.save(`Receipt_${inv.invoiceNumber}.pdf`)
+    toast.success("Payment receipt downloaded!")
   }
 
   const activeInvoice = invoices.find(i => i.status === "pending" || i.status === "overdue")
@@ -77,7 +77,7 @@ export default function ClientPaymentsPage() {
         <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Client Portal</span>
         <h1 className="font-heading text-2xl text-text-primary tracking-wide mt-0.5">PAYMENTS &amp; SUBSCRIPTION</h1>
         <p className="text-xs text-text-muted mt-1">
-          View coaching fees, pay online via Razorpay or UPI, and download GST tax receipts.
+          View coaching fees, pay online via Razorpay or UPI, and download payment receipts.
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export default function ClientPaymentsPage() {
               onClick={() => handleDownloadInvoice(activeInvoice)}
               className="py-3 px-4 rounded-full bg-bg-elevated border border-border-subtle text-text-muted text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-text-primary transition-colors"
             >
-              <Download className="size-4 text-accent-orange" /> GST Receipt
+              <Download className="size-4 text-accent-orange" /> Receipt
             </button>
           </div>
         </div>

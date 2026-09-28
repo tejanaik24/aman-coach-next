@@ -84,11 +84,12 @@ export default function LoginPage() {
       <div className="absolute inset-0 h-[42%] overflow-hidden">
         <div ref={heroPhotoRef} className="relative w-full h-full">
           <Image
-            src="/images/aman/aman-01.jpeg"
+            src="/images/aman/aman-workout-hero.webp"
             alt=""
             fill
             priority
             className="object-cover"
+            style={{ objectPosition: "center 20%" }}
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-bg-primary" />

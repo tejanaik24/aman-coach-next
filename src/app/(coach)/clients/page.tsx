@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "motion/react"
-import { Search, Users, ChevronRight, Plus } from "lucide-react"
+import { Search, Users, ChevronRight, Plus, Link as LinkIcon, Send } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
@@ -89,6 +89,38 @@ export default function ClientsPage() {
             {clients.length}
           </span>
         )}
+      </div>
+
+      {/* Lead Questionnaire Link — for leads before they pay / before an account exists */}
+      <div
+        className="rounded-2xl p-4 flex items-center justify-between gap-3"
+        style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
+      >
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A7F70]">Lead Questionnaire</p>
+          <p className="text-xs text-[#181310] mt-0.5 truncate">Send this to anyone before payment, before they're a client</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText("https://amankhuranafitness.com/questionnaire")
+              toast.success("Questionnaire link copied!")
+            }}
+            className="size-10 rounded-full bg-[#181310]/5 border border-[#181310]/10 flex items-center justify-center text-[#8A7F70] hover:text-[#181310] cursor-pointer"
+            title="Copy link"
+          >
+            <LinkIcon className="size-4" />
+          </button>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent("Please fill this quick lifestyle & health questionnaire before we begin: https://amankhuranafitness.com/questionnaire")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="size-10 rounded-full bg-accent-orange flex items-center justify-center text-bg-primary cursor-pointer"
+            title="Share via WhatsApp"
+          >
+            <Send className="size-4" />
+          </a>
+        </div>
       </div>
 
       {/* Search */}

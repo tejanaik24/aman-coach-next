@@ -1,9 +1,9 @@
-import type { MetadataRoute } from "next"
+import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AK Fitness Coach",
-    short_name: "AK Coach",
+    name: "Aman Khurana Fitness Coaching",
+    short_name: "Aman Khurana",
     description: "Premium coaching by Aman Khurana",
     start_url: "/login",
     display: "standalone",
@@ -15,14 +15,14 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/icon-192.png",
         sizes: "192x192",
         type: "image/png",
-        purpose: "maskable",
+        purpose: "any maskable" as any,
       },
       {
         src: "/icon-512.png",
         sizes: "512x512",
         type: "image/png",
-        purpose: "maskable",
+        purpose: "any maskable" as any,
       },
     ],
-  }
+  };
 }

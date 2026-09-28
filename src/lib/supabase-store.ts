@@ -174,7 +174,7 @@ export async function getAllSubmissions(coachId: string): Promise<{
   id: string
   clientId: string
   clientName: string
-  formType: "standard_joining" | "antenatal_joining" | "checkin"
+  formType: "standard_joining" | "antenatal_joining" | "checkin" | "enquiry"
   status: string
   submittedAt: string
   formData: Record<string, unknown>
@@ -184,7 +184,7 @@ export async function getAllSubmissions(coachId: string): Promise<{
     id: string
     clientId: string
     clientName: string
-    formType: "standard_joining" | "antenatal_joining" | "checkin"
+    formType: "standard_joining" | "antenatal_joining" | "checkin" | "enquiry"
     status: string
     submittedAt: string
     formData: Record<string, unknown>
@@ -200,14 +200,15 @@ export async function getAllSubmissions(coachId: string): Promise<{
     if (subs) {
       subs.forEach((s: Record<string, unknown>) => {
         const prof = s.profiles as { name?: string } | null
+        const formData = (s.form_data as Record<string, unknown>) || {}
         results.push({
           id: s.id as string,
           clientId: (s.client_id as string) || (s.user_id as string),
-          clientName: prof?.name || "Client",
-          formType: s.form_type as "standard_joining" | "antenatal_joining" | "checkin",
+          clientName: prof?.name || (formData.name as string) || "Client",
+          formType: s.form_type as "standard_joining" | "antenatal_joining" | "checkin" | "enquiry",
           status: (s.status as string) || "submitted",
           submittedAt: (s.submitted_at as string) || new Date().toISOString(),
-          formData: (s.form_data as Record<string, unknown>) || {}
+          formData
         })
       })
     }

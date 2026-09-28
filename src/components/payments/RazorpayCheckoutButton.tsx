@@ -136,7 +136,7 @@ export function RazorpayCheckoutButton({
 
             const verifyData = await verifyRes.json()
             if (verifyRes.ok && verifyData.success) {
-              toast.success("Payment successful! GST receipt generated.")
+              toast.success("Payment successful! Receipt generated.")
               if (onSuccess) onSuccess()
             } else {
               toast.error(verifyData.error || "Payment verification failed.")

@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { IndianRupee, Bell, Download, QrCode, Send, X } from "lucide-react"
+import { IndianRupee, Bell, Download, QrCode, Send, X, Receipt } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import { useCountUp } from "@/hooks/useCountUp"
-import { generateGstInvoicePdf, generateUpiPaymentUrl, markInvoicePaid, sendPaymentReminderWhatsApp, type Invoice } from "@/lib/payments"
+import { generatePaymentReceiptPdf, generateUpiPaymentUrl, markInvoicePaid, sendPaymentReminderWhatsApp, type Invoice } from "@/lib/payments"
 import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 
@@ -22,6 +22,14 @@ interface FeeWithClient {
   clientPhone: string
   clientAvatar: string | null
   invoiceNumber: string
+  memberNumber: number | null
+  packageName: string | null
+  startDate: string | null
+  endDate: string | null
+  otherCharges: number
+  discount: number
+  rewardPointsRedeemed: number
+  amountPaid: number
 }
 
 function getInitials(name: string): string {
@@ -56,6 +64,9 @@ export default function FeesPage() {
 
   const [upiModalFee, setUpiModalFee] = useState<FeeWithClient | null>(null)
   const [reminderModalFee, setReminderModalFee] = useState<FeeWithClient | null>(null)
+  const [billingModalFee, setBillingModalFee] = useState<FeeWithClient | null>(null)
+  const [billingForm, setBillingForm] = useState({ otherCharges: "0", discount: "0", rewardPointsRedeemed: "0", amountPaid: "0" })
+  const [isSavingBilling, setIsSavingBilling] = useState(false)
 
   const statsRef = useStaggerReveal<HTMLDivElement>([isLoading])
   const listRef = useStaggerReveal<HTMLDivElement>([isLoading])
@@ -67,13 +78,17 @@ export default function FeesPage() {
       if (!userData.user) return
       const coachId = userData.user.id
 
-      const { data: clientRows } = await supabase.from("clients").select("id, user_id").eq("coach_id", coachId)
+      const { data: clientRows } = await supabase
+        .from("clients")
+        .select("id, user_id, member_number, package_name, start_date, end_date")
+        .eq("coach_id", coachId)
       const clients = clientRows || []
       if (clients.length === 0) { setFees([]); return }
 
       const clientIds = clients.map((c: any) => c.id)
       const userIds = clients.map((c: any) => c.user_id).filter((uid: any): uid is string => uid !== null)
 
+      const clientById = new Map(clients.map((c: any) => [c.id, c]))
       const userIdByClientId = new Map<string, string>()
       for (const c of clients) if ((c as any).user_id) userIdByClientId.set((c as any).id, (c as any).user_id)
 
@@ -95,6 +110,7 @@ export default function FeesPage() {
 
       const mapped: FeeWithClient[] = (feeRows || []).map((f: any) => {
         const c = resolveClient(f.client_id)
+        const client: any = clientById.get(f.client_id)
         return {
           id: f.id,
           clientId: f.client_id,
@@ -104,7 +120,15 @@ export default function FeesPage() {
           clientName: c.name,
           clientPhone: c.phone,
           clientAvatar: c.avatar,
-          invoiceNumber: `INV-${f.id.slice(0, 6).toUpperCase()}`
+          invoiceNumber: f.invoice_number || `INV-${f.id.slice(0, 6).toUpperCase()}`,
+          memberNumber: client?.member_number ?? null,
+          packageName: client?.package_name ?? null,
+          startDate: client?.start_date ?? null,
+          endDate: client?.end_date ?? null,
+          otherCharges: Number(f.other_charges ?? 0),
+          discount: Number(f.discount ?? 0),
+          rewardPointsRedeemed: Number(f.reward_points_redeemed ?? 0),
+          amountPaid: Number(f.amount_paid ?? 0),
         }
       })
       setFees(mapped)
@@ -119,6 +143,40 @@ export default function FeesPage() {
     fetchData()
   }, [fetchData])
 
+  function openBillingModal(f: FeeWithClient) {
+    setBillingForm({
+      otherCharges: String(f.otherCharges),
+      discount: String(f.discount),
+      rewardPointsRedeemed: String(f.rewardPointsRedeemed),
+      amountPaid: String(f.amountPaid),
+    })
+    setBillingModalFee(f)
+  }
+
+  async function handleSaveBilling() {
+    if (!billingModalFee) return
+    const otherCharges = Number(billingForm.otherCharges) || 0
+    const discount = Number(billingForm.discount) || 0
+    const rewardPointsRedeemed = Number(billingForm.rewardPointsRedeemed) || 0
+    const amountPaid = Number(billingForm.amountPaid) || 0
+
+    setIsSavingBilling(true)
+    try {
+      const { error } = await supabase
+        .from("fees")
+        .update({ other_charges: otherCharges, discount, reward_points_redeemed: rewardPointsRedeemed, amount_paid: amountPaid })
+        .eq("id", billingModalFee.id)
+      if (error) throw error
+      setFees((prev) => prev.map((item) => (item.id === billingModalFee.id ? { ...item, otherCharges, discount, rewardPointsRedeemed, amountPaid } : item)))
+      toast.success("Billing details saved")
+      setBillingModalFee(null)
+    } catch {
+      toast.error("Failed to save billing details")
+    } finally {
+      setIsSavingBilling(false)
+    }
+  }
+
   async function handleMarkPaid(f: FeeWithClient) {
     const success = await markInvoicePaid(f.id, f.clientName, f.clientPhone)
     if (success) {
@@ -129,26 +187,34 @@ export default function FeesPage() {
     }
   }
 
-  function handleDownloadGstInvoice(f: FeeWithClient) {
+  async function handleDownloadReceipt(f: FeeWithClient) {
     const invObj: Invoice = {
       id: f.id,
       clientId: f.clientId,
       invoiceNumber: f.invoiceNumber,
       amount: f.amount,
-      gstRate: 18,
-      gstAmount: f.amount * 0.18,
-      totalAmount: f.amount * 1.18,
+      gstRate: 0,
+      gstAmount: 0,
+      totalAmount: f.amount,
       upiId: "amankhurana@upi",
       status: f.status,
       dueDate: f.dueDate,
       clientName: f.clientName,
       clientPhone: f.clientPhone,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      memberNumber: f.memberNumber ?? undefined,
+      packageName: f.packageName ?? undefined,
+      startDate: f.startDate ?? undefined,
+      endDate: f.endDate ?? undefined,
+      otherCharges: f.otherCharges,
+      discount: f.discount,
+      rewardPointsRedeemed: f.rewardPointsRedeemed,
+      amountPaid: f.amountPaid,
     }
 
-    const doc = generateGstInvoicePdf(invObj)
-    doc.save(`GST_Invoice_${f.invoiceNumber}_${f.clientName.replace(/\s+/g, "_")}.pdf`)
-    toast.success("GST Tax Invoice downloaded!")
+    const doc = await generatePaymentReceiptPdf(invObj)
+    doc.save(`Receipt_${f.invoiceNumber}_${f.clientName.replace(/\s+/g, "_")}.pdf`)
+    toast.success("Payment receipt downloaded!")
   }
 
   async function handleSendReminder(f: FeeWithClient, reminderType: "1week_before" | "1day_before" | "1week_overdue") {
@@ -189,7 +255,7 @@ export default function FeesPage() {
         <div>
           <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Coach Dashboard</span>
           <h1 className="font-heading text-3xl text-text-primary tracking-wide">FEE LEDGER &amp; PAYMENTS</h1>
-          <p className="text-xs text-text-muted mt-1">Track client subscriptions, overdue fees, UPI links, and GST tax invoices.</p>
+          <p className="text-xs text-text-muted mt-1">Track client subscriptions, overdue fees, UPI links, and payment receipts.</p>
         </div>
       </div>
 
@@ -313,10 +379,16 @@ export default function FeesPage() {
                     </button>
 
                     <button
-                      onClick={() => handleDownloadGstInvoice(f)}
+                      onClick={() => handleDownloadReceipt(f)}
                       className="py-2 px-3.5 rounded-xl bg-[#181310]/5 border border-[#181310]/10 text-xs font-bold text-[#8A7F70] hover:text-[#181310] flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Download className="size-3.5 text-accent-orange" /> GST Invoice
+                      <Download className="size-3.5 text-accent-orange" /> Receipt
+                    </button>
+                    <button
+                      onClick={() => openBillingModal(f)}
+                      className="py-2 px-3.5 rounded-xl bg-[#181310]/5 border border-[#181310]/10 text-xs font-bold text-[#8A7F70] hover:text-[#181310] flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Receipt className="size-3.5 text-accent-orange" /> Billing Details
                     </button>
 
                     {(f.status === "pending" || f.status === "overdue") && (
@@ -422,6 +494,76 @@ export default function FeesPage() {
                   <Send className="size-3.5 text-red-700" />
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Billing Details Modal */}
+      <AnimatePresence>
+        {billingModalFee && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-sm rounded-2xl p-6 space-y-4 relative"
+              style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
+            >
+              <button onClick={() => setBillingModalFee(null)} className="absolute top-4 right-4 size-8 rounded-full bg-[#181310]/5 flex items-center justify-center text-[#8A7F70] hover:text-[#181310]">
+                <X className="size-4" />
+              </button>
+
+              <div>
+                <h3 className="font-heading text-xl text-[#181310]">Billing Details</h3>
+                <p className="text-xs text-[#8A7F70] mt-1">{billingModalFee.clientName} &middot; Package fees ₹{billingModalFee.amount.toLocaleString("en-IN")}</p>
+              </div>
+
+              <div className="space-y-3 text-left">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">Other Charges (₹)</label>
+                  <input
+                    type="number"
+                    value={billingForm.otherCharges}
+                    onChange={(e) => setBillingForm((p) => ({ ...p, otherCharges: e.target.value }))}
+                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">Discount (₹)</label>
+                  <input
+                    type="number"
+                    value={billingForm.discount}
+                    onChange={(e) => setBillingForm((p) => ({ ...p, discount: e.target.value }))}
+                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">Reward Points Redeemed (₹)</label>
+                  <input
+                    type="number"
+                    value={billingForm.rewardPointsRedeemed}
+                    onChange={(e) => setBillingForm((p) => ({ ...p, rewardPointsRedeemed: e.target.value }))}
+                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">First Amount Paid (₹)</label>
+                  <input
+                    type="number"
+                    value={billingForm.amountPaid}
+                    onChange={(e) => setBillingForm((p) => ({ ...p, amountPaid: e.target.value }))}
+                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveBilling}
+                disabled={isSavingBilling}
+                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider disabled:opacity-60"
+              >
+                {isSavingBilling ? "Saving…" : "Save Billing Details"}
+              </button>
             </motion.div>
           </motion.div>
         )}

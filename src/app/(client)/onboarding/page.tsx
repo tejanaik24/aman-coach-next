@@ -251,7 +251,7 @@ export default function StandardOnboardingPage() {
         {/* Q1-Q64 Exact Questions */}
         {step === 1 && <QuestionWrapper title="Your Full Name" subtitle="As you'd like Coach Aman to address you."><TextInputDark value={form.q1_name} onChange={v => set("q1_name", v)} placeholder="e.g. Aman Khurana" /></QuestionWrapper>}
         {step === 2 && <QuestionWrapper title="Your Email ID" subtitle="For WhatsApp updates & client portal login."><TextInputDark type="email" value={form.q2_email} onChange={v => set("q2_email", v)} placeholder="email@example.com" /></QuestionWrapper>}
-        {step === 3 && <QuestionWrapper title="Your Complete Residence Address" subtitle="Required for client records & GST tax invoice."><TextAreaDark value={form.q3_address} onChange={v => set("q3_address", v)} placeholder="Full address..." /></QuestionWrapper>}
+        {step === 3 && <QuestionWrapper title="Your Complete Residence Address" subtitle="Required for client records."><TextAreaDark value={form.q3_address} onChange={v => set("q3_address", v)} placeholder="Full address..." /></QuestionWrapper>}
         {step === 4 && <QuestionWrapper title="Your Primary Contact Number" subtitle="WhatsApp phone number for direct coach access."><TextInputDark type="tel" value={form.q4_phone} onChange={v => set("q4_phone", v)} placeholder="+91 98156 90656" /></QuestionWrapper>}
         {step === 5 && <QuestionWrapper title="Alternate Contact Number (optional)" subtitle="Secondary or family phone number."><TextInputDark type="tel" value={form.q5_alt_phone} onChange={v => set("q5_alt_phone", v)} placeholder="+91 98765 43210" /></QuestionWrapper>}
         

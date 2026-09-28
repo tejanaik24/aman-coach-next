@@ -82,9 +82,9 @@ function Ticket({ value, label, prefix, onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left p-4 cursor-pointer transition-colors hover:bg-black/[0.02] border-l border-[#181310]/[0.08] first:border-l-0"
+      className="w-full min-w-0 text-left p-4 cursor-pointer transition-colors hover:bg-black/[0.02] border-l border-[#181310]/[0.08] first:border-l-0"
     >
-      <p className="font-heading text-2xl text-[#181310] tabular-nums">
+      <p className="font-heading text-xl sm:text-2xl text-[#181310] tabular-nums truncate">
         {prefix || ""}{count.toLocaleString("en-IN")}
       </p>
       <p className="text-[#8A7F70] text-[10px] mt-1 font-medium uppercase tracking-[0.14em]">{label}</p>

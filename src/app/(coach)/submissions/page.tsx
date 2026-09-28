@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { getAllSubmissions } from "@/lib/store"
+import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "motion/react"
 import {
-  FileText, Search, Clock, ChevronRight, X
+  FileText, Search, Clock, ChevronRight, X, CheckCircle2
 } from "lucide-react"
+import toast from "react-hot-toast"
 import { SignedImage } from "@/components/shared/SignedImage"
 import { isPhotoPathValue } from "@/components/forms/ConversationalFormComponents"
 
@@ -14,7 +16,7 @@ type Submission = {
   id: string
   clientId: string
   clientName: string
-  formType: "standard_joining" | "antenatal_joining" | "checkin"
+  formType: "standard_joining" | "antenatal_joining" | "checkin" | "enquiry"
   status: string
   submittedAt: string
   formData: Record<string, unknown>
@@ -46,11 +48,24 @@ export default function CoachSubmissionsPage() {
     })
   }, [submissions, searchTerm, selectedFormType])
 
+  async function handleMarkContacted(sub: Submission) {
+    const supabase = createClient()
+    const { error } = await supabase.from("form_submissions").update({ status: "contacted" }).eq("id", sub.id)
+    if (error) {
+      toast.error("Failed to update lead")
+      return
+    }
+    setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "contacted" } : s))
+    setActiveSubmission(prev => prev && prev.id === sub.id ? { ...prev, status: "contacted" } : prev)
+    toast.success("Marked as contacted")
+  }
+
   const getFormLabel = (type: string) => {
     switch (type) {
       case "standard_joining": return "Standard Joining Questionnaire"
       case "antenatal_joining": return "AN-PN Questionnaire"
       case "checkin": return "Weekly Check-in Form"
+      case "enquiry": return "New Enquiry"
       default: return type
     }
   }
@@ -60,12 +75,14 @@ export default function CoachSubmissionsPage() {
       case "standard_joining": return "bg-accent-orange/15 text-accent-orange border-accent-orange/30"
       case "antenatal_joining": return "bg-pink-500/15 text-pink-400 border-pink-500/30"
       case "checkin": return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+      case "enquiry": return "bg-violet-500/15 text-violet-400 border-violet-500/30"
       default: return "bg-bg-elevated text-text-muted"
     }
   }
 
   const filterTabs = [
     { key: "all", label: "All Types" },
+    { key: "enquiry", label: "Leads" },
     { key: "standard_joining", label: "Standard" },
     { key: "antenatal_joining", label: "AN-PN" },
     { key: "checkin", label: "Check-in" },
@@ -81,7 +98,7 @@ export default function CoachSubmissionsPage() {
             <p className="text-accent-orange text-xs font-bold uppercase tracking-widest">Coach Dashboard</p>
             <h1 className="font-heading text-3xl text-text-primary tracking-wide">CLIENT SUBMISSIONS</h1>
             <p className="text-xs text-text-muted mt-1">
-              View and review all onboarding questionnaires and weekly check-in forms.
+              View and review new leads, onboarding questionnaires, and weekly check-in forms.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -156,9 +173,18 @@ export default function CoachSubmissionsPage() {
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-[#181310]/[0.08]">
-                  <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${getFormBadge(sub.formType)}`}>
-                    {getFormLabel(sub.formType)}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${getFormBadge(sub.formType)}`}>
+                      {getFormLabel(sub.formType)}
+                    </span>
+                    {sub.formType === "enquiry" && (
+                      sub.status === "contacted" ? (
+                        <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-0.5"><CheckCircle2 className="size-3" /> Contacted</span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-violet-400">New</span>
+                      )
+                    )}
+                  </div>
                   <span className="text-xs font-bold text-accent-orange flex items-center gap-1">
                     View <ChevronRight className="size-4" />
                   </span>
@@ -276,7 +302,15 @@ export default function CoachSubmissionsPage() {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="p-4 border-t border-[#181310]/[0.08] bg-[#181310]/5 flex justify-end">
+                <div className="p-4 border-t border-[#181310]/[0.08] bg-[#181310]/5 flex justify-end gap-3">
+                  {activeSubmission.formType === "enquiry" && activeSubmission.status !== "contacted" && (
+                    <button
+                      onClick={() => handleMarkContacted(activeSubmission)}
+                      className="px-6 py-2.5 rounded-full bg-emerald-500 text-xs font-bold uppercase tracking-wider text-white hover:bg-emerald-600 transition-all flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="size-4" /> Mark Contacted
+                    </button>
+                  )}
                   <button
                     onClick={() => setActiveSubmission(null)}
                     className="px-6 py-2.5 rounded-full bg-accent-orange text-xs font-bold uppercase tracking-wider text-bg-primary hover:bg-accent-orange/90 transition-all"

@@ -24,6 +24,14 @@ export type Invoice = {
   clientName?: string
   clientPhone?: string
   createdAt: string
+  memberNumber?: number
+  packageName?: string
+  startDate?: string
+  endDate?: string
+  otherCharges?: number
+  discount?: number
+  rewardPointsRedeemed?: number
+  amountPaid?: number
 }
 
 export const DEFAULT_UPI_ID = "9815690656@upi"
@@ -79,78 +87,231 @@ export async function getAllInvoices(): Promise<Invoice[]> {
   return []
 }
 
+let cachedReceiptLogo: string | null = null
+async function getReceiptLogoBase64(): Promise<string | null> {
+  if (cachedReceiptLogo !== null) return cachedReceiptLogo
+  try {
+    const res = await fetch("/images/aman/logo.jpg")
+    const blob = await res.blob()
+    cachedReceiptLogo = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve((reader.result as string).split(",")[1])
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    cachedReceiptLogo = ""
+  }
+  return cachedReceiptLogo || null
+}
+
+const TERMS_AND_CONDITIONS = [
+  "1. Payment once made will be non-refundable.",
+  "2. The Above Start & End Dates are set on the bases of the Day You Received Your First Plan, not on the bases of the Date of payment Received.",
+  "3. After you receive your plans, if you do not follow the plans due to any reasons, it will be completely on you, neither the payment nor any number of days will be adjusted or extended on request for the same.",
+  "4. Payment or any number of days will only be adjusted or extended if there will be any delay (More than 1 week) in the updation of your plans from \"OUR END\" due to any unavoidable circumstances (You will get informed for the same).",
+  "5. At times of unavoidable circumstances or medical emergencies On \"YOUR END\", keeping your Enrollment \"ON HOLD\" will only be accepted for minimum 1 Month Period (not less than 1 month) with prior notice & authentication (Holding Period will be Valid for 3 Months only).",
+]
+
+function fmtDate(d?: string): string {
+  if (!d) return "-"
+  const parsed = new Date(d)
+  if (isNaN(parsed.getTime())) return "-"
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+}
+
 /**
- * Generate GST Tax Invoice PDF as Data URI or blob
+ * Generate the full itemized Payment Receipt / Invoice PDF, matching Aman's
+ * established invoice format: Client Detail / Description / Billing Detail
+ * sections, pending-amount line, and the real Terms & Conditions.
  */
-export function generateGstInvoicePdf(inv: Invoice): jsPDF {
+export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   const doc = new jsPDF()
+  const left = 16
+  const right = 194
+  const width = right - left
+  const orange: [number, number, number] = [255, 106, 26]
+  const black: [number, number, number] = [15, 13, 12]
+  const gray: [number, number, number] = [100, 100, 100]
 
-  // Header background
-  doc.setFillColor(10, 10, 10)
-  doc.rect(0, 0, 210, 45, "F")
+  const otherCharges = inv.otherCharges ?? 0
+  const discount = inv.discount ?? 0
+  const rewardPointsRedeemed = inv.rewardPointsRedeemed ?? 0
+  const amountPaid = inv.amountPaid ?? 0
+  const subtotal = inv.amount + otherCharges
+  const netPayable = subtotal - discount - rewardPointsRedeemed
+  const pendingAmount = Math.max(netPayable - amountPaid, 0)
+  const isPaid = pendingAmount <= 0
 
-  // Brand Name
-  doc.setTextColor(255, 106, 26) // Orange
-  doc.setFontSize(20)
+  // Logo + brand (top left)
+  const logoBase64 = await getReceiptLogoBase64()
+  if (logoBase64) {
+    doc.addImage(`data:image/jpeg;base64,${logoBase64}`, "JPEG", left, 14, 16, 16)
+  }
+  const brandX = logoBase64 ? left + 20 : left
+  doc.setTextColor(...black)
+  doc.setFontSize(14)
   doc.setFont("helvetica", "bold")
-  doc.text("AMAN KHURANA FITNESS", 15, 22)
-
-  doc.setTextColor(200, 200, 200)
-  doc.setFontSize(9)
+  doc.text("AMAN KHURANA", brandX, 21)
+  doc.setTextColor(...gray)
+  doc.setFontSize(7.5)
   doc.setFont("helvetica", "normal")
-  doc.text("Official GST Tax Invoice & Receipt", 15, 30)
-  doc.text("GSTIN: 03AAAAA0000A1Z5 | Reg: Punjab, India", 15, 36)
+  doc.text("FITNESS & NUTRITION COACHING", brandX, 26)
 
-  // Invoice Details Box
-  doc.setDrawColor(220, 220, 220)
-  doc.setFillColor(248, 248, 248)
-  doc.roundedRect(15, 55, 180, 35, 3, 3, "FD")
+  // Diagonal ribbon + "INVOICE" title (top right)
+  const ribbonY = 12
+  const ribbonH = 14
+  doc.setFillColor(...orange)
+  doc.triangle(115, ribbonY, 128, ribbonY, 115, ribbonY + ribbonH, "F")
+  doc.rect(128, ribbonY, right - 128, ribbonH, "F")
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(19)
+  doc.setFont("helvetica", "bold")
+  doc.text("INVOICE", right - 2, ribbonY + ribbonH - 4, { align: "right" })
 
-  doc.setTextColor(40, 40, 40)
+  let y = 40
+  doc.setDrawColor(225, 225, 225)
+  doc.setLineWidth(0.3)
+  doc.line(left, y, right, y)
+  y += 8
+
+  // Invoice to / Invoice # + Date
+  doc.setTextColor(...gray)
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "bold")
+  doc.text("INVOICE TO:", left, y)
+  doc.setFont("helvetica", "normal")
+  doc.text("Invoice#", 130, y)
+  doc.text("Date", 130, y + 5)
+
+  doc.setTextColor(...black)
+  doc.setFont("helvetica", "bold")
+  doc.text(inv.invoiceNumber, 155, y)
+  doc.setFont("helvetica", "normal")
+  doc.text(fmtDate(inv.createdAt), 155, y + 5)
+
+  y += 5
   doc.setFontSize(10)
   doc.setFont("helvetica", "bold")
-  doc.text(`INVOICE #: ${inv.invoiceNumber}`, 22, 67)
-  doc.text(`DATE: ${new Date(inv.createdAt).toLocaleDateString("en-IN")}`, 22, 75)
-  doc.text(`DUE DATE: ${new Date(inv.dueDate).toLocaleDateString("en-IN")}`, 22, 83)
+  doc.text(inv.clientName || "Valued Client", left, y)
+  y += 5
+  doc.setFontSize(8.5)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  if (inv.clientPhone) { doc.text(inv.clientPhone, left, y); y += 4.5 }
+  doc.text(`Member ID: ${inv.memberNumber ?? "-"}`, left, y)
+  y += 12
 
-  doc.text(`CLIENT: ${inv.clientName || "Valued Client"}`, 110, 67)
-  doc.text(`STATUS: ${inv.status.toUpperCase()}`, 110, 75)
-  doc.text(`PAYMENT METHOD: UPI`, 110, 83)
+  // Item table
+  const col = { sl: left, item: left + 10, start: 115, end: 148, total: right }
+  doc.setFillColor(...black)
+  doc.rect(left, y, width, 8, "F")
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "bold")
+  doc.text("SL.", col.sl + 2, y + 5.3)
+  doc.text("ITEM DESCRIPTION", col.item, y + 5.3)
+  doc.text("START", col.start, y + 5.3)
+  doc.text("END", col.end, y + 5.3)
+  doc.text("AMOUNT", col.total - 2, y + 5.3, { align: "right" })
+  y += 8
 
-  // Items Table
-  doc.setFillColor(10, 10, 10)
-  doc.rect(15, 100, 180, 10, "F")
-  doc.setTextColor(255, 106, 26)
+  type LineItem = { label: string; amount: number }
+  const items: LineItem[] = [
+    { label: inv.packageName || "Coaching Package", amount: inv.amount },
+  ]
+  if (otherCharges) items.push({ label: "Other Charges", amount: otherCharges })
+  if (discount) items.push({ label: "Discount", amount: -discount })
+  if (rewardPointsRedeemed) items.push({ label: "Reward Points Redeemed", amount: -rewardPointsRedeemed })
+
+  items.forEach((item, i) => {
+    const rowH = 9
+    if (i % 2 === 1) {
+      doc.setFillColor(245, 245, 245)
+      doc.rect(left, y, width, rowH, "F")
+    }
+    doc.setTextColor(...black)
+    doc.setFontSize(8.5)
+    doc.setFont("helvetica", "normal")
+    doc.text(String(i + 1), col.sl + 2, y + 6)
+    doc.text(item.label, col.item, y + 6)
+    if (i === 0) {
+      doc.text(fmtDate(inv.startDate), col.start, y + 6)
+      doc.text(fmtDate(inv.endDate), col.end, y + 6)
+    }
+    doc.text(`${item.amount < 0 ? "-" : ""}INR ${Math.abs(item.amount).toFixed(2)}`, col.total - 2, y + 6, { align: "right" })
+    y += rowH
+  })
+  doc.setDrawColor(225, 225, 225)
+  doc.line(left, y, right, y)
+  y += 8
+
+  // Totals block (bottom right)
+  const labelX = 140
+  function totalRow(label: string, value: string, bold = false) {
+    doc.setTextColor(...(bold ? black : gray))
+    doc.setFontSize(9)
+    doc.setFont("helvetica", bold ? "bold" : "normal")
+    doc.text(label, labelX, y)
+    doc.text(value, right - 2, y, { align: "right" })
+    y += 6
+  }
+  totalRow("Sub Total:", `INR ${subtotal.toFixed(2)}`)
+  if (discount) totalRow("Discount:", `- INR ${discount.toFixed(2)}`)
+  if (rewardPointsRedeemed) totalRow("Reward Points:", `- INR ${rewardPointsRedeemed.toFixed(2)}`)
+  totalRow("Amount Paid:", `INR ${amountPaid.toFixed(2)}`)
+  y += 1
+
+  doc.setFillColor(...(isPaid ? [60, 180, 90] as [number, number, number] : orange))
+  doc.rect(labelX - 4, y - 5, right - labelX + 4, 9, "F")
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(10)
+  doc.setFont("helvetica", "bold")
+  doc.text(isPaid ? "PAID IN FULL" : "Balance Due:", labelX, y + 1)
+  doc.text(`INR ${pendingAmount.toFixed(2)}`, right - 2, y + 1, { align: "right" })
+  y += 16
+
+  // Terms & Conditions + Payment Info (bottom left), aligned with totals block
+  const bottomBlockTop = y - 32
+  let ty = bottomBlockTop
+  doc.setTextColor(...black)
   doc.setFontSize(9)
   doc.setFont("helvetica", "bold")
-  doc.text("DESCRIPTION", 22, 106.5)
-  doc.text("BASE AMOUNT", 110, 106.5)
-  doc.text("GST (18%)", 145, 106.5)
-  doc.text("TOTAL (INR)", 175, 106.5)
+  doc.text("Thank you for choosing #teamAKF", left, ty)
+  ty += 6
 
-  doc.setTextColor(50, 50, 50)
-  doc.setFont("helvetica", "normal")
-  doc.text("1-on-1 Fitness & Nutrition Coaching Package", 22, 118)
-  doc.text(`INR ${inv.amount.toFixed(2)}`, 110, 118)
-  doc.text(`INR ${inv.gstAmount.toFixed(2)}`, 145, 118)
-  doc.text(`INR ${inv.totalAmount.toFixed(2)}`, 175, 118)
-
-  doc.setDrawColor(200, 200, 200)
-  doc.line(15, 125, 195, 125)
-
-  // Total Summary
-  doc.setFontSize(12)
+  doc.setFontSize(8.5)
   doc.setFont("helvetica", "bold")
-  doc.setTextColor(10, 10, 10)
-  doc.text("TOTAL AMOUNT PAID:", 110, 138)
-  doc.setTextColor(218, 165, 32)
-  doc.text(`INR ${inv.totalAmount.toLocaleString("en-IN")}`, 165, 138)
+  doc.text("Terms & Conditions", left, ty)
+  ty += 4
+  doc.setFontSize(6.3)
+  doc.setFont("helvetica", "italic")
+  doc.setTextColor(190, 60, 40)
+  for (const clause of TERMS_AND_CONDITIONS) {
+    const lines = doc.splitTextToSize(clause, 105)
+    doc.text(lines, left, ty)
+    ty += lines.length * 2.9 + 1.2
+  }
+  y = Math.max(y, ty + 4)
+
+  // Authorised Sign
+  doc.setDrawColor(...gray)
+  doc.setLineWidth(0.3)
+  doc.line(right - 45, y, right, y)
+  doc.setTextColor(...gray)
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "normal")
+  doc.text("Authorised Sign", right - 22.5, y + 5, { align: "center" })
+  y += 16
 
   // Footer
-  doc.setFontSize(8)
-  doc.setTextColor(120, 120, 120)
-  doc.setFont("helvetica", "italic")
-  doc.text("Thank you for choosing Aman Khurana Fitness. For queries, contact info@amankhuranafitness.com", 105, 160, { align: "center" })
+  doc.setDrawColor(...orange)
+  doc.setLineWidth(1.2)
+  doc.line(left, 280, right, 280)
+  doc.setTextColor(...gray)
+  doc.setFontSize(7.5)
+  doc.setFont("helvetica", "normal")
+  doc.text("+91 98156 90656  |  Chandigarh, India  |  www.amankhuranafitness.com", 105, 286, { align: "center" })
 
   return doc
 }
@@ -168,7 +329,7 @@ export async function markInvoicePaid(invId: string, clientName: string, clientP
       const msg = `✅ *PAYMENT RECEIVED & CONFIRMED*\n\n` +
         `Hi ${clientName},\n` +
         `We have received your coaching fee payment.\n\n` +
-        `📄 Your official GST Tax Receipt is available in your client portal:\n` +
+        `📄 Your payment receipt is available in your client portal:\n` +
         `https://aman-coach-next.vercel.app/payments\n\n` +
         `Thank you!`
       sendWhatsAppText(clientPhone, msg).catch(e => console.error("Payment WA receipt note:", e))
