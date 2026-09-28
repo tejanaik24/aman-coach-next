@@ -35,7 +35,7 @@ const PACKAGES: PackageItem[] = [
     amount: 1500,
     cta: "Book Now",
     href: "/book",
-    image: "/images/aman-online-coaching-12wk.webp",
+    image: "/images/aman-on-call-consultation.webp",
   },
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (1 Year)",
@@ -52,6 +52,7 @@ const PACKAGES: PackageItem[] = [
     days: "168 Days",
     amount: 28000,
     image: "/images/aman-online-coaching-24wk.webp",
+    popular: true,
     tag: "Most Popular",
   },
   {

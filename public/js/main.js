@@ -107,6 +107,8 @@ function initServicesFilter() {
   if (!filterPills.length) return;
 
   filterPills.forEach((pill) => {
+    if (pill.dataset.filterBound) return;
+    pill.dataset.filterBound = "true";
     pill.addEventListener("click", () => {
       filterPills.forEach((p) => p.classList.remove("active"));
       pill.classList.add("active");
