@@ -1,194 +1,328 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { motion } from "motion/react"
-import dynamic from "next/dynamic"
-import { getISOWeek, getISOWeekYear, startOfISOWeek, subWeeks } from "date-fns"
-import { ChevronRight, Calendar, Flame, Trophy, Zap, Phone, Star, Sparkles, BadgeCheck, Bell, X } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { getAppointments } from "@/lib/supabase-store"
-import { getDailyTip, ACTIVE_OFFER } from "@/lib/dailyTip"
-import ProfileMenu from "@/components/shared/ProfileMenu"
-import BadgesGrid from "@/components/client/BadgesGrid"
-import GlassCard from "@/components/ui/GlassCard"
-import KineticText from "@/components/ui/KineticText"
-import ScrollReveal from "@/components/ui/ScrollReveal"
-import { useCountUp } from "@/hooks/useCountUp"
-import { usePushNotifications } from "@/hooks/usePushNotifications"
-import { getClientBadges, checkAndUnlockBadges, fireBadgeUnlockConfetti, type ClientBadge } from "@/lib/badges"
-import type { Client, WorkoutPlan, NutritionPlan, Checkin, Profile, Appointment } from "@/types"
+import BadgesGrid from "@/components/client/BadgesGrid";
+import ProfileMenu from "@/components/shared/ProfileMenu";
+import GlassCard from "@/components/ui/GlassCard";
+import KineticText from "@/components/ui/KineticText";
+import ScrollReveal from "@/components/ui/ScrollReveal";
+import { useCountUp } from "@/hooks/useCountUp";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import {
+  checkAndUnlockBadges,
+  fireBadgeUnlockConfetti,
+  getClientBadges,
+  type ClientBadge,
+} from "@/lib/badges";
+import { ACTIVE_OFFER, getDailyTip } from "@/lib/dailyTip";
+import { getAppointments } from "@/lib/supabase-store";
+import { createClient } from "@/lib/supabase/client";
+import type {
+  Appointment,
+  Checkin,
+  Client,
+  NutritionPlan,
+  Profile,
+  WorkoutPlan,
+} from "@/types";
+import { getISOWeek, getISOWeekYear, startOfISOWeek, subWeeks } from "date-fns";
+import {
+  BadgeCheck,
+  Bell,
+  Calendar,
+  ChevronRight,
+  Droplets,
+  Flame,
+  Phone,
+  Plus,
+  Sparkles,
+  Star,
+  Trophy,
+  X,
+  Zap,
+} from "lucide-react";
+import { motion } from "motion/react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-const GradientMesh = dynamic(() => import("@/components/ui/GradientMesh"), { ssr: false })
-const ParticleField = dynamic(() => import("@/components/ui/ParticleField"), { ssr: false })
+const GradientMesh = dynamic(() => import("@/components/ui/GradientMesh"), {
+  ssr: false,
+});
+const ParticleField = dynamic(() => import("@/components/ui/ParticleField"), {
+  ssr: false,
+});
 
 function getGreeting(): string {
-  const h = new Date().getHours()
-  if (h < 12) return "Good morning"
-  if (h < 17) return "Good afternoon"
-  return "Good evening"
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 function getInitials(name: string): string {
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 function Counter({ to }: { to: number }) {
-  return <>{useCountUp(to)}</>
+  return <>{useCountUp(to)}</>;
 }
 
 function formatSessionDate(dateStr: string): string {
-  const today = new Date()
-  const d = new Date(dateStr)
-  const isToday = d.toDateString() === today.toDateString()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-  const isTomorrow = d.toDateString() === tomorrow.toDateString()
-  if (isToday) return "Today"
-  if (isTomorrow) return "Tomorrow"
-  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+  const today = new Date();
+  const d = new Date(dateStr);
+  const isToday = d.toDateString() === today.toDateString();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+  if (isToday) return "Today";
+  if (isTomorrow) return "Tomorrow";
+  return d.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function formatTime12h(t: string): string {
-  const [h, m] = t.split(":").map(Number)
-  const period = h >= 12 ? "PM" : "AM"
-  const h12 = h % 12 === 0 ? 12 : h % 12
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 export default function ClientHomePage() {
-  const router = useRouter()
-  const supabase = createClient()
+  const router = useRouter();
+  const supabase = createClient();
 
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [clientRow, setClientRow] = useState<Client | null>(null)
-  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null)
-  const [nutritionPlan, setNutritionPlan] = useState<NutritionPlan | null>(null)
-  const [latestCheckin, setLatestCheckin] = useState<Checkin | null>(null)
-  const [prevCheckin, setPrevCheckin] = useState<Checkin | null>(null)
-  const [clientBadges, setClientBadges] = useState<ClientBadge[]>([])
-  const [nextAppointment, setNextAppointment] = useState<Appointment | null>(null)
-  const [totalWorkoutsThisWeek, setTotalWorkoutsThisWeek] = useState(0)
-  const [streak, setStreak] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [coachName, setCoachName] = useState<string | null>(null)
-  const [dismissPushBanner, setDismissPushBanner] = useState(false)
-  const { permission, subscribe } = usePushNotifications()
-  const showPushBanner = permission === "default" && !dismissPushBanner
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [clientRow, setClientRow] = useState<Client | null>(null);
+  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
+  const [nutritionPlan, setNutritionPlan] = useState<NutritionPlan | null>(
+    null,
+  );
+  const [latestCheckin, setLatestCheckin] = useState<Checkin | null>(null);
+  const [prevCheckin, setPrevCheckin] = useState<Checkin | null>(null);
+  const [clientBadges, setClientBadges] = useState<ClientBadge[]>([]);
+  const [nextAppointment, setNextAppointment] = useState<Appointment | null>(
+    null,
+  );
+  const [totalWorkoutsThisWeek, setTotalWorkoutsThisWeek] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [coachName, setCoachName] = useState<string | null>(null);
+  const [dismissPushBanner, setDismissPushBanner] = useState(false);
+  const { permission, subscribe } = usePushNotifications();
+  const showPushBanner = permission === "default" && !dismissPushBanner;
+
+  const [waterGlasses, setWaterGlasses] = useState(0);
+
+  useEffect(() => {
+    try {
+      const todayKey = `ak_water_${new Date().toISOString().slice(0, 10)}`;
+      const saved = localStorage.getItem(todayKey);
+      if (saved) setWaterGlasses(Number(saved));
+    } catch {}
+  }, []);
+
+  const addWater = () => {
+    const next = Math.min(waterGlasses + 1, 16);
+    setWaterGlasses(next);
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate(15);
+      } catch {}
+    }
+    try {
+      const todayKey = `ak_water_${new Date().toISOString().slice(0, 10)}`;
+      localStorage.setItem(todayKey, String(next));
+    } catch {}
+    toast.success(`+250ml logged! (${(next * 0.25).toFixed(1)}L total)`, {
+      id: "water-toast",
+    });
+  };
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        setUserEmail(user.email ?? null)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+        setUserEmail(user.email ?? null);
 
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
-          .single()
-        if (profileData) setProfile(profileData as Profile)
+          .single();
+        if (profileData) setProfile(profileData as Profile);
 
         const { data: clientData, error: clientError } = await supabase
           .from("clients")
           .select("*")
           .eq("user_id", user.id)
-          .single()
+          .single();
         if (clientError || !clientData) {
-          setIsLoading(false)
-          return
+          setIsLoading(false);
+          return;
         }
-        const client = clientData as Client
-        setClientRow(client)
+        const client = clientData as Client;
+        setClientRow(client);
 
         const [workoutRes, nutritionRes, checkinsRes] = await Promise.all([
-          supabase.from("workout_plans").select("*").eq("client_id", client.id).eq("is_active", true).single(),
-          supabase.from("nutrition_plans").select("*").eq("client_id", client.id).eq("is_active", true).single(),
-          supabase.from("checkins").select("*").eq("client_id", client.id).order("submitted_at", { ascending: false }).limit(52),
-        ])
+          supabase
+            .from("workout_plans")
+            .select("*")
+            .eq("client_id", client.id)
+            .eq("is_active", true)
+            .single(),
+          supabase
+            .from("nutrition_plans")
+            .select("*")
+            .eq("client_id", client.id)
+            .eq("is_active", true)
+            .single(),
+          supabase
+            .from("checkins")
+            .select("*")
+            .eq("client_id", client.id)
+            .order("submitted_at", { ascending: false })
+            .limit(52),
+        ]);
 
-        if (!workoutRes.error && workoutRes.data) setWorkoutPlan(workoutRes.data as WorkoutPlan)
-        if (!nutritionRes.error && nutritionRes.data) setNutritionPlan(nutritionRes.data as NutritionPlan)
-        const checkins = (checkinsRes.data ?? []) as Checkin[]
-        if (checkins[0]) setLatestCheckin(checkins[0])
-        if (checkins[1]) setPrevCheckin(checkins[1])
+        if (!workoutRes.error && workoutRes.data)
+          setWorkoutPlan(workoutRes.data as WorkoutPlan);
+        if (!nutritionRes.error && nutritionRes.data)
+          setNutritionPlan(nutritionRes.data as NutritionPlan);
+        const checkins = (checkinsRes.data ?? []) as Checkin[];
+        if (checkins[0]) setLatestCheckin(checkins[0]);
+        if (checkins[1]) setPrevCheckin(checkins[1]);
 
         if (client.coach_id) {
-          const { data: coachProfile } = await supabase.from("profiles").select("name").eq("id", client.coach_id).single()
-          if (coachProfile) setCoachName(coachProfile.name)
+          const { data: coachProfile } = await supabase
+            .from("profiles")
+            .select("name")
+            .eq("id", client.coach_id)
+            .single();
+          if (coachProfile) setCoachName(coachProfile.name);
         }
 
-        const badges = await getClientBadges(client.id)
-        setClientBadges(badges)
+        const badges = await getClientBadges(client.id);
+        setClientBadges(badges);
 
-        const appointments = await getAppointments(user.id, "client")
+        const appointments = await getAppointments(user.id, "client");
         const upcoming = appointments
-          .filter((a) => a.status === "scheduled" && new Date(`${a.date}T${a.startTime}`) >= new Date(new Date().toDateString()))
-          .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
-        if (upcoming[0]) setNextAppointment(upcoming[0])
+          .filter(
+            (a) =>
+              a.status === "scheduled" &&
+              new Date(`${a.date}T${a.startTime}`) >=
+                new Date(new Date().toDateString()),
+          )
+          .sort(
+            (a, b) =>
+              new Date(`${a.date}T${a.startTime}`).getTime() -
+              new Date(`${b.date}T${b.startTime}`).getTime(),
+          );
+        if (upcoming[0]) setNextAppointment(upcoming[0]);
 
-        const weekStart = new Date()
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-        weekStart.setHours(0, 0, 0, 0)
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        weekStart.setHours(0, 0, 0, 0);
         const thisWeekCount = appointments.filter(
-          (a) => a.status === "completed" && new Date(a.date) >= weekStart
-        ).length
-        setTotalWorkoutsThisWeek(thisWeekCount)
+          (a) => a.status === "completed" && new Date(a.date) >= weekStart,
+        ).length;
+        setTotalWorkoutsThisWeek(thisWeekCount);
 
         const sorted = [...checkins].sort(
-          (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
-        )
+          (a, b) =>
+            new Date(b.submitted_at).getTime() -
+            new Date(a.submitted_at).getTime(),
+        );
         const checkinWeekSet = new Set(
-          sorted.map(c => {
-            const d = new Date(c.submitted_at)
-            return `${getISOWeekYear(d)}-${getISOWeek(d)}`
-          })
-        )
-        let streakCount = 0
-        let cursor = startOfISOWeek(new Date())
-        while (checkinWeekSet.has(`${getISOWeekYear(cursor)}-${getISOWeek(cursor)}`)) {
-          streakCount++
-          cursor = subWeeks(cursor, 1)
+          sorted.map((c) => {
+            const d = new Date(c.submitted_at);
+            return `${getISOWeekYear(d)}-${getISOWeek(d)}`;
+          }),
+        );
+        let streakCount = 0;
+        let cursor = startOfISOWeek(new Date());
+        while (
+          checkinWeekSet.has(`${getISOWeekYear(cursor)}-${getISOWeek(cursor)}`)
+        ) {
+          streakCount++;
+          cursor = subWeeks(cursor, 1);
         }
-        setStreak(streakCount)
+        setStreak(streakCount);
 
-        const checkinCount = checkins.length
-        const newlyUnlocked = await checkAndUnlockBadges(client.id, profileData?.name || "Client", {
-          checkinCount,
-          hasPlan: !!(workoutRes.data || nutritionRes.data)
-        })
+        const checkinCount = checkins.length;
+        const newlyUnlocked = await checkAndUnlockBadges(
+          client.id,
+          profileData?.name || "Client",
+          {
+            checkinCount,
+            hasPlan: !!(workoutRes.data || nutritionRes.data),
+          },
+        );
 
         if (newlyUnlocked.length > 0) {
-          fireBadgeUnlockConfetti()
-          const updatedBadges = await getClientBadges(client.id)
-          setClientBadges(updatedBadges)
+          fireBadgeUnlockConfetti();
+          const updatedBadges = await getClientBadges(client.id);
+          setClientBadges(updatedBadges);
         }
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
-  const name = profile?.name ?? "there"
-  const initials = profile?.name ? getInitials(profile.name) : "?"
-  const firstName = name.split(" ")[0].toUpperCase()
-  const heroNameFontSize = firstName.length <= 5 ? 43 : firstName.length <= 7 ? 34 : firstName.length <= 9 ? 28 : 22
-  const heroPromo = ACTIVE_OFFER ?? getDailyTip()
-  const adherencePct = latestCheckin?.adherence_workout != null ? Math.round(latestCheckin.adherence_workout * 10) : 0
-  const prevAdherencePct = prevCheckin?.adherence_workout != null ? Math.round(prevCheckin.adherence_workout * 10) : null
-  const adherenceDelta = prevAdherencePct != null ? adherencePct - prevAdherencePct : null
-  const eliteLevel = adherencePct >= 80 ? "Elite Level" : adherencePct >= 60 ? "Solid Progress" : adherencePct > 0 ? "Building Momentum" : "Getting Started"
-  const ringCircumference = 2 * Math.PI * 80
-  const ringOffset = ringCircumference - (ringCircumference * adherencePct) / 100
+  const name = profile?.name ?? "there";
+  const initials = profile?.name ? getInitials(profile.name) : "?";
+  const firstName = name.split(" ")[0].toUpperCase();
+  const heroNameFontSize =
+    firstName.length <= 5
+      ? 43
+      : firstName.length <= 7
+        ? 34
+        : firstName.length <= 9
+          ? 28
+          : 22;
+  const heroPromo = ACTIVE_OFFER ?? getDailyTip();
+  const adherencePct =
+    latestCheckin?.adherence_workout != null
+      ? Math.round(latestCheckin.adherence_workout * 10)
+      : 0;
+  const prevAdherencePct =
+    prevCheckin?.adherence_workout != null
+      ? Math.round(prevCheckin.adherence_workout * 10)
+      : null;
+  const adherenceDelta =
+    prevAdherencePct != null ? adherencePct - prevAdherencePct : null;
+  const eliteLevel =
+    adherencePct >= 80
+      ? "Elite Level"
+      : adherencePct >= 60
+        ? "Solid Progress"
+        : adherencePct > 0
+          ? "Building Momentum"
+          : "Getting Started";
+  const ringCircumference = 2 * Math.PI * 80;
+  const ringOffset =
+    ringCircumference - (ringCircumference * adherencePct) / 100;
 
-  const workoutsToNextMilestone = Math.max(0, 3 - totalWorkoutsThisWeek)
-  const motivationLine = workoutsToNextMilestone > 0
-    ? `You're ${workoutsToNextMilestone} workout${workoutsToNextMilestone === 1 ? "" : "s"} away from becoming unstoppable.`
-    : "You've hit your weekly target. Champion form."
+  const workoutsToNextMilestone = Math.max(0, 3 - totalWorkoutsThisWeek);
+  const motivationLine =
+    workoutsToNextMilestone > 0
+      ? `You're ${workoutsToNextMilestone} workout${workoutsToNextMilestone === 1 ? "" : "s"} away from becoming unstoppable.`
+      : "You've hit your weekly target. Champion form.";
 
   return (
     <div className="min-h-screen relative bg-[#0A0A0A] text-white">
@@ -196,9 +330,7 @@ export default function ClientHomePage() {
       <ParticleField />
 
       <div className="relative z-10 pb-28 w-full">
-
         <div className="pt-8 space-y-6">
-
           <ProfileMenu
             isOpen={isProfileOpen}
             onClose={() => setIsProfileOpen(false)}
@@ -206,7 +338,9 @@ export default function ClientHomePage() {
             email={userEmail}
             avatarUrl={profile?.avatar_url ?? null}
             role="client"
-            onNameUpdated={(newName) => setProfile((p) => (p ? { ...p, name: newName } : p))}
+            onNameUpdated={(newName) =>
+              setProfile((p) => (p ? { ...p, name: newName } : p))
+            }
           />
 
           {/* HERO — a single banner, not a card-plus-column grid. The coach photo is an
@@ -240,7 +374,8 @@ export default function ClientHomePage() {
                   height: "420px",
                   left: "-140px",
                   top: "230px",
-                  background: "radial-gradient(ellipse, rgba(230,110,40,0.10) 0%, transparent 70%)",
+                  background:
+                    "radial-gradient(ellipse, rgba(230,110,40,0.10) 0%, transparent 70%)",
                   filter: "blur(90px)",
                 }}
               />
@@ -254,7 +389,8 @@ export default function ClientHomePage() {
                   height: "760px",
                   right: "-190px",
                   top: "-60px",
-                  background: "radial-gradient(circle, rgba(255,120,40,0.22) 0%, transparent 66%)",
+                  background:
+                    "radial-gradient(circle, rgba(255,120,40,0.22) 0%, transparent 66%)",
                   filter: "blur(75px)",
                 }}
               />
@@ -306,7 +442,9 @@ export default function ClientHomePage() {
                   />
                 ) : (
                   <div className="w-11 h-11 rounded-full bg-bg-elevated border-2 border-accent-orange shadow-[0_0_20px_rgba(255, 106, 26,0.3)] flex items-center justify-center">
-                    <span className="text-accent-orange text-sm font-heading font-bold">{initials}</span>
+                    <span className="text-accent-orange text-sm font-heading font-bold">
+                      {initials}
+                    </span>
                   </div>
                 )}
               </button>
@@ -324,14 +462,22 @@ export default function ClientHomePage() {
                     delay={0.2}
                     className="font-extrabold text-white tracking-tight !flex-nowrap"
                   />
-                  <span className="text-accent-orange text-3xl font-extrabold leading-none mb-0.5">.</span>
+                  <span className="text-accent-orange text-3xl font-extrabold leading-none mb-0.5">
+                    .
+                  </span>
                 </div>
                 <div className="inline-flex items-center gap-2 mt-2 pl-2.5 pr-3.5 py-1.5 rounded-full bg-accent-orange/10 border border-accent-orange/20">
                   <Flame className="w-4 h-4 text-accent-orange fill-accent-orange" />
-                  <span className="text-accent-orange text-base font-extrabold leading-none">{streak || 0}</span>
+                  <span className="text-accent-orange text-base font-extrabold leading-none">
+                    {streak || 0}
+                  </span>
                   <span className="flex flex-col leading-[10px]">
-                    <span className="text-accent-orange text-[8.5px] font-bold uppercase tracking-wider">Day</span>
-                    <span className="text-accent-orange text-[8.5px] font-bold uppercase tracking-wider">Streak</span>
+                    <span className="text-accent-orange text-[8.5px] font-bold uppercase tracking-wider">
+                      Day
+                    </span>
+                    <span className="text-accent-orange text-[8.5px] font-bold uppercase tracking-wider">
+                      Streak
+                    </span>
                   </span>
                 </div>
               </div>
@@ -349,9 +495,13 @@ export default function ClientHomePage() {
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <Sparkles className="w-3 h-3 text-accent-orange shrink-0" />
-                  <span className="text-accent-orange text-[9px] font-bold uppercase tracking-wider">{heroPromo.label}</span>
+                  <span className="text-accent-orange text-[9px] font-bold uppercase tracking-wider">
+                    {heroPromo.label}
+                  </span>
                 </div>
-                <p className="text-white/90 text-[10.5px] leading-snug mb-2">{heroPromo.text}</p>
+                <p className="text-white/90 text-[10.5px] leading-snug mb-2">
+                  {heroPromo.text}
+                </p>
                 <div className="flex items-center gap-1">
                   <span className="w-3 h-1 rounded-full bg-accent-orange" />
                   <span className="w-1 h-1 rounded-full bg-white/25" />
@@ -362,7 +512,10 @@ export default function ClientHomePage() {
               {/* BOTTOM CONTENT — coach info + call button, anchored to the hero floor, sitting
                   in front of the coach photo (z-20 vs image's z-[1]), not beside it in a column. */}
               <div className="absolute z-20 bottom-0 left-0 right-0 px-5 pb-5 pt-10">
-                <p className="text-accent-orange text-2xl leading-none mb-1.5" style={{ fontFamily: "var(--font-script)" }}>
+                <p
+                  className="text-accent-orange text-2xl leading-none mb-1.5"
+                  style={{ fontFamily: "var(--font-script)" }}
+                >
                   Your Coach
                 </p>
                 <div className="flex items-center gap-1.5 mb-1.5">
@@ -372,11 +525,15 @@ export default function ClientHomePage() {
                   <BadgeCheck className="w-4 h-4 text-accent-orange fill-accent-orange/20 shrink-0" />
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 mb-3 max-w-[62%]">
-                  <span className="text-text-muted text-[11px] font-medium">Head Coach &amp; Nutritionist</span>
+                  <span className="text-text-muted text-[11px] font-medium">
+                    Head Coach &amp; Nutritionist
+                  </span>
                   <span className="text-white/15">&bull;</span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.04] border border-white/[0.08] px-2 py-0.5">
                     <Star className="w-3 h-3 text-accent-orange fill-accent-orange" />
-                    <span className="text-text-muted text-[10.5px] font-medium">12+ Yrs</span>
+                    <span className="text-text-muted text-[10.5px] font-medium">
+                      12+ Yrs
+                    </span>
                   </span>
                 </div>
                 <button
@@ -389,27 +546,38 @@ export default function ClientHomePage() {
               </div>
             </div>
           </ScrollReveal>
-          </div>
+        </div>
 
-          <div className="px-5 space-y-6">
-
+        <div className="px-5 space-y-6">
           {showPushBanner && (
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 flex items-center gap-3 border border-white/10">
               <div className="size-10 rounded-full bg-accent-orange/15 border border-accent-orange/30 flex items-center justify-center shrink-0">
                 <Bell className="w-5 h-5 text-accent-orange" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-bold font-heading">Enable workout reminders</p>
-                <p className="text-text-muted text-[10px] mt-0.5">Get notified when it&apos;s time to check in</p>
+                <p className="text-white text-xs font-bold font-heading">
+                  Enable workout reminders
+                </p>
+                <p className="text-text-muted text-[10px] mt-0.5">
+                  Get notified when it&apos;s time to check in
+                </p>
               </div>
               <button
-                onClick={() => { subscribe(); setDismissPushBanner(true) }}
+                onClick={() => {
+                  subscribe();
+                  setDismissPushBanner(true);
+                }}
                 className="bg-accent-orange text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-full whitespace-nowrap cursor-pointer hover:bg-accent-orange/90 transition-colors"
               >
                 Enable
               </button>
               <button
-                onClick={() => { setDismissPushBanner(true); try { sessionStorage.setItem("push_dismissed", "1") } catch {} }}
+                onClick={() => {
+                  setDismissPushBanner(true);
+                  try {
+                    sessionStorage.setItem("push_dismissed", "1");
+                  } catch {}
+                }}
                 className="text-white/30 hover:text-white/60 transition-colors cursor-pointer shrink-0"
                 aria-label="Dismiss"
               >
@@ -418,43 +586,119 @@ export default function ClientHomePage() {
             </div>
           )}
 
-          {/* WEEKLY SCORE — white surface card */}
+          {/* WEEKLY SCORE — Dark Luxury Obsidian Card */}
           <ScrollReveal delay={0.15}>
-            <div className="bg-white rounded-3xl p-5 flex items-center gap-4 shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
+            <div className="bg-[#121215] border border-white/10 rounded-3xl p-5 flex items-center gap-4 shadow-[0_20px_40px_rgba(0,0,0,0.6)]">
               <div className="relative w-[140px] h-[140px] shrink-0 flex items-center justify-center">
                 <svg viewBox="0 0 168 168" className="w-full h-full -rotate-90">
-                  <circle cx="84" cy="84" r="80" stroke="rgba(0,0,0,0.08)" strokeWidth="8" fill="none" />
+                  <circle
+                    cx="84"
+                    cy="84"
+                    r="80"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth="8"
+                    fill="none"
+                  />
                   <motion.circle
-                    cx="84" cy="84" r="80"
-                    stroke="#FF6A1A" strokeWidth="8" fill="none" strokeLinecap="round"
-                    initial={{ strokeDasharray: ringCircumference, strokeDashoffset: ringCircumference }}
+                    cx="84"
+                    cy="84"
+                    r="80"
+                    stroke="#FFB800"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeLinecap="round"
+                    initial={{
+                      strokeDasharray: ringCircumference,
+                      strokeDashoffset: ringCircumference,
+                    }}
                     animate={{ strokeDashoffset: ringOffset }}
                     transition={{ type: "spring", duration: 1.5, bounce: 0.15 }}
                   />
                 </svg>
                 <div className="absolute flex flex-col items-center">
-                  <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Weekly Score</span>
-                  <span className="text-3xl font-extrabold text-gray-900 font-heading">
-                    <Counter to={adherencePct} /><span className="text-lg align-top">%</span>
+                  <span className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">
+                    Weekly Score
                   </span>
-                  <span className="text-accent-orange text-[10px] font-bold uppercase tracking-wider mt-0.5">{eliteLevel}</span>
+                  <span className="text-3xl font-extrabold text-white font-heading">
+                    <Counter to={adherencePct} />
+                    <span className="text-lg align-top text-[#FFB800]">%</span>
+                  </span>
+                  <span className="text-[#FFB800] text-[10px] font-bold uppercase tracking-wider mt-0.5">
+                    {eliteLevel}
+                  </span>
                   {adherenceDelta != null && (
-                    <span className={`text-[10px] font-semibold mt-1 ${adherenceDelta >= 0 ? "text-emerald-600" : "text-danger"}`}>
-                      {adherenceDelta >= 0 ? "↑" : "↓"} {Math.abs(adherenceDelta)}% vs last week
+                    <span
+                      className={`text-[10px] font-semibold mt-1 ${adherenceDelta >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+                    >
+                      {adherenceDelta >= 0 ? "↑" : "↓"}{" "}
+                      {Math.abs(adherenceDelta)}% vs last week
                     </span>
                   )}
                 </div>
               </div>
 
               <div className="flex-1 min-w-0">
-                <span className="text-accent-orange text-2xl font-serif leading-none">&ldquo;</span>
-                <p className="text-gray-900 text-[15px] font-semibold leading-snug -mt-2">
+                <span className="text-[#FFB800] text-2xl font-serif leading-none">
+                  &ldquo;
+                </span>
+                <p className="text-zinc-100 text-[14.5px] font-semibold leading-snug -mt-2">
                   {motivationLine.split(/(\d+)/).map((part, i) =>
-                    /^\d+$/.test(part) ? <span key={i} className="text-accent-orange">{part}</span> : part
+                    /^\d+$/.test(part) ? (
+                      <span key={i} className="text-[#FFB800]">
+                        {part}
+                      </span>
+                    ) : (
+                      part
+                    ),
                   )}
                 </p>
-                <p className="text-gray-400 text-[11px] mt-1.5">Keep going!</p>
+                <p className="text-zinc-500 text-[11px] mt-1.5">
+                  Consistency builds hardware.
+                </p>
               </div>
+            </div>
+          </ScrollReveal>
+
+          {/* DAILY HYDRATION PROTOCOL */}
+          <ScrollReveal delay={0.18}>
+            <div className="bg-[#121215]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+              <div className="flex items-center gap-3">
+                <div className="size-11 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0">
+                  <Droplets className="size-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-white text-xs font-bold font-heading">
+                      Hydration Protocol
+                    </span>
+                    <span className="text-[10px] text-sky-400 font-semibold font-mono">
+                      {(waterGlasses * 0.25).toFixed(1)}L / 3.5L
+                    </span>
+                  </div>
+                  <div className="w-36 h-1.5 bg-white/10 rounded-full mt-1.5 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-sky-400 to-[#FFB800] rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${Math.min((waterGlasses / 14) * 100, 100)}%`,
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 30,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={addWater}
+                className="flex items-center gap-1 bg-white/5 hover:bg-sky-500/15 border border-white/10 hover:border-sky-500/40 text-white hover:text-sky-300 text-[11px] font-bold py-2 px-3 rounded-xl transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+              >
+                <Plus className="size-3.5" />
+                <span>250ml</span>
+              </button>
             </div>
           </ScrollReveal>
 
@@ -483,12 +727,18 @@ export default function ClientHomePage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-950/90 via-violet-950/60 to-transparent" />
                 <div className="relative z-10 h-full flex flex-col justify-center pl-5 pr-16">
-                  <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest mb-1">Next Session</span>
+                  <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest mb-1">
+                    Next Session
+                  </span>
                   <h3 className="font-heading font-bold text-lg text-white leading-tight">
                     {workoutPlan?.name ?? "Training Session"}
                   </h3>
                   <div className="flex items-center gap-3 mt-1.5 text-[11px] text-white/70">
-                    <span className="flex items-center gap-1"><Calendar size={11} /> {formatSessionDate(nextAppointment.date)}, {formatTime12h(nextAppointment.startTime)}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar size={11} />{" "}
+                      {formatSessionDate(nextAppointment.date)},{" "}
+                      {formatTime12h(nextAppointment.startTime)}
+                    </span>
                   </div>
                   <span className="text-violet-300 text-[11px] font-bold mt-2 flex items-center gap-1">
                     View Workout <ChevronRight size={13} />
@@ -504,24 +754,38 @@ export default function ClientHomePage() {
           {/* TODAY AT A GLANCE — white surface card */}
           <ScrollReveal delay={0.3}>
             <div className="bg-white rounded-3xl p-5 shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
-              <p className="text-accent-orange text-[10px] font-bold uppercase tracking-[0.2em] mb-3">Today at a Glance</p>
+              <p className="text-accent-orange text-[10px] font-bold uppercase tracking-[0.2em] mb-3">
+                Today at a Glance
+              </p>
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col items-center gap-1.5">
                   <Flame className="text-accent-orange" size={22} />
-                  <span className="text-2xl font-extrabold text-gray-900 font-heading"><Counter to={streak} /></span>
-                  <span className="text-gray-400 text-[9px] uppercase font-bold tracking-wider">Day Streak</span>
+                  <span className="text-2xl font-extrabold text-gray-900 font-heading">
+                    <Counter to={streak} />
+                  </span>
+                  <span className="text-gray-400 text-[9px] uppercase font-bold tracking-wider">
+                    Day Streak
+                  </span>
                 </div>
                 <div className="flex flex-col items-center gap-1.5">
                   <Zap className="text-gray-900" size={22} />
-                  <span className="text-2xl font-extrabold text-gray-900 font-heading"><Counter to={totalWorkoutsThisWeek} /></span>
-                  <span className="text-gray-400 text-[9px] uppercase font-bold tracking-wider">Workouts</span>
+                  <span className="text-2xl font-extrabold text-gray-900 font-heading">
+                    <Counter to={totalWorkoutsThisWeek} />
+                  </span>
+                  <span className="text-gray-400 text-[9px] uppercase font-bold tracking-wider">
+                    Workouts
+                  </span>
                 </div>
                 <div className="flex flex-col items-center gap-1.5">
                   <Trophy className="text-accent-orange" size={22} />
                   <span className="text-2xl font-extrabold text-gray-900 font-heading">
-                    <Counter to={clientBadges.filter((b) => b.unlockedAt).length} />
+                    <Counter
+                      to={clientBadges.filter((b) => b.unlockedAt).length}
+                    />
                   </span>
-                  <span className="text-gray-400 text-[9px] uppercase font-bold tracking-wider">Badges</span>
+                  <span className="text-gray-400 text-[9px] uppercase font-bold tracking-wider">
+                    Badges
+                  </span>
                 </div>
               </div>
             </div>
@@ -535,35 +799,58 @@ export default function ClientHomePage() {
                   Nutrition Target
                 </span>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-heading font-extrabold text-3xl text-gray-900">{nutritionPlan.total_calories ?? "—"}</span>
-                  <span className="text-xs text-accent-orange font-bold">kcal / day</span>
+                  <span className="font-heading font-extrabold text-3xl text-gray-900">
+                    {nutritionPlan.total_calories ?? "—"}
+                  </span>
+                  <span className="text-xs text-accent-orange font-bold">
+                    kcal / day
+                  </span>
                 </div>
 
                 {(() => {
-                  const protein = nutritionPlan.protein_g ?? 0
-                  const carbs = nutritionPlan.carbs_g ?? 0
-                  const fats = nutritionPlan.fats_g ?? 0
-                  const total = protein + carbs + fats || 1
+                  const protein = nutritionPlan.protein_g ?? 0;
+                  const carbs = nutritionPlan.carbs_g ?? 0;
+                  const fats = nutritionPlan.fats_g ?? 0;
+                  const total = protein + carbs + fats || 1;
                   return (
                     <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
-                      <div style={{ width: `${(protein / total) * 100}%` }} className="bg-accent-orange" />
-                      <div style={{ width: `${(carbs / total) * 100}%` }} className="bg-gray-900" />
-                      <div style={{ width: `${(fats / total) * 100}%` }} className="bg-gray-300" />
+                      <div
+                        style={{ width: `${(protein / total) * 100}%` }}
+                        className="bg-accent-orange"
+                      />
+                      <div
+                        style={{ width: `${(carbs / total) * 100}%` }}
+                        className="bg-gray-900"
+                      />
+                      <div
+                        style={{ width: `${(fats / total) * 100}%` }}
+                        className="bg-gray-300"
+                      />
                     </div>
-                  )
+                  );
                 })()}
 
                 <div className="flex gap-4 text-xs font-semibold">
                   <div>
-                    <span className="text-accent-orange font-bold">{nutritionPlan.protein_g ?? "—"}g</span>
-                    <span className="text-gray-400 ml-1 text-[10px]">protein</span>
+                    <span className="text-accent-orange font-bold">
+                      {nutritionPlan.protein_g ?? "—"}g
+                    </span>
+                    <span className="text-gray-400 ml-1 text-[10px]">
+                      protein
+                    </span>
                   </div>
                   <div>
-                    <span className="text-gray-900 font-bold">{nutritionPlan.carbs_g ?? "—"}g</span>
-                    <span className="text-gray-400 ml-1 text-[10px]">carbs</span>
+                    <span className="text-gray-900 font-bold">
+                      {nutritionPlan.carbs_g ?? "—"}g
+                    </span>
+                    <span className="text-gray-400 ml-1 text-[10px]">
+                      carbs
+                    </span>
                   </div>
                   <div>
-                    <span className="text-gray-500 font-bold">{nutritionPlan.fats_g ?? "—"}g</span>
+                    <span className="text-gray-500 font-bold">
+                      {nutritionPlan.fats_g ?? "—"}g
+                    </span>
                     <span className="text-gray-400 ml-1 text-[10px]">fats</span>
                   </div>
                 </div>
@@ -575,13 +862,16 @@ export default function ClientHomePage() {
           {!isLoading && (
             <ScrollReveal delay={0.45}>
               <GlassCard className="p-5">
-                <BadgesGrid unlockedBadges={clientBadges} title="Your Achievements" showAll={true} />
+                <BadgesGrid
+                  unlockedBadges={clientBadges}
+                  title="Your Achievements"
+                  showAll={true}
+                />
               </GlassCard>
             </ScrollReveal>
           )}
-
         </div>
       </div>
     </div>
-  )
+  );
 }

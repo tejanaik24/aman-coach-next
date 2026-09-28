@@ -100,6 +100,35 @@ function initAOS() {
   document.querySelectorAll("[data-aos]").forEach((el) => observer.observe(el));
 }
 
+function initServicesFilter() {
+  const filterPills = document.querySelectorAll(
+    ".services-filter-bar .filter-pill",
+  );
+  if (!filterPills.length) return;
+
+  filterPills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      filterPills.forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+      const filter = pill.dataset.filter;
+      const services = document.querySelectorAll(".service-detail");
+      services.forEach((card) => {
+        const cat = card.dataset.category || "";
+        if (filter === "all" || cat === filter) {
+          card.style.display = "";
+        } else {
+          card.style.display = "none";
+        }
+      });
+      if (typeof window !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate(10);
+        } catch {}
+      }
+    });
+  });
+}
+
 // Global Page Load Transition
 document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.createElement("div");
@@ -114,6 +143,11 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => overlay.remove(), 400);
     }, 150);
   });
+
+  initServicesFilter();
 });
 
-document.addEventListener("partials-loaded", initApp);
+document.addEventListener("partials-loaded", () => {
+  initApp();
+  initServicesFilter();
+});
