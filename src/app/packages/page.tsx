@@ -18,8 +18,6 @@ const CATEGORIES = [
 interface PackageItem {
   name: string;
   category: string;
-  days: string;
-  amount: number;
   image: string;
   tag?: string;
   popular?: boolean;
@@ -31,8 +29,6 @@ const PACKAGES: PackageItem[] = [
   {
     name: "On Call Consultation — One time on call consult",
     category: "Online Coaching",
-    days: "1 Day",
-    amount: 1500,
     cta: "Book Now",
     href: "/book",
     image: "/images/aman-on-call-consultation.webp",
@@ -40,17 +36,13 @@ const PACKAGES: PackageItem[] = [
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (1 Year)",
     category: "Online Coaching",
-    days: "365 Days",
-    amount: 50000,
-    image: "/images/aman-online-coaching-1yr.webp",
+    image: "/images/aman-online-coaching-24wk.webp",
     popular: true,
     tag: "Best Value",
   },
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (24 Weeks)",
     category: "Online Coaching",
-    days: "168 Days",
-    amount: 28000,
     image: "/images/aman-online-coaching-24wk.webp",
     popular: true,
     tag: "Most Popular",
@@ -58,96 +50,70 @@ const PACKAGES: PackageItem[] = [
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (12 Weeks)",
     category: "Online Coaching",
-    days: "84 Days",
-    amount: 15000,
-    image: "/images/aman-online-coaching-12wk.webp",
+    image: "/images/aman-online-coaching-24wk.webp",
   },
   {
     name: "Bodybuilding Contest Prep (24 Weeks)",
     category: "Contest Prep",
-    days: "168 Days",
-    amount: 45000,
-    image: "/images/aman-contest-prep.webp",
+    image: "/images/aman-contest-prep-2.webp",
     tag: "Championship Tier",
   },
   {
     name: "Bodybuilding Contest Prep (12 Weeks)",
     category: "Contest Prep",
-    days: "84 Days",
-    amount: 25000,
-    image: "/images/aman-contest-prep-12wk-detail.webp",
+    image: "/images/aman-contest-prep-2.webp",
   },
   {
     name: "Only Nutrition / Diet Consultancy (24 Weeks)",
     category: "Nutrition Only",
-    days: "168 Days",
-    amount: 17999,
     image: "/images/aman-nutrition-coaching.webp",
     tag: "Full Lifestyle Shift",
   },
   {
     name: "Only Nutrition / Diet Consultancy (12 Weeks)",
     category: "Nutrition Only",
-    days: "84 Days",
-    amount: 9999,
-    image: "/images/aman-nutrition-coaching-12wk.webp",
+    image: "/images/aman-nutrition-coaching.webp",
   },
   {
     name: "Child Nutrition (1 Month Consult)",
     category: "Nutrition Only",
-    days: "30 Days",
-    amount: 6000,
     image: "/images/aman-child-nutrition.webp",
   },
   {
     name: "Child Nutrition (One Time Consult)",
     category: "Nutrition Only",
-    days: "3 Days",
-    amount: 2000,
-    image: "/images/aman-child-nutrition-onetime.webp",
+    image: "/images/aman-child-nutrition.webp",
   },
   {
     name: "POSTPARTUM Care — Training & Nutrition (24 Weeks)",
     category: "Postpartum & Antenatal",
-    days: "168 Days",
-    amount: 29000,
     image: "/images/aman-postpartum-24wk.webp",
     tag: "Full Recovery",
   },
   {
     name: "POSTPARTUM Care — Training & Nutrition (12 Weeks)",
     category: "Postpartum & Antenatal",
-    days: "84 Days",
-    amount: 16000,
-    image: "/images/aman-postpartum-12wk.webp",
+    image: "/images/aman-postpartum-24wk.webp",
   },
   {
     name: "Online Antenatal — Postnatal Complete Care (2nd - 4th Trimester)",
     category: "Postpartum & Antenatal",
-    days: "280 Days",
-    amount: 35000,
     image: "/images/aman-antenatal-detail.webp",
   },
   {
     name: "Bodybuilding Posing Coaching (8 Virtual Sessions)",
     category: "Posing & Camp",
-    days: "60 Days",
-    amount: 9000,
     image: "/images/aman-posing-coaching.webp",
     tag: "Stage Ready",
   },
   {
     name: "Bodybuilding Posing Coaching (4 Virtual Sessions)",
     category: "Posing & Camp",
-    days: "30 Days",
-    amount: 5000,
-    image: "/images/aman-posing-coaching-4.webp",
+    image: "/images/aman-posing-coaching.webp",
   },
   {
     name: 'Offline "Exercise Training Execution Camp" (3-5 Days)',
     category: "Posing & Camp",
-    days: "30 Days",
-    amount: 12000,
     image: "/images/aman-training-camp.webp",
     tag: "Hands-on Intense",
   },
@@ -223,13 +189,7 @@ export default function PackagesPage() {
                     <p className="text-white text-sm font-bold font-heading leading-tight truncate sm:whitespace-normal">
                       {pkg.name}
                     </p>
-                    <p className="text-zinc-400 text-xs mt-1.5 flex items-center gap-2">
-                      <span>Duration: {pkg.days}</span>
-                      <span className="text-zinc-600">•</span>
-                      <span className="text-[#FFB800] font-bold font-mono text-sm">
-                        ₹{pkg.amount.toLocaleString("en-IN")}
-                      </span>
-                    </p>
+                    <p className="text-zinc-400 text-xs mt-1.5">{pkg.category}</p>
                   </div>
                 </div>
 

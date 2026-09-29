@@ -133,11 +133,15 @@ function initServicesFilter() {
 
 // Global Page Load Transition
 document.addEventListener("DOMContentLoaded", () => {
-  const overlay = document.createElement("div");
-  overlay.className = "page-transition-overlay active";
-  overlay.innerHTML =
-    '<div class="page-loader-inner"><img src="/images/aman/logo-large.webp" alt="Aman Khurana" class="page-loader-logo"></div>';
-  document.body.appendChild(overlay);
+  // Loader is inline in each page so the logo paints before the hero photo.
+  let overlay = document.getElementById("page-loader");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "page-transition-overlay active";
+    overlay.innerHTML =
+      '<div class="page-loader-inner"><img src="/images/aman/logo-large.webp" alt="Aman Khurana" class="page-loader-logo"></div>';
+    document.body.appendChild(overlay);
+  }
 
   window.addEventListener("load", () => {
     setTimeout(() => {
