@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { withRetry } from "@/lib/db-retry"
 import { randomBytes } from "crypto"
 import { queueWebhook } from "@/lib/webhook-queue"
+import { phoneEmail } from "@/lib/phone-login"
 
 function calculateFirstDueDate(feeDueDay: number, startDate: string): string {
   const d = new Date(startDate)
@@ -37,7 +38,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, email, phone, goal, packageName, endDate, clientType, feeAmount, feeDueDay, startDate, notes } = body
+    const { name, phone, goal, packageName, endDate, clientType, feeAmount, feeCurrency, feeDueDay, startDate, notes } = body
+
+    // Email is optional: clients sign in with their mobile number, which maps to a placeholder email.
+    const phoneDigits = typeof phone === "string" ? phone.replace(/\D/g, "") : ""
+    const rawEmail = typeof body.email === "string" ? body.email.trim() : ""
+    const email = rawEmail || (phoneDigits.length >= 10 ? phoneEmail(phoneDigits) : "")
 
     if (!name || !email || !phone || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -45,6 +51,11 @@ export async function POST(request: Request) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
     }
+
+    const validCurrencies = ["INR", "USD", "EUR", "GBP", "AED", "CAD"]
+    const selectedCurrency = (typeof feeCurrency === "string" && validCurrencies.includes(feeCurrency.toUpperCase()))
+      ? feeCurrency.toUpperCase()
+      : "INR"
 
     const parsedFeeAmount = Number(feeAmount)
     const parsedFeeDueDay = Number(feeDueDay)
@@ -83,7 +94,7 @@ export async function POST(request: Request) {
         authError.code === "email_exists" ||
         (authError as { status?: number }).status === 422
       ) {
-        return NextResponse.json({ error: "This email is already registered" }, { status: 409 })
+        return NextResponse.json({ error: rawEmail ? "This email is already registered" : "A client with this mobile number already exists" }, { status: 409 })
       }
       return NextResponse.json({ error: authError.message }, { status: 400 })
     }
@@ -111,7 +122,7 @@ export async function POST(request: Request) {
           end_date: endDate ?? null,
           client_type: clientType,
           fee_amount: feeAmount,
-          fee_currency: "INR",
+          fee_currency: selectedCurrency,
           fee_due_day: feeDueDay,
           start_date: startDate,
           status: "active",
@@ -131,7 +142,7 @@ export async function POST(request: Request) {
       supabase.from("fees").insert({
         client_id: clientData.id,
         amount: parsedFeeAmount,
-        currency: "INR",
+        currency: selectedCurrency,
         due_date: dueDate,
         status: "pending",
       })

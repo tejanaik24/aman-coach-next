@@ -9,16 +9,18 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
+import { useLang, type TKey } from "@/lib/i18n";
 
 const tabs = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/workout", label: "Workout", icon: Dumbbell },
-  { href: "/diet", label: "Diet", icon: Utensils },
-  { href: "/progress", label: "Progress", icon: TrendingUp },
-  { href: "/checkin", label: "Check-in", icon: MoreHorizontal },
+  { href: "/home", label: "navHome" as TKey, icon: Home },
+  { href: "/workout", label: "navWorkout" as TKey, icon: Dumbbell },
+  { href: "/diet", label: "navDiet" as TKey, icon: Utensils },
+  { href: "/progress", label: "navProgress" as TKey, icon: TrendingUp },
+  { href: "/checkin", label: "navCheckin" as TKey, icon: MoreHorizontal },
 ];
 
 export default function ClientBottomNav() {
+  const { t } = useLang();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -56,8 +58,8 @@ export default function ClientBottomNav() {
               }`}
             >
               <Icon className="w-5 h-5 transition-transform duration-200" />
-              <span className="text-[9px] tracking-tight font-medium">
-                {label}
+              <span className="text-xs tracking-tight font-medium">
+                {t(label)}
               </span>
             </span>
           </button>

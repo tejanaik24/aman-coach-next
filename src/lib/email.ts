@@ -1,10 +1,17 @@
 import { Resend } from "resend"
+import { isPlaceholderEmail } from "@/lib/phone-login"
 
-const FROM = "AK Fitness <noreply@amankhuranafitness.com>"
+const FROM = "Aman Khurana Fitness <noreply@amankhuranafitness.com>"
 
 function getResend() {
   if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured")
   return new Resend(process.env.RESEND_API_KEY)
+}
+
+// Clients added with only a mobile number have a placeholder email; never send mail to it.
+async function sendMail(msg: { from: string; to: string; subject: string; html: string }) {
+  if (isPlaceholderEmail(msg.to)) return { skipped: true }
+  return getResend().emails.send(msg)
 }
 
 function layout(body: string) {
@@ -14,13 +21,13 @@ function layout(body: string) {
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 20px">
 <table width="480" cellpadding="0" cellspacing="0" style="max-width:100%">
 <tr><td style="padding:0 0 24px;text-align:center">
-<h1 style="font-family:Georgia,serif;color:#fff;font-size:28px;letter-spacing:4px;margin:0">AK FITNESS</h1>
+<h1 style="font-family:Georgia,serif;color:#fff;font-size:28px;letter-spacing:4px;margin:0">AMAN KHURANA FITNESS</h1>
 </td></tr>
 <tr><td style="background:#111;border-radius:16px;padding:32px">
 ${body}
 </td></tr>
 <tr><td style="padding:24px 0 0;text-align:center">
-<p style="color:#52525b;font-size:11px;margin:0">AK Fitness — Transformation starts here</p>
+<p style="color:#52525b;font-size:11px;margin:0">Aman Khurana Fitness — Transformation starts here</p>
 </td></tr>
 </table>
 </td></tr></table></body></html>`
@@ -34,7 +41,7 @@ function ctaButton(url: string, label: string) {
 
 export async function sendWelcomeEmail(to: string, name: string, loginUrl: string) {
   const html = layout(`
-    <h2 style="color:#fff;font-size:20px;margin:0 0 12px">Welcome to AK Fitness, ${name}! 💪</h2>
+    <h2 style="color:#fff;font-size:20px;margin:0 0 12px">Welcome to Aman Khurana Fitness, ${name}! 💪</h2>
     <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 16px">
       Your transformation journey starts now. Your coach will assign a personalized plan shortly.
     </p>
@@ -47,7 +54,7 @@ export async function sendWelcomeEmail(to: string, name: string, loginUrl: strin
     </ul>
     ${ctaButton(loginUrl, "Login to Your Dashboard")}
   `)
-  return getResend().emails.send({ from: FROM, to, subject: "Welcome to AK Fitness 💪", html })
+  return sendMail({ from: FROM, to, subject: "Welcome to Aman Khurana Fitness 💪", html })
 }
 
 export async function sendInvoiceEmail(to: string, name: string, invoiceUrl: string, amount: number, month: string) {
@@ -65,7 +72,7 @@ export async function sendInvoiceEmail(to: string, name: string, invoiceUrl: str
     </table>
     ${ctaButton(invoiceUrl, "Download Invoice")}
   `)
-  return getResend().emails.send({ from: FROM, to, subject: `Your AK Fitness Invoice — ${month}`, html })
+  return sendMail({ from: FROM, to, subject: `Your Aman Khurana Fitness Invoice — ${month}`, html })
 }
 
 export async function sendPaymentReminderEmail(to: string, name: string, amount: number, dueDate: string, dayNumber: number) {
@@ -86,7 +93,7 @@ export async function sendPaymentReminderEmail(to: string, name: string, amount:
     </ul>
     ${ctaButton("https://aman-coach-next.vercel.app/client/payments", "Make Payment")}
   `)
-  return getResend().emails.send({ from: FROM, to, subject: "Payment Reminder — AK Fitness", html })
+  return sendMail({ from: FROM, to, subject: "Payment Reminder — Aman Khurana Fitness", html })
 }
 
 export async function sendEnquiryAlertEmail(name: string, phone: string, email: string, interest: string) {
@@ -102,7 +109,7 @@ export async function sendEnquiryAlertEmail(name: string, phone: string, email: 
     </table>
     ${ctaButton("https://aman-coach-next.vercel.app/submissions", "Review in Coach Portal")}
   `)
-  return getResend().emails.send({ from: FROM, to, subject: `New Enquiry — ${name}`, html })
+  return sendMail({ from: FROM, to, subject: `New Enquiry — ${name}`, html })
 }
 
 export async function sendPlanExpiryEmail(to: string, name: string, expiryDate: string, daysLeft: number) {
@@ -123,5 +130,5 @@ export async function sendPlanExpiryEmail(to: string, name: string, expiryDate: 
     </p>
     ${ctaButton("https://aman-coach-next.vercel.app/client/payments", "Renew Now")}
   `)
-  return getResend().emails.send({ from: FROM, to, subject: `Your plan ${label} — AK Fitness`, html })
+  return sendMail({ from: FROM, to, subject: `Your plan ${label} — Aman Khurana Fitness`, html })
 }

@@ -2,7 +2,7 @@ import { updateSession } from "@/lib/supabase/middleware"
 import { NextResponse, type NextRequest } from "next/server"
 
 const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule", "/submissions"]
-const CLIENT_PATHS = ["/home", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding"]
+const CLIENT_PATHS = ["/home", "/more", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding"]
 
 async function getRole(supabase: ReturnType<typeof import("@supabase/ssr").createServerClient>, userId: string): Promise<string> {
   const { data } = await supabase

@@ -30,6 +30,7 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
 }
 
 body {
@@ -106,6 +107,19 @@ img {
   }
   .section-header {
     margin-bottom: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 1rem;
+  }
+  .nav-container {
+    gap: 0.75rem;
+  }
+  .btn-mobile-header {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.65rem;
   }
 }
 
@@ -490,19 +504,24 @@ img {
   .nav-menu {
     position: fixed;
     top: 0;
-    right: -100%;
+    right: 0;
     width: 100%;
     height: 100vh;
     background: var(--bg-primary);
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: right 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: translateX(100%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.4s ease;
     z-index: 999;
   }
 
   .nav-menu.is-open {
-    right: 0;
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .nav-list {
@@ -1816,11 +1835,14 @@ img {
 .transformations-hero {
   text-align: center;
   padding: 12rem 0 5rem;
+  overflow: hidden;
 }
 
 .transformations-hero h1 {
-  font-size: clamp(3.5rem, 9vw, 6rem);
+  font-size: clamp(2.4rem, 7vw, 6rem);
   margin-bottom: 1.5rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .transformations-hero-sub {
@@ -1829,6 +1851,24 @@ img {
   max-width: 560px;
   margin: 0 auto;
   line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .transformations-hero {
+    padding: 7.5rem 0 2rem;
+  }
+  .transformations-hero h1 {
+    font-size: clamp(1.65rem, 6.5vw, 2.4rem);
+    line-height: 1.15;
+    margin-bottom: 0.85rem;
+    padding: 0 0.5rem;
+    word-break: normal;
+  }
+  .transformations-hero-sub {
+    font-size: 0.95rem;
+    padding: 0 0.75rem;
+    line-height: 1.5;
+  }
 }
 
 /* ===== FILTER BAR ===== */
@@ -2007,13 +2047,14 @@ img {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .transform-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 
   .transformations-section {
-    padding: 0 0 4rem;
+    padding: 0 0 3rem;
   }
 }
 
@@ -2621,7 +2662,7 @@ main {
 .about-story-placeholder::before,
 .transform-before::before,
 .transform-after::before {
-  content: "AK FITNESS";
+  content: "AMAN KHURANA FITNESS";
   position: absolute;
   top: 10px;
   right: 10px;
@@ -2863,7 +2904,7 @@ button {
   padding: 6rem 0 2rem;
   position: relative;
   overflow: hidden;
-  background: url("../images/aman-hero-1.webp") center center / contain
+  background: url("../images/aman/aman-hero-01.webp") center center / contain
     no-repeat;
   background-color: #000;
 }
@@ -3188,7 +3229,7 @@ button {
 .hover-slider-item {
   font-family: var(--font-heading);
   font-size: clamp(2rem, 4vw, 3rem);
-  color: var(--gray);
+  color: #fff;
   letter-spacing: 0.06em;
   line-height: 1.1;
   cursor: pointer;
@@ -3207,7 +3248,7 @@ button {
 
 .hover-char-out {
   display: inline-block;
-  opacity: 0.2;
+  opacity: 1;
 }
 
 .hover-char-in {
@@ -3620,3 +3661,20 @@ button {
   border-color: #ffb800;
   box-shadow: 0 0 20px rgba(255, 184, 0, 0.35);
 }
+
+
+/* Real client photos under service descriptions (unnamed) */
+.athlete-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+}
+.athlete-strip img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 184, 0, 0.25);
+}
+.service-detail-content .athlete-strip { grid-column: 1 / -1; }

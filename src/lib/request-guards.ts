@@ -30,3 +30,12 @@ export const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/we
 export function isAllowedImage(file: File): boolean {
   return file.size > 0 && file.size <= MAX_IMAGE_UPLOAD_BYTES && ALLOWED_IMAGE_TYPES.has(file.type)
 }
+
+// Serverless request bodies are capped (~4.5 MB), so PDFs stay under that; photos are shrunk in the browser first.
+export const MAX_PDF_UPLOAD_BYTES = 4 * 1024 * 1024
+
+export function isAllowedUpload(file: File): boolean {
+  if (file.size <= 0) return false
+  if (file.type === "application/pdf") return file.size <= MAX_PDF_UPLOAD_BYTES
+  return isAllowedImage(file)
+}

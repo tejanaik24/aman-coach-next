@@ -43,14 +43,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to save enquiry" }, { status: 500 })
     }
 
-    sendEnquiryAlertEmail(name, `${countryCode}${phone}`, email, interest)
-      .catch((e) => console.error("Enquiry email alert error:", e))
-
     const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
+    const tasks: Promise<unknown>[] = [
+      sendEnquiryAlertEmail(name, `${countryCode}${phone}`, email, interest).catch((e) => {
+        console.error("Enquiry email alert error:", e)
+        return { success: false, error: e }
+      }),
+    ]
+
     if (coachPhone) {
-      sendEnquiryAlert(coachPhone, name, `${countryCode}${phone}`, interest)
-        .catch((e) => console.error("Enquiry WhatsApp alert error:", e))
+      tasks.push(
+        sendEnquiryAlert(coachPhone, name, `${countryCode}${phone}`, interest).catch((e) => {
+          console.error("Enquiry WhatsApp alert error:", e)
+          return { success: false, error: e }
+        })
+      )
     }
+
+    const results = await Promise.allSettled(tasks)
+    results.forEach((res, idx) => {
+      if (res.status === "rejected") {
+        console.error(`Enquiry notification task ${idx} failed:`, res.reason)
+      }
+    })
 
     return NextResponse.json({ success: true, message: "Enquiry submitted" })
   } catch (err: unknown) {

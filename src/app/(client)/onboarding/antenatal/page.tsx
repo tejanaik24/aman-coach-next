@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { queueDraftUpload, hydrateDraft, clearServerDraft } from "@/lib/draft-sync"
 import { useRouter } from "next/navigation"
 import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
@@ -30,13 +31,13 @@ export default function AntenatalOnboardingPage() {
     q3_phone: "",
     q4_address: "",
     q5_alt_phone: "",
-    q6_dob: "1996-08-15",
-    q6_age: "28",
-    q7_height: "165",
-    q8_gestational_weeks: "18",
-    q9_lmp: "2026-03-10",
-    q10_edd: "2026-12-15",
-    q11_gravidity: "1",
+    q6_dob: "",
+    q6_age: "",
+    q7_height: "",
+    q8_gestational_weeks: "",
+    q9_lmp: "",
+    q10_edd: "",
+    q11_gravidity: "",
     q12_pregnancy_type: "Singleton",
     q13_injuries_pain: "",
     q14_health_issues: "",
@@ -55,11 +56,11 @@ export default function AntenatalOnboardingPage() {
     q24_work_schedule: "",
     q25_exercise_history: "",
     q26_preconception_routine: "",
-    q27_steps_daily: "6000",
+    q27_steps_daily: "",
     q28_cardio_regular: "",
     q29_workout_timings: "",
-    q30_wake_time: "07:00",
-    q30_sleep_time: "22:00",
+    q30_wake_time: "",
+    q30_sleep_time: "",
     q31_had_coach: "",
     q32_supplements: "",
     q32_supplements_pics: [],
@@ -72,7 +73,7 @@ export default function AntenatalOnboardingPage() {
     q35_diet_lunch: "",
     q35_diet_eve: "",
     q35_diet_dinner: "",
-    q36_water_intake: "3.0",
+    q36_water_intake: "",
     q37_food_love: "",
     q38_food_hate: "",
     q39_nausea_foods: "",
@@ -84,36 +85,36 @@ export default function AntenatalOnboardingPage() {
     q45_diet_preference: "Vegetarian",
     q46_nonveg_fast_days: "",
     q47_lactose_intolerant: "",
-    q48_meal_bf: "08:30",
-    q48_meal_midday: "11:30",
-    q48_meal_lunch: "14:00",
-    q48_meal_eve: "17:30",
-    q48_meal_dinner: "20:30",
+    q48_meal_bf: "",
+    q48_meal_midday: "",
+    q48_meal_lunch: "",
+    q48_meal_eve: "",
+    q48_meal_dinner: "",
     q49_overseas_links: "",
-    q50_bp_morning: "115/75",
-    q50_bp_afternoon: "118/76",
-    q50_bp_night: "112/72",
+    q50_bp_morning: "",
+    q50_bp_afternoon: "",
+    q50_bp_night: "",
     q51_glucose_fasting: "85 mg/dL",
     q51_glucose_bf: "",
     q51_glucose_lunch: "",
     q51_glucose_eve: "",
     q51_glucose_dinner: "",
     q52_medical_reports: [],
-    q53_resting_bpm: "72",
+    q53_resting_bpm: "",
     q54_front_pic: [],
     q55_back_pic: [],
     q56_left_pic: [],
     q57_right_pic: [],
     q58_preconception_pics: [],
-    q59_weight: "65.0",
-    q60_abdomen: "84",
-    q61_waist_pelvic: "88",
-    q62_hips: "96",
-    q63_preconception_weight: "58.0",
+    q59_weight: "",
+    q60_abdomen: "",
+    q61_waist_pelvic: "",
+    q62_hips: "",
+    q63_preconception_weight: "",
     q64_preconception_weight_duration: "",
-    q65_heaviest_weight: "68.0",
-    q66_weight_start_trimester1: "59.0",
-    q67_weight_end_trimester1: "62.0",
+    q65_heaviest_weight: "",
+    q66_weight_start_trimester1: "",
+    q67_weight_end_trimester1: "",
     q68_equipment_photos: [],
     q69_additional_notes: ""
   })
@@ -129,7 +130,7 @@ export default function AntenatalOnboardingPage() {
     setForm(prev => {
       const updated = { ...prev, [key]: val }
       try {
-        if (user?.id) localStorage.setItem(`draft_antenatal_joining_${user.id}`, JSON.stringify(updated))
+        if (user?.id) { localStorage.setItem(`draft_antenatal_joining_${user.id}`, JSON.stringify(updated)); queueDraftUpload(user.id, "antenatal_joining", updated) }
       } catch {}
       return updated
     })
@@ -140,6 +141,11 @@ export default function AntenatalOnboardingPage() {
     getClientProfile(user.id).then(c => {
       if (c) setClientObj({ id: c.id })
     }).catch(() => {})
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
+    hydrateDraft(user.id, "antenatal_joining").then((found) => { if (found) setShowResumeBanner(true) })
   }, [user?.id])
 
   useEffect(() => {
@@ -181,7 +187,7 @@ export default function AntenatalOnboardingPage() {
         })
       })
       if (!res.ok) throw new Error("Failed to submit")
-      try { localStorage.removeItem(`draft_antenatal_joining_${user.id}`) } catch {}
+      try { localStorage.removeItem(`draft_antenatal_joining_${user.id}`); clearServerDraft(user.id, "antenatal_joining") } catch {}
       setDone(true)
       toast.success("Antenatal questionnaire submitted!")
     } catch {
@@ -221,7 +227,7 @@ export default function AntenatalOnboardingPage() {
             setShowResumeBanner(false)
           }}
           onReset={() => {
-            try { localStorage.removeItem(`draft_antenatal_joining_${user?.id}`) } catch {}
+            try { localStorage.removeItem(`draft_antenatal_joining_${user?.id}`); clearServerDraft(user?.id, "antenatal_joining") } catch {}
             setShowResumeBanner(false)
           }}
         />

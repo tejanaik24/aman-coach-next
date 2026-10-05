@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { queueDraftUpload, hydrateDraft, clearServerDraft } from "@/lib/draft-sync"
 import { useRouter } from "next/navigation"
 import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
@@ -30,18 +31,18 @@ export default function StandardOnboardingPage() {
     q3_address: "",
     q4_phone: "",
     q5_alt_phone: "",
-    q6_dob: "1996-08-15",
-    q6_age: "28",
-    q7_height: "175",
+    q6_dob: "",
+    q6_age: "",
+    q7_height: "",
     q8_goal: "",
-    q9_wake_time: "06:30",
-    q10_sleep_time: "22:30",
+    q9_wake_time: "",
+    q10_sleep_time: "",
     q11_hired_coach: "",
     q12_home_equipment: "",
     q13_work_schedule: "",
     q14_exercise_history: "",
     q15_workout_routine: "",
-    q16_steps_daily: "8000",
+    q16_steps_daily: "",
     q17_cardio_regular: "",
     q18_workout_timings: "",
     q19_injuries_pain: "",
@@ -58,12 +59,12 @@ export default function StandardOnboardingPage() {
     q27_diet_preference: "",
     q28_nonveg_fast_days: "",
     q29_lactose_intolerant: "",
-    q30_meal_bf: "08:00",
-    q30_meal_midday: "11:30",
-    q30_meal_lunch: "14:00",
-    q30_meal_eve: "17:30",
-    q30_meal_dinner: "21:00",
-    q31_max_meals: "4",
+    q30_meal_bf: "",
+    q30_meal_midday: "",
+    q30_meal_lunch: "",
+    q30_meal_eve: "",
+    q30_meal_dinner: "",
+    q31_max_meals: "",
     q32_preworkout_meal: "",
     q33_supplements: "",
     q33_supplements_pics: [],
@@ -76,7 +77,7 @@ export default function StandardOnboardingPage() {
     q36_diet_lunch: "",
     q36_diet_eve: "",
     q36_diet_dinner: "",
-    q37_water_intake: "3.5",
+    q37_water_intake: "",
     q38_food_love: "",
     q39_food_hate: "",
     q40_food_want: "",
@@ -85,7 +86,7 @@ export default function StandardOnboardingPage() {
     q43_chocolates: "",
     q44_cheat_meal: "",
     q45_overseas_links: "",
-    q46_bp_morning: "120/80",
+    q46_bp_morning: "",
     q47_blood_tests: [],
     q48_anything_else: "",
     q49_front_pic: [],
@@ -94,13 +95,13 @@ export default function StandardOnboardingPage() {
     q52_right_pic: [],
     q53_fav_pose: [],
     q54_mandatory_pose: [],
-    q55_weight: "74.5",
-    q56_neck: "38",
-    q57_abdomen: "85",
-    q58_hips: "95",
-    q59_arm: "35",
-    q60_thigh: "58",
-    q61_calf: "38",
+    q55_weight: "",
+    q56_neck: "",
+    q57_abdomen: "",
+    q58_hips: "",
+    q59_arm: "",
+    q60_thigh: "",
+    q61_calf: "",
     q62_lowest_weight: "",
     q62_lowest_when: "",
     q63_heaviest_weight: "",
@@ -120,7 +121,7 @@ export default function StandardOnboardingPage() {
     setForm(prev => {
       const updated = { ...prev, [key]: val }
       try {
-        if (user?.id) localStorage.setItem(`draft_standard_joining_${user.id}`, JSON.stringify(updated))
+        if (user?.id) { localStorage.setItem(`draft_standard_joining_${user.id}`, JSON.stringify(updated)); queueDraftUpload(user.id, "standard_joining", updated) }
       } catch {}
       return updated
     })
@@ -137,6 +138,11 @@ export default function StandardOnboardingPage() {
       }
     }).catch(() => {})
   }, [user?.id, router])
+
+  useEffect(() => {
+    if (!user?.id) return
+    hydrateDraft(user.id, "standard_joining").then((found) => { if (found) setShowResumeBanner(true) })
+  }, [user?.id])
 
   useEffect(() => {
     if (!user?.id) return
@@ -177,7 +183,7 @@ export default function StandardOnboardingPage() {
         })
       })
       if (!res.ok) throw new Error("Failed to submit")
-      try { localStorage.removeItem(`draft_standard_joining_${user.id}`) } catch {}
+      try { localStorage.removeItem(`draft_standard_joining_${user.id}`); clearServerDraft(user.id, "standard_joining") } catch {}
       setDone(true)
       toast.success("Standard joining questionnaire submitted!")
     } catch {
@@ -217,7 +223,7 @@ export default function StandardOnboardingPage() {
             setShowResumeBanner(false)
           }}
           onReset={() => {
-            try { localStorage.removeItem(`draft_standard_joining_${user?.id}`) } catch {}
+            try { localStorage.removeItem(`draft_standard_joining_${user?.id}`); clearServerDraft(user?.id, "standard_joining") } catch {}
             setShowResumeBanner(false)
           }}
         />

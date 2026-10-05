@@ -252,7 +252,7 @@ export default function CoachSubmissionsPage() {
                       )
                     }
 
-                    if (Array.isArray(value) && value.some(v => typeof v === "string" && (v.startsWith("data:") || isPhotoPathValue(v)))) {
+                    if (Array.isArray(value) && value.some(v => typeof v === "string" && (v.startsWith("data:") || isPhotoPathValue(v) || /^[^/]+\/[^/]+\.pdf$/i.test(v)))) {
                       return (
                         <div key={key} className="space-y-2">
                           <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{key.replace(/_/g, " ")} ({value.length} files)</p>
@@ -264,9 +264,18 @@ export default function CoachSubmissionsPage() {
                               ) : isPhotoPathValue(f) ? (
                                 <SignedImage key={i} path={f} alt={`File ${i}`} className="size-24 rounded-lg object-cover border border-[#181310]/[0.08]" />
                               ) : (
-                                <div key={i} className="p-3 rounded-lg border border-[#181310]/[0.08] bg-[#181310]/5 text-xs text-accent-orange flex items-center gap-2">
-                                  <FileText className="size-4" /> Document #{i + 1}
-                                </div>
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/checkin/photo-url?path=${encodeURIComponent(f)}`)
+                                    const d = await res.json().catch(() => ({}))
+                                    if (d.url) window.open(d.url, "_blank", "noopener")
+                                  }}
+                                  className="p-3 rounded-lg border border-[#181310]/[0.08] bg-[#181310]/5 text-xs text-accent-orange flex items-center gap-2 cursor-pointer"
+                                >
+                                  <FileText className="size-4" /> Open document #{i + 1}
+                                </button>
                               )
                             ))}
                           </div>

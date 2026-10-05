@@ -13,17 +13,25 @@ interface DayWithExercises extends WorkoutDay {
 }
 
 const inputClass =
-  "w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input h-14 px-4 text-charcoal-deep outline-none transition-all placeholder:text-charcoal-muted/50 text-sm font-semibold shadow-inner"
+  "w-full bg-[#1A1A1A] focus:bg-[#222222] border border-[#333333] focus:border-[#FFB800] rounded-xl h-14 px-4 text-white outline-none transition-all placeholder:text-zinc-500 text-sm font-semibold shadow-inner"
 
 const smallInputClass =
-  "w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input h-11 px-3 text-charcoal-deep outline-none transition-all placeholder:text-charcoal-muted/50 text-xs font-semibold shadow-inner"
+  "w-full bg-[#1A1A1A] focus:bg-[#222222] border border-[#333333] focus:border-[#FFB800] rounded-xl h-11 px-3 text-white outline-none transition-all placeholder:text-zinc-500 text-xs font-semibold shadow-inner"
 
 function Skeleton() {
   return (
-    <div className="px-5 pt-2 space-y-4 bg-cream min-h-full">
-      <div className="h-6 w-40 bg-white rounded-card-mobile animate-pulse" />
-      <div className="flex gap-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-9 w-16 bg-white rounded-full animate-pulse" />)}</div>
-      <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-20 bg-white rounded-card-mobile shadow-bento animate-pulse" />)}</div>
+    <div className="px-5 pt-4 space-y-4 bg-bg-primary min-h-screen">
+      <div className="h-6 w-40 bg-zinc-800 rounded-lg animate-pulse" />
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-9 w-16 bg-zinc-900 border border-zinc-800 rounded-full animate-pulse" />
+        ))}
+      </div>
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-20 bg-zinc-900 border border-zinc-800 rounded-2xl animate-pulse" />
+        ))}
+      </div>
     </div>
   )
 }
@@ -56,12 +64,70 @@ export default function WorkoutPlanBuilderPage() {
 
   const fetchData = useCallback(async () => {
     try {
+      if (id === "demo" || id.startsWith("demo")) {
+        setPlan({
+          id: "demo",
+          client_id: "demo-client",
+          coach_id: "coach-demo",
+          name: "12-Week Lean Hypertrophy Plan",
+          weeks: 12,
+          is_active: true,
+          is_template: false,
+          created_at: new Date().toISOString(),
+        })
+        setClientName("Rahul Sharma")
+        setDays([
+          {
+            id: "day-1",
+            plan_id: "demo",
+            day_number: 1,
+            day_name: "Push & Delts",
+            focus: "Chest, Shoulders & Triceps",
+            exercises: [
+              {
+                id: "ex-1",
+                day_id: "day-1",
+                name: "Incline Dumbbell Press",
+                sets: 4,
+                reps: "10-12",
+                weight: "32.5 kg",
+                rest_seconds: 90,
+                video_url: null,
+                notes: "Focus on 3s eccentric and hard contraction at top",
+                order_index: 0,
+              },
+              {
+                id: "ex-2",
+                day_id: "day-1",
+                name: "Cable Lateral Raises",
+                sets: 4,
+                reps: "15",
+                weight: "10 kg",
+                rest_seconds: 60,
+                video_url: null,
+                notes: "Keep shoulders depressed, cuff height at hip",
+                order_index: 1,
+              }
+            ]
+          },
+          {
+            id: "day-2",
+            plan_id: "demo",
+            day_number: 2,
+            day_name: "Pull & Traps",
+            focus: "Lats & Upper Back",
+            exercises: []
+          }
+        ])
+        return
+      }
+
       const { data: planData, error: planErr } = await supabase
         .from("workout_plans")
         .select("*")
         .eq("id", id)
         .single()
-      if (planErr || !planData) { toast.error("Plan not found"); router.replace("/plans"); return }
+      if (planErr || !planData) { toast.error("Plan not found"); router.replace("/plans/builder"); return }
       setPlan(planData as WorkoutPlan)
 
       const { data: clientData } = await supabase
@@ -195,15 +261,18 @@ export default function WorkoutPlanBuilderPage() {
   const activeDay = days[selectedDay]
 
   return (
-    <div className="px-5 pt-2 flex flex-col gap-5 bg-cream min-h-full pb-8">
+    <div className="px-5 pt-4 flex flex-col gap-5 bg-bg-primary min-h-screen pb-32 text-white">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => router.push("/plans")} className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
-          <ArrowLeft className="w-4 h-4 text-charcoal-deep" />
+        <button
+          onClick={() => router.push("/plans/builder")}
+          className="w-9 h-9 rounded-full bg-zinc-850 hover:bg-zinc-800 border border-zinc-700/60 flex items-center justify-center shrink-0 text-white cursor-pointer transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-white" />
         </button>
         <div className="min-w-0 flex-1">
-          <h2 className="font-montserrat font-black text-lg text-charcoal-deep leading-tight truncate">{plan?.name}</h2>
-          <p className="text-[10px] text-charcoal-muted font-semibold mt-0.5">{clientName || "Unknown"} · {plan?.weeks} weeks</p>
+          <h2 className="font-heading font-bold text-xl text-white leading-tight truncate">{plan?.name}</h2>
+          <p className="text-xs text-zinc-400 font-semibold mt-0.5">{clientName || "Unknown"} · {plan?.weeks} weeks</p>
         </div>
       </div>
 
@@ -213,8 +282,10 @@ export default function WorkoutPlanBuilderPage() {
           <button
             key={day.id}
             onClick={() => setSelectedDay(i)}
-            className={`relative px-5 py-3 rounded-full text-xs font-montserrat font-black tracking-wide uppercase snap-start whitespace-nowrap transition-all duration-300 ${
-              selectedDay === i ? "bg-charcoal-deep text-lime-electric shadow-md" : "bg-white text-charcoal-deep border border-charcoal-deep/5 shadow-sm"
+            className={`relative px-5 py-3 rounded-full text-xs font-heading font-bold tracking-wide uppercase snap-start whitespace-nowrap transition-all duration-300 cursor-pointer ${
+              selectedDay === i
+                ? "bg-[#FFB800] text-black shadow-md"
+                : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
             }`}
           >
             Day {day.day_number}
@@ -222,7 +293,7 @@ export default function WorkoutPlanBuilderPage() {
         ))}
         <button
           onClick={() => setShowDayModal(true)}
-          className="px-4 py-3 rounded-full text-xs font-montserrat font-bold tracking-wide uppercase whitespace-nowrap bg-lime-tint text-charcoal-deep border border-lime-electric/30 shadow-sm"
+          className="px-4 py-3 rounded-full text-xs font-heading font-bold tracking-wide uppercase whitespace-nowrap bg-[#FFB800]/15 text-[#FFB800] border border-[#FFB800]/30 hover:bg-[#FFB800]/25 shadow-sm cursor-pointer transition-colors"
         >
           <Plus className="w-3.5 h-3.5 inline mr-1" />
           Add Day
@@ -233,96 +304,96 @@ export default function WorkoutPlanBuilderPage() {
       {activeDay ? (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Dumbbell className="w-4 h-4 text-lime-electric fill-charcoal-deep" />
-            <h3 className="text-xs font-bold text-charcoal-deep uppercase tracking-wider">
+            <Dumbbell className="w-4 h-4 text-[#FFB800]" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
               {activeDay.day_name}{activeDay.focus ? ` · ${activeDay.focus}` : ""}
             </h3>
           </div>
-          <button onClick={() => handleDeleteDay(activeDay.id)} className="text-red-400 hover:text-red-600 p-1">
+          <button onClick={() => handleDeleteDay(activeDay.id)} className="text-zinc-500 hover:text-red-400 p-1 cursor-pointer transition-colors">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ) : (
         <div className="text-center py-8">
-          <Dumbbell className="size-10 text-charcoal-muted/30 mx-auto mb-2" />
-          <p className="text-charcoal-muted text-xs font-medium">No days yet. Add one above.</p>
+          <Dumbbell className="size-10 text-zinc-700 mx-auto mb-2" />
+          <p className="text-zinc-500 text-xs font-medium">No days yet. Add one above.</p>
         </div>
       )}
 
       {/* Exercises */}
       {activeDay && activeDay.exercises.length === 0 && (
-        <div className="bg-white rounded-card-mobile shadow-bento p-8 flex flex-col items-center gap-3">
-          <p className="text-charcoal-muted text-xs">No exercises yet</p>
-          <button onClick={openAddExercise} className="text-lime-electric font-bold text-xs uppercase tracking-wider">+ Add First Exercise</button>
+        <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-8 flex flex-col items-center gap-3">
+          <p className="text-zinc-400 text-xs">No exercises yet</p>
+          <button onClick={openAddExercise} className="text-[#FFB800] hover:text-[#E5A600] font-bold text-xs uppercase tracking-wider cursor-pointer transition-colors">+ Add First Exercise</button>
         </div>
       )}
 
       <div className="flex flex-col gap-3">
-        {activeDay?.exercises.map((ex) => (
-          <motion.div
-            key={ex.id}
-            whileTap={{ scale: 0.98 }}
-            className="bg-white rounded-card-mobile p-4 shadow-bento flex items-center gap-3"
-          >
-            <GripVertical className="w-4 h-4 text-charcoal-muted/30 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-charcoal-deep font-montserrat truncate">{ex.name}</p>
-              <p className="text-[10px] text-charcoal-muted font-medium mt-0.5">
-                {ex.sets !== null && ex.reps !== null ? `${ex.sets} × ${ex.reps}` : ""}
-                {ex.weight ? ` · ${ex.weight}` : ""}
-                {ex.rest_seconds ? ` · ${ex.rest_seconds}s rest` : ""}
-              </p>
-              {ex.notes && <p className="text-[9px] text-charcoal-muted/70 italic mt-0.5 truncate">{ex.notes}</p>}
+        {activeDay?.exercises.map((ex, i) => (
+          <motion.div key={ex.id} whileTap={{ scale: 0.98 }} className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-4 flex gap-3 shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-[#FFB800]/15 border border-[#FFB800]/30 flex items-center justify-center shrink-0">
+              <span className="font-heading font-bold text-sm text-[#FFB800]">{i + 1}</span>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => openEditExercise(ex)} className="w-8 h-8 rounded-full bg-cream flex items-center justify-center text-charcoal-muted hover:text-charcoal-deep">
-                <span className="text-[10px] font-bold">Edit</span>
-              </button>
-              <button onClick={() => handleDeleteExercise(ex.id)} className="w-8 h-8 rounded-full bg-cream flex items-center justify-center text-red-400 hover:text-red-600">
-                <Trash2 className="w-3 h-3" />
-              </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h4 className="font-heading font-bold text-sm text-white capitalize truncate">{ex.name}</h4>
+                  <p className="text-[11px] text-zinc-400 font-medium mt-0.5">
+                    {ex.sets ?? "—"} sets × {ex.reps ?? "—"} reps
+                    {ex.weight ? ` · ${ex.weight}` : ""}
+                    {ex.rest_seconds ? ` · ${ex.rest_seconds}s rest` : ""}
+                  </p>
+                  {ex.notes && <p className="text-[10px] text-zinc-500 italic mt-0.5 truncate">{ex.notes}</p>}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button onClick={() => openEditExercise(ex)} className="px-2.5 py-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold cursor-pointer transition-colors">
+                    Edit
+                  </button>
+                  <button onClick={() => handleDeleteExercise(ex.id)} className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-red-950/60 flex items-center justify-center text-red-400 cursor-pointer transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         ))}
-      </div>
 
-      {/* FAB — add exercise */}
-      {activeDay && (
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={openAddExercise}
-          className="fixed bottom-24 right-5 w-14 h-14 rounded-full bg-lime-electric shadow-bento flex items-center justify-center z-40"
-        >
-          <Plus className="w-6 h-6 text-charcoal-deep" />
-        </motion.button>
-      )}
+        {activeDay && activeDay.exercises.length > 0 && (
+          <button onClick={openAddExercise} className="w-full h-12 rounded-full border border-dashed border-zinc-700 hover:border-[#FFB800] text-zinc-400 hover:text-[#FFB800] text-xs font-heading font-bold uppercase tracking-wider flex items-center justify-center gap-2 mt-2 cursor-pointer transition-colors">
+            <Plus className="w-4 h-4" /> Add Exercise
+          </button>
+        )}
+      </div>
 
       {/* Add Day Modal */}
       <AnimatePresence>
         {showDayModal && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-charcoal-deep/60 z-50" onClick={() => setShowDayModal(false)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={() => setShowDayModal(false)} />
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-cream rounded-t-3xl z-50 p-5 pb-8 space-y-4"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#141414] border-t border-zinc-800 rounded-t-3xl z-50 max-h-[85vh] flex flex-col text-white shadow-2xl"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="font-montserrat font-black text-lg text-charcoal-deep">Add Workout Day</h3>
-                <button onClick={() => setShowDayModal(false)} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-charcoal-muted shadow-sm"><X className="size-4" /></button>
+              <div className="flex justify-center pt-3 pb-1"><div className="w-12 h-1 rounded-full bg-zinc-700" /></div>
+              <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/80">
+                <h3 className="font-heading font-bold text-lg text-white">Add Workout Day</h3>
+                <button onClick={() => setShowDayModal(false)} className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300 cursor-pointer"><X className="size-4" /></button>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Day Name *</label>
-                <input value={dayName} onChange={(e) => setDayName(e.target.value)} placeholder="e.g. Push Day" className={inputClass} />
+              <div className="flex-1 overflow-y-auto px-5 pb-32 space-y-4 pt-3">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide mb-1.5 block">Day Name *</label>
+                  <input value={dayName} onChange={(e) => setDayName(e.target.value)} placeholder="e.g. Chest & Triceps" className={inputClass} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide mb-1.5 block">Focus / Muscle Group</label>
+                  <input value={dayFocus} onChange={(e) => setDayFocus(e.target.value)} placeholder="e.g. Upper Body Hypertrophy" className={inputClass} />
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddDay}
+                  className="w-full h-14 rounded-full bg-[#FFB800] hover:bg-[#E5A600] text-black font-heading font-bold text-xs uppercase tracking-widest shadow-lg mt-4 cursor-pointer">
+                  Add Day
+                </motion.button>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Focus (optional)</label>
-                <input value={dayFocus} onChange={(e) => setDayFocus(e.target.value)} placeholder="e.g. Chest, Shoulders, Triceps" className={inputClass} />
-              </div>
-              <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddDay}
-                className="w-full h-14 rounded-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest shadow-bento">
-                Add Day
-              </motion.button>
             </motion.div>
           </>
         )}
@@ -332,46 +403,48 @@ export default function WorkoutPlanBuilderPage() {
       <AnimatePresence>
         {showExerciseModal && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-charcoal-deep/60 z-50" onClick={() => setShowExerciseModal(false)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={() => setShowExerciseModal(false)} />
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-cream rounded-t-3xl z-50 max-h-[85vh] flex flex-col"
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#141414] border-t border-zinc-800 rounded-t-3xl z-50 max-h-[85vh] flex flex-col text-white shadow-2xl"
             >
-              <div className="flex justify-center pt-3 pb-1"><div className="w-12 h-1 rounded-full bg-charcoal-deep/20" /></div>
-              <div className="flex items-center justify-between px-5 py-3">
-                <h3 className="font-montserrat font-black text-lg text-charcoal-deep">{editingExercise ? "Edit Exercise" : "Add Exercise"}</h3>
-                <button onClick={() => setShowExerciseModal(false)} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-charcoal-muted shadow-sm"><X className="size-4" /></button>
+              <div className="flex justify-center pt-3 pb-1"><div className="w-12 h-1 rounded-full bg-zinc-700" /></div>
+              <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/80">
+                <h3 className="font-heading font-bold text-lg text-white">{editingExercise ? "Edit Exercise" : "Add Exercise"}</h3>
+                <button onClick={() => setShowExerciseModal(false)} className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300 cursor-pointer"><X className="size-4" /></button>
               </div>
-              <div className="flex-1 overflow-y-auto px-5 pb-8 space-y-4">
+              <div className="flex-1 overflow-y-auto px-5 pb-32 space-y-4 pt-3">
                 <div>
-                  <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Exercise Name *</label>
-                  <input value={exName} onChange={(e) => setExName(e.target.value)} placeholder="e.g. Barbell Bench Press" className={inputClass} />
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide mb-1.5 block">Exercise Name *</label>
+                  <input value={exName} onChange={(e) => setExName(e.target.value)} placeholder="e.g. Incline DB Bench Press" className={inputClass} />
                 </div>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[9px] font-bold text-charcoal-deep uppercase tracking-wide mb-1 block">Sets</label>
+                    <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide mb-1 block">Sets</label>
                     <input type="number" value={exSets} onChange={(e) => setExSets(e.target.value)} placeholder="3" className={smallInputClass} />
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-charcoal-deep uppercase tracking-wide mb-1 block">Reps</label>
+                    <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide mb-1 block">Reps</label>
                     <input value={exReps} onChange={(e) => setExReps(e.target.value)} placeholder="8-12" className={smallInputClass} />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[9px] font-bold text-charcoal-deep uppercase tracking-wide mb-1 block">Rest (s)</label>
+                    <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide mb-1 block">Weight</label>
+                    <input value={exWeight} onChange={(e) => setExWeight(e.target.value)} placeholder="30 kg" className={smallInputClass} />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide mb-1 block">Rest (seconds)</label>
                     <input type="number" value={exRest} onChange={(e) => setExRest(e.target.value)} placeholder="90" className={smallInputClass} />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Weight</label>
-                  <input value={exWeight} onChange={(e) => setExWeight(e.target.value)} placeholder="e.g. 60kg" className={inputClass} />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wide mb-1.5 block">Notes</label>
-                  <input value={exNotes} onChange={(e) => setExNotes(e.target.value)} placeholder="e.g. slow eccentric, pause at bottom" className={inputClass} />
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide mb-1.5 block">Notes / Cues</label>
+                  <input value={exNotes} onChange={(e) => setExNotes(e.target.value)} placeholder="Control negative, slight arch" className={inputClass} />
                 </div>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={handleSaveExercise}
-                  className="w-full h-14 rounded-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest shadow-bento mt-2">
+                  className="w-full h-14 rounded-full bg-[#FFB800] hover:bg-[#E5A600] text-black font-heading font-bold text-xs uppercase tracking-widest shadow-lg mt-4 cursor-pointer">
                   {editingExercise ? "Update Exercise" : "Add Exercise"}
                 </motion.button>
               </div>

@@ -6,14 +6,15 @@ import { motion, AnimatePresence } from "motion/react"
 import {
   ArrowLeft,
   Dumbbell,
-  ClipboardList,
-  IndianRupee,
   MessageSquare,
   Check,
   ChevronDown,
   ChevronUp,
   User,
   FileText,
+  MessageCircle,
+  Phone,
+  CalendarPlus,
 } from "lucide-react"
 import { format, differenceInDays } from "date-fns"
 import toast from "react-hot-toast"
@@ -21,9 +22,14 @@ import { createClient } from "@/lib/supabase/client"
 import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import BadgesGrid from "@/components/client/BadgesGrid"
 import { getClientBadges, type ClientBadge } from "@/lib/badges"
+import AddFollowupSheet from "@/components/coach/AddFollowupSheet"
+import SendPlanPanel from "@/components/coach/SendPlanPanel"
+import { waLink } from "@/lib/quick-manage"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
 
 type Tab = "overview" | "checkins" | "plans" | "fees"
+
+const FOLLOWUP_LABEL: Record<string, string> = { checkin: "Check-in", payment: "Payment", renewal: "Renewal", feedback: "Feedback", birthday: "Birthday", other: "Follow-up" }
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -76,6 +82,8 @@ export default function ClientDetailPage() {
   const [expandedCheckin, setExpandedCheckin] = useState<string | null>(null)
   const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({})
   const [savingFeedback, setSavingFeedback] = useState<string | null>(null)
+  const [followups, setFollowups] = useState<{ id: string; type: string; due_date: string; note: string | null }[]>([])
+  const [followupOpen, setFollowupOpen] = useState(false)
 
   const actionsRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
@@ -92,12 +100,13 @@ export default function ClientDetailPage() {
     }
     setClient({ ...clientRow, profile })
 
-    const [r1, r2, r3, r4, badges] = await Promise.allSettled([
+    const [r1, r2, r3, r4, badges, r5] = await Promise.allSettled([
       supabase.from("checkins").select("*").eq("client_id", id).order("submitted_at", { ascending: false }),
       supabase.from("fees").select("*").eq("client_id", id).order("due_date", { ascending: false }),
       supabase.from("workout_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       supabase.from("nutrition_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
-      getClientBadges(id)
+      getClientBadges(id),
+      supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).order("due_date").limit(3),
     ])
 
     if (r1.status === "fulfilled") setCheckins(r1.value.data ?? [])
@@ -105,12 +114,28 @@ export default function ClientDetailPage() {
     if (r3.status === "fulfilled") setWorkoutPlans(r3.value.data ?? [])
     if (r4.status === "fulfilled") setNutritionPlans(r4.value.data ?? [])
     if (badges.status === "fulfilled") setClientBadges(badges.value)
+    if (r5.status === "fulfilled") setFollowups(r5.value.data ?? [])
     setIsLoading(false)
   }, [id])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  async function sendLoginLink() {
+    try {
+      const res = await fetch(`/api/coach/clients/${id}/login-link`, { method: "POST" })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.url) { toast.error(data.error ?? "Could not make the login link"); return }
+      const first = (client?.profile?.name ?? "").split(" ")[0] || "there"
+      const text = `Hi ${first}, tap this link to open your Aman Khurana Fitness app (no password needed): ${data.url}`
+      const wa = waLink(client?.profile?.phone ?? null, text)
+      if (!wa) { await navigator.clipboard.writeText(data.url); toast.success("No number saved. Link copied."); return }
+      if (!window.open(wa, "_blank", "noopener")) window.location.href = wa
+    } catch {
+      toast.error("Could not make the login link")
+    }
+  }
 
   async function handleMarkAsPaid(feeId: string) {
     const supabase = createClient()
@@ -141,6 +166,7 @@ export default function ClientDetailPage() {
   const name = client?.profile?.name ?? "Unknown"
   const phone = client?.profile?.phone
   const avatarUrl = client?.profile?.avatar_url ?? null
+  const waHref = waLink(phone ?? null, `Hi ${name.split(" ")[0]}, this is Aman. `)
   const daysActive = client ? differenceInDays(new Date(), new Date(client.start_date)) : 0
   const activeWorkout = workoutPlans.find((p) => p.is_active)
   const activeNutrition = nutritionPlans.find((p) => p.is_active)
@@ -150,7 +176,7 @@ export default function ClientDetailPage() {
     { key: "overview", label: "Overview" },
     { key: "checkins", label: "Check-ins" },
     { key: "plans", label: "Plans" },
-    { key: "fees", label: "Fees" },
+    { key: "fees", label: "Money" },
   ]
 
   return (
@@ -191,36 +217,46 @@ export default function ClientDetailPage() {
       </div>
 
       <div className="px-5 pt-5 flex flex-col gap-5">
-        {/* Quick actions */}
+        {/* Quick actions: talk, call, follow-up */}
         {!isLoading && (
-          <div ref={actionsRef} className="grid grid-cols-3 gap-3">
-            {[
-              { icon: Dumbbell, label: "Assign Plan", action: () => router.push("/plans") },
-              { icon: ClipboardList, label: "Check-in", action: () => setActiveTab("checkins") },
-              { icon: IndianRupee, label: "Record Fee", action: () => setActiveTab("fees") },
-            ].map(({ icon: Icon, label, action }) => (
-              <motion.button
-                key={label}
-                whileTap={{ scale: 0.96 }}
-                onClick={action}
-                className="reveal-item bg-bg-card/80 border border-border-subtle backdrop-blur-xl rounded-2xl p-3 flex flex-col items-center gap-1.5 cursor-pointer"
-              >
-                <Icon className="size-5 text-accent-orange" />
-                <span className="text-text-muted text-[10px] font-semibold">{label}</span>
-              </motion.button>
-            ))}
+          <div className="grid grid-cols-3 gap-3">
+            {waHref ? (
+              <a href={waHref} target="_blank" rel="noopener noreferrer" className="h-14 rounded-2xl bg-[#25D366] text-black font-bold text-sm flex items-center justify-center gap-1.5">
+                <MessageCircle className="size-5" /> WhatsApp
+              </a>
+            ) : (
+              <span className="h-14 rounded-2xl bg-white/5 text-text-muted text-sm flex items-center justify-center">No number</span>
+            )}
+            {phone ? (
+              <a href={`tel:${phone}`} className="h-14 rounded-2xl bg-white/10 text-white font-bold text-sm flex items-center justify-center gap-1.5">
+                <Phone className="size-5" /> Call
+              </a>
+            ) : (
+              <span className="h-14 rounded-2xl bg-white/5 text-text-muted text-sm flex items-center justify-center">No number</span>
+            )}
+            <button type="button" onClick={() => setFollowupOpen(true)} className="h-14 rounded-2xl bg-accent-orange text-black font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer">
+              <CalendarPlus className="size-5" /> Follow-up
+            </button>
           </div>
         )}
 
-        {phone && (
-          <a
-            href={`https://wa.me/${phone.replace("+", "")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full h-11 rounded-full bg-bg-card/80 border border-border-subtle backdrop-blur-xl text-xs font-bold text-text-primary"
-          >
-            WhatsApp {phone}
-          </a>
+        {!isLoading && phone && (
+          <button type="button" onClick={sendLoginLink} className="h-12 rounded-xl bg-white/5 text-text-muted font-semibold text-base cursor-pointer">
+            Send app login link on WhatsApp
+          </button>
+        )}
+
+        {/* Next follow-ups */}
+        {!isLoading && followups.length > 0 && (
+          <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 space-y-2">
+            <p className="text-sm text-text-muted">Next follow-ups</p>
+            {followups.slice(0, 3).map((f) => (
+              <p key={f.id} className="text-base">
+                <span className="font-semibold">{format(new Date(f.due_date + "T00:00:00"), "d MMM")}</span>
+                <span className="text-text-muted"> · {FOLLOWUP_LABEL[f.type] ?? "Follow-up"}{f.note ? ` · ${f.note}` : ""}</span>
+              </p>
+            ))}
+          </div>
         )}
 
         {/* Tab bar */}
@@ -231,7 +267,7 @@ export default function ClientDetailPage() {
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className="flex-1 py-2 text-center text-[10px] font-heading font-bold uppercase tracking-wider rounded-full relative z-10 cursor-pointer"
+                className="flex-1 py-3 text-center text-[11px] font-heading font-bold uppercase tracking-normal rounded-full relative z-10 cursor-pointer"
               >
                 {isSelected && (
                   <motion.div
@@ -443,6 +479,11 @@ export default function ClientDetailPage() {
             )}
 
             {activeTab === "plans" && (
+              <div className="space-y-6">
+                <SendPlanPanel clientId={id} clientName={name} phone={phone} />
+                <details className="rounded-2xl border border-border-subtle p-4">
+                  <summary className="text-base font-semibold cursor-pointer">Plans built inside the app (advanced)</summary>
+                  <div className="mt-4">
               <div className="space-y-4">
                 <div>
                   <p className="text-text-muted text-xs font-bold mb-2 uppercase tracking-wider">Workout Plans</p>
@@ -488,11 +529,14 @@ export default function ClientDetailPage() {
 
                 <motion.button
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => router.push("/plans")}
+                  onClick={() => router.push("/plans/builder")}
                   className="w-full h-12 rounded-full bg-bg-card/80 border border-border-subtle backdrop-blur-xl text-text-primary text-sm font-bold cursor-pointer"
                 >
                   Assign New Plan
                 </motion.button>
+              </div>
+                  </div>
+                </details>
               </div>
             )}
 
@@ -540,6 +584,16 @@ export default function ClientDetailPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {followupOpen && (
+        <AddFollowupSheet
+          isOpen
+          onClose={() => setFollowupOpen(false)}
+          clientId={id}
+          clientName={name}
+          onSaved={fetchData}
+        />
+      )}
     </div>
   )
 }

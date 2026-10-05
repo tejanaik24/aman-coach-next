@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { queueDraftUpload, hydrateDraft, clearServerDraft } from "@/lib/draft-sync"
 import { useRouter } from "next/navigation"
 import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
@@ -204,7 +205,7 @@ export default function CheckinFormPage() {
     setForm(prev => {
       const updated = { ...prev, [key]: val }
       try {
-        if (user?.id) localStorage.setItem(`draft_checkin_${user.id}`, JSON.stringify(updated))
+        if (user?.id) { localStorage.setItem(`draft_checkin_${user.id}`, JSON.stringify(updated)); queueDraftUpload(user.id, "checkin", updated) }
       } catch {}
       return updated
     })
@@ -236,6 +237,11 @@ export default function CheckinFormPage() {
   // Check existing draft
   useEffect(() => {
     if (!user?.id) return
+    hydrateDraft(user.id, "checkin").then((found) => { if (found) setShowResumeBanner(true) })
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
     try {
       const saved = localStorage.getItem(`draft_checkin_${user.id}`)
       if (saved) {
@@ -259,7 +265,7 @@ export default function CheckinFormPage() {
   const handleStartFresh = () => {
     if (!user?.id) return
     try {
-      localStorage.removeItem(`draft_checkin_${user.id}`)
+      localStorage.removeItem(`draft_checkin_${user.id}`); clearServerDraft(user.id, "checkin")
     } catch {}
     setForm(defaultCheckinForm)
     setShowResumeBanner(false)
@@ -380,7 +386,7 @@ export default function CheckinFormPage() {
       if (!res.ok) throw new Error("Submission failed")
 
       try {
-        localStorage.removeItem(`draft_checkin_${user.id}`)
+        localStorage.removeItem(`draft_checkin_${user.id}`); clearServerDraft(user.id, "checkin")
       } catch {}
 
       setDone(true)

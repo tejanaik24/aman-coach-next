@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Upload, X, Camera, RefreshCw, Check, Sparkles } from "lucide-react"
+import toast from "react-hot-toast"
+import { compressImage } from "@/lib/compress-image"
 
 // ─── Progress Bar & Header ───────────────────────────────────────────────────
 
@@ -332,16 +334,18 @@ export function NumberStepper({
   unit?: string
   placeholder?: string
 }) {
-  const numVal = parseFloat(value) || 0
+  const isEmpty = value === "" || Number.isNaN(parseFloat(value))
+  const numVal = isEmpty ? 0 : parseFloat(value)
+  // Nothing is pre-filled: the first tap on + or - lands on a plausible starting number.
+  const startVal = Math.min(max, Math.max(min, Math.round((min + (max - min) * 0.25) / step) * step))
+  const fmt = (n: number) => (Math.round(n * 100) / 100).toString()
 
   const handleIncrement = () => {
-    const next = Math.min(max, numVal + step)
-    onChange(next.toString())
+    onChange(isEmpty ? fmt(startVal) : fmt(Math.min(max, numVal + step)))
   }
 
   const handleDecrement = () => {
-    const prev = Math.max(min, numVal - step)
-    onChange(prev.toString())
+    onChange(isEmpty ? fmt(startVal) : fmt(Math.max(min, numVal - step)))
   }
 
   return (
@@ -467,13 +471,22 @@ export function PhotoUploadScreen({
 
     try {
       const uploadedPaths = await Promise.all(
-        uploaded.map(async (file) => {
-          const fd = new FormData()
-          fd.append("file", file)
-          const res = await fetch("/api/checkin/upload-photo", { method: "POST", body: fd })
-          if (!res.ok) return null
-          const data = await res.json()
-          return data.path as string
+        uploaded.map(async (original) => {
+          try {
+            const file = await compressImage(original)
+            const fd = new FormData()
+            fd.append("file", file)
+            const res = await fetch("/api/checkin/upload-photo", { method: "POST", body: fd })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) {
+              toast.error(data.error ?? "Could not upload. Please try again.")
+              return null
+            }
+            return data.path as string
+          } catch {
+            toast.error("Could not upload. Check your internet and try again.")
+            return null
+          }
         })
       )
       const validPaths = uploadedPaths.filter((p): p is string => !!p)

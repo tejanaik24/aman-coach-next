@@ -24,7 +24,11 @@ export async function GET(req: Request) {
 
   const isOwner = ownerUserId === user.id
   let isCoach = false
-  if (!isOwner) {
+  if (ownerUserId === "public-questionnaire") {
+    // files uploaded by website visitors: any coach account may open them
+    const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+    isCoach = me?.role === "coach"
+  } else if (!isOwner) {
     const { data: coachClient } = await supabase
       .from("clients")
       .select("id")

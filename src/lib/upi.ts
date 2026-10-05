@@ -1,4 +1,4 @@
-const UPI_ID = "amankhurana@upi"
+const UPI_ID = "aman.khurana.1460-1@okhdfcbank"
 const PAYEE_NAME = "Aman Khurana Fitness"
 
 export function generateUpiLink(amount: number, note?: string): string {

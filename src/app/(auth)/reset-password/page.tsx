@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
 
       <div className="text-center pb-6 animate-fade-in-up">
         <p className="text-[10px] text-charcoal-muted font-medium">
-          AK Fitness Security Protection Protocol
+          Aman Khurana Fitness Security Protection Protocol
         </p>
       </div>
     </div>

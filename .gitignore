@@ -48,6 +48,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
 .vercel
 supabase/.temp/
+
+# Work files & verification artifacts
+screenshots/
+sample_receipt.pdf

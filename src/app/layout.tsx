@@ -23,7 +23,7 @@ const dancingScript = Dancing_Script({
 });
 
 export const metadata: Metadata = {
-  title: "AK Fitness Coach — Premium Coaching by Aman Khurana",
+  title: "Aman Khurana Fitness — Premium 1-on-1 Coaching",
   description:
     "Elite fitness coaching platform by Aman Khurana. Track workouts, nutrition, and progress.",
   manifest: "/manifest.json",
@@ -63,7 +63,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <meta name="application-name" content="AK Fitness Coach" />
+        <meta name="application-name" content="Aman Khurana Fitness" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"

@@ -16,10 +16,9 @@ interface FormData {
   name: string
   email: string
   phone: string
-  goal: string
   packageName: string
   feeAmount: string
-  feeDueDay: string
+  feeCurrency: string
   startDate: string
   notes: string
 }
@@ -28,19 +27,9 @@ interface FormErrors {
   name?: string
   email?: string
   phone?: string
-  goal?: string
   packageName?: string
   feeAmount?: string
-  feeDueDay?: string
 }
-
-const GOALS = [
-  "Fat Loss",
-  "Muscle Building",
-  "Contest Prep",
-  "Maintenance",
-  "Antenatal/Postnatal",
-]
 
 interface Package {
   name: string
@@ -66,8 +55,18 @@ const PACKAGES: Package[] = [
   { name: "Postpartum Care 24 Weeks", days: 168 },
 ]
 
+const CURRENCY_SYMBOL: Record<string, string> = { INR: "₹", USD: "$", EUR: "€", GBP: "£", AED: "AED", CAD: "CA$" }
+
 function isAntenatalPackage(packageName: string): boolean {
   return packageName.startsWith("Antenatal") || packageName.startsWith("Postpartum")
+}
+
+// Goal is derived from the package so Aman never has to pick it.
+function goalForPackage(packageName: string): string {
+  if (packageName.includes("Contest Prep") || packageName.includes("Posing")) return "Contest Prep"
+  if (isAntenatalPackage(packageName)) return "Antenatal/Postnatal"
+  if (packageName.startsWith("Child Nutrition")) return "Child Nutrition"
+  return "Lifestyle Coaching"
 }
 
 function calculateEndDate(startDate: string, days: number): string {
@@ -82,20 +81,22 @@ const inputClass =
 const errorInputClass =
   "w-full bg-[#1A1A1A] border border-red-500 rounded-2xl h-14 px-4 text-white outline-none focus:border-red-500 transition-colors placeholder:text-[#555555]"
 
+const emptyForm = (): FormData => ({
+  name: "",
+  email: "",
+  phone: "",
+  packageName: "",
+  feeAmount: "",
+  feeCurrency: "INR",
+  startDate: new Date().toISOString().split("T")[0],
+  notes: "",
+})
+
 export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
-  const [form, setForm] = useState<FormData>({
-    name: "",
-    email: "",
-    phone: "",
-    goal: "",
-    packageName: "",
-    feeAmount: "",
-    feeDueDay: "1",
-    startDate: new Date().toISOString().split("T")[0],
-    notes: "",
-  })
+  const [form, setForm] = useState<FormData>(emptyForm)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showMore, setShowMore] = useState(false)
 
   function set(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -106,13 +107,11 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
 
   function validate(): boolean {
     const e: FormErrors = {}
-    if (form.name.trim().length < 2) e.name = "Name must be at least 2 characters"
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email address"
-    if (!form.goal) e.goal = "Select a goal"
-    if (!PACKAGES.some((p) => p.name === form.packageName)) e.packageName = "Select a package"
-    if (!form.feeAmount || Number(form.feeAmount) <= 0) e.feeAmount = "Enter a valid fee amount"
-    const day = Number(form.feeDueDay)
-    if (!day || day < 1 || day > 28) e.feeDueDay = "Enter a day between 1 and 28"
+    if (form.name.trim().length < 2) e.name = "Enter the client's name"
+    if (form.phone.length !== 10) e.phone = "Enter the 10-digit WhatsApp number"
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email or leave it empty"
+    if (!PACKAGES.some((p) => p.name === form.packageName)) e.packageName = "Pick a package"
+    if (!form.feeAmount || Number(form.feeAmount) <= 0) e.feeAmount = "Enter the fee"
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -126,46 +125,37 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
     if (!validate()) return
     setIsSubmitting(true)
     try {
+      // First payment is due on the start date (day clamped to 1-28 for the monthly cycle).
+      const dueDay = Math.min(28, Number(form.startDate.slice(8, 10)) || 1)
       const res = await fetch("/api/clients/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: form.phone.trim() ? `+91${form.phone.replace(/\D/g, "")}` : null,
-          goal: form.goal,
+          phone: `+91${form.phone}`,
+          goal: goalForPackage(form.packageName),
           packageName: form.packageName,
           endDate: computedEndDate,
           clientType: computedClientType,
           feeAmount: Number(form.feeAmount),
-          feeDueDay: Number(form.feeDueDay),
+          feeCurrency: form.feeCurrency || "INR",
+          feeDueDay: dueDay,
           startDate: form.startDate,
           notes: form.notes.trim() || null,
         }),
       })
       const data = await res.json()
       if (!res.ok) {
-        if (data.error?.includes("already registered") || res.status === 409) {
-          toast.error("This email is already registered")
-        } else {
-          toast.error(data.error ?? "Failed to add client")
-        }
+        toast.error(data.error ?? "Failed to add client")
         return
       }
-      toast.success(`Client added! Password: ${data.password}`)
-      setForm({
-        name: "",
-        email: "",
-        phone: "",
-        goal: "",
-        packageName: "",
-        feeAmount: "",
-        feeDueDay: "1",
-        startDate: new Date().toISOString().split("T")[0],
-        notes: "",
-      })
+      toast.success(`${form.name.trim()} added ✅`)
+      setForm(emptyForm())
       setErrors({})
+      setShowMore(false)
       onSuccess()
+      onClose()
     } catch {
       toast.error("Network error. Please try again.")
     } finally {
@@ -177,7 +167,6 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -186,7 +175,6 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
             onClick={onClose}
           />
 
-          {/* Sheet */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -194,30 +182,24 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
             transition={{ type: "spring", damping: 28, stiffness: 350 }}
             className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#111111] rounded-t-3xl border border-[#222222] z-[60] max-h-[92vh] flex flex-col"
           >
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
               <div className="w-12 h-1 rounded-full bg-[#333333]" />
             </div>
 
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
               <h2 className="text-white font-bold text-xl">Add New Client</h2>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center text-[#A0A0A0] hover:text-white transition-colors"
+                aria-label="Close"
+                className="w-10 h-10 rounded-full bg-[#1A1A1A] flex items-center justify-center text-[#A0A0A0] hover:text-white transition-colors"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            {/* Form */}
-            <form
-              onSubmit={handleSubmit}
-              className="flex-1 overflow-y-auto px-5 pb-8 space-y-4"
-            >
-              {/* Full Name */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 pb-8 space-y-4">
               <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">Full Name *</label>
+                <label className="text-sm text-[#A0A0A0] mb-1.5 block">Name</label>
                 <input
                   type="text"
                   value={form.name}
@@ -225,30 +207,17 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
                   placeholder="Priya Sharma"
                   className={errors.name ? errorInputClass : inputClass}
                 />
-                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
               </div>
 
-              {/* Email */}
               <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">
-                  Email * <span className="text-[#555555]">(used for login)</span>
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => set("email", e.target.value)}
-                  placeholder="client@email.com"
-                  className={errors.email ? errorInputClass : inputClass}
-                />
-                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-              </div>
-
-              {/* Phone (optional) */}
-              <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">
-                  Phone <span className="text-[#555555]">(optional)</span>
-                </label>
-                <div className="flex items-center bg-[#1A1A1A] border border-[#333333] rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors">
+                <label className="text-sm text-[#A0A0A0] mb-1.5 block">WhatsApp number</label>
+                <div
+                  className={cn(
+                    "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors",
+                    errors.phone ? "border-red-500" : "border-[#333333]"
+                  )}
+                >
                   <span className="text-[#C9A84C] font-semibold text-sm">+91</span>
                   <div className="w-px h-5 bg-[#333333] mx-3 flex-shrink-0" />
                   <input
@@ -260,160 +229,107 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
                     className="flex-1 bg-transparent text-white outline-none placeholder:text-[#555555]"
                   />
                 </div>
+                {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
               </div>
 
-              {/* Goal */}
               <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">Goal *</label>
-                <div className="relative">
-                  <select
-                    value={form.goal}
-                    onChange={(e) => set("goal", e.target.value)}
-                    className={cn(
-                      "w-full appearance-none bg-[#1A1A1A] border rounded-2xl h-14 px-4 text-white outline-none transition-colors",
-                      errors.goal
-                        ? "border-red-500"
-                        : "border-[#333333] focus:border-[#C9A84C]",
-                      !form.goal && "text-[#555555]"
-                    )}
-                  >
-                    <option value="" disabled>
-                      Select Goal
-                    </option>
-                    {GOALS.map((g) => (
-                      <option key={g} value={g} className="bg-[#1A1A1A] text-white">
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1l5 5 5-5" stroke="#555555" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                </div>
-                {errors.goal && (
-                  <p className="text-red-400 text-xs mt-1">{errors.goal}</p>
-                )}
+                <label className="text-sm text-[#A0A0A0] mb-1.5 block">Package</label>
+                <select
+                  value={form.packageName}
+                  onChange={(e) => set("packageName", e.target.value)}
+                  className={cn(errors.packageName ? errorInputClass : inputClass, "appearance-none")}
+                >
+                  <option value="" className="bg-[#1A1A1A]">Pick a package</option>
+                  {PACKAGES.map((p) => (
+                    <option key={p.name} value={p.name} className="bg-[#1A1A1A]">{p.name}</option>
+                  ))}
+                </select>
+                {errors.packageName && <p className="text-red-400 text-sm mt-1">{errors.packageName}</p>}
+                {computedEndDate && <p className="text-[#888888] text-sm mt-1">Plan ends {computedEndDate}</p>}
               </div>
 
-              {/* Package */}
               <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">Package *</label>
-                <div className="relative">
-                  <select
-                    value={form.packageName}
-                    onChange={(e) => set("packageName", e.target.value)}
-                    className={cn(
-                      "w-full appearance-none bg-[#1A1A1A] border rounded-2xl h-14 px-4 text-white outline-none transition-colors",
-                      errors.packageName
-                        ? "border-red-500"
-                        : "border-[#333333] focus:border-[#C9A84C]",
-                      !form.packageName && "text-[#555555]"
-                    )}
-                  >
-                    <option value="" disabled>
-                      Select Package
-                    </option>
-                    {PACKAGES.map((p) => (
-                      <option key={p.name} value={p.name} className="bg-[#1A1A1A] text-white">
-                        {p.name} ({p.days} days)
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1l5 5 5-5" stroke="#555555" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                </div>
-                {errors.packageName && (
-                  <p className="text-red-400 text-xs mt-1">{errors.packageName}</p>
-                )}
-                {selectedPackage && (
-                  <p className="text-[#C9A84C] text-xs mt-1.5">
-                    Ends {computedEndDate} · {computedClientType === "antenatal" ? "Antenatal/Postpartum care" : "Standard"}
-                  </p>
-                )}
-              </div>
-
-              {/* Fee Amount + Due Day row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-[#A0A0A0] mb-1.5 block">Fee Amount *</label>
-                  <div
-                    className={cn(
-                      "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 transition-colors",
-                      errors.feeAmount
-                        ? "border-red-500"
-                        : "border-[#333333] focus-within:border-[#C9A84C]"
-                    )}
-                  >
-                    <span className="text-[#C9A84C] font-semibold text-sm">₹</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={form.feeAmount}
-                      onChange={(e) => set("feeAmount", e.target.value)}
-                      placeholder="5000"
-                      min="1"
-                      className="flex-1 bg-transparent text-white outline-none placeholder:text-[#555555] ml-2"
-                    />
-                  </div>
-                  {errors.feeAmount && (
-                    <p className="text-red-400 text-xs mt-1">{errors.feeAmount}</p>
+                <label className="text-sm text-[#A0A0A0] mb-1.5 block">Fee</label>
+                <div
+                  className={cn(
+                    "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors",
+                    errors.feeAmount ? "border-red-500" : "border-[#333333]"
                   )}
-                </div>
-
-                <div>
-                  <label className="text-xs text-[#A0A0A0] mb-1.5 block">Fee Due Day *</label>
+                >
+                  <span className="text-[#C9A84C] font-semibold">{CURRENCY_SYMBOL[form.feeCurrency] ?? "₹"}</span>
                   <input
                     type="number"
                     inputMode="numeric"
-                    value={form.feeDueDay}
-                    onChange={(e) => set("feeDueDay", e.target.value)}
-                    placeholder="1"
+                    value={form.feeAmount}
+                    onChange={(e) => set("feeAmount", e.target.value)}
+                    placeholder="10000"
                     min="1"
-                    max="28"
-                    className={errors.feeDueDay ? errorInputClass : inputClass}
+                    className="flex-1 min-w-0 bg-transparent text-white outline-none placeholder:text-[#555555] ml-2"
                   />
-                  {errors.feeDueDay && (
-                    <p className="text-red-400 text-xs mt-1">{errors.feeDueDay}</p>
-                  )}
                 </div>
+                {errors.feeAmount && <p className="text-red-400 text-sm mt-1">{errors.feeAmount}</p>}
               </div>
 
-              {/* Start Date */}
-              <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">Start Date *</label>
-                <input
-                  type="date"
-                  value={form.startDate}
-                  onChange={(e) => set("startDate", e.target.value)}
-                  className={cn(inputClass, "text-white [color-scheme:dark]")}
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowMore((v) => !v)}
+                className="text-[#C9A84C] text-sm font-semibold underline underline-offset-4 cursor-pointer"
+              >
+                {showMore ? "Hide details" : "More details (optional)"}
+              </button>
 
-              {/* Notes */}
-              <div>
-                <label className="text-xs text-[#A0A0A0] mb-1.5 block">
-                  Notes <span className="text-[#555555]">(optional)</span>
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => set("notes", e.target.value)}
-                  placeholder="Any health conditions, preferences..."
-                  rows={3}
-                  className="w-full bg-[#1A1A1A] border border-[#333333] rounded-2xl px-4 py-3 text-white outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#555555] resize-none"
-                />
-              </div>
+              {showMore && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-[#A0A0A0] mb-1.5 block">Email</label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => set("email", e.target.value)}
+                      placeholder="client@email.com"
+                      className={errors.email ? errorInputClass : inputClass}
+                    />
+                    {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#A0A0A0] mb-1.5 block">Currency</label>
+                    <select
+                      value={form.feeCurrency}
+                      onChange={(e) => set("feeCurrency", e.target.value)}
+                      className={cn(inputClass, "appearance-none")}
+                    >
+                      {Object.keys(CURRENCY_SYMBOL).map((c) => (
+                        <option key={c} value={c} className="bg-[#1A1A1A]">{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#A0A0A0] mb-1.5 block">Start date</label>
+                    <input
+                      type="date"
+                      value={form.startDate}
+                      onChange={(e) => set("startDate", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#A0A0A0] mb-1.5 block">Notes</label>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => set("notes", e.target.value)}
+                      placeholder="Any health conditions, preferences..."
+                      rows={3}
+                      className="w-full bg-[#1A1A1A] border border-[#333333] rounded-2xl px-4 py-3 text-white outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#555555] resize-none"
+                    />
+                  </div>
+                </div>
+              )}
 
-              {/* Submit */}
               <motion.button
                 type="submit"
                 disabled={isSubmitting}
                 whileTap={{ scale: 0.97 }}
-                className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
+                className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
               >
                 {isSubmitting ? (
                   <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />

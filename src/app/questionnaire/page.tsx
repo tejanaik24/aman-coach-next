@@ -4,10 +4,43 @@ import { useState } from "react"
 import { CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 import { PublicPageShell } from "@/components/shared/PublicPageShell"
+import PublicUploadField from "@/components/forms/PublicUploadField"
 
 const DIET_OPTIONS = ["Vegetarian", "Vegan", "Non-Vegetarian", "Eggetarian"]
 const URINE_OPTIONS = ["Clear", "Light Yellow", "Yellow", "Dark Yellow", "Orange"]
 const YES_NO_SOMETIMES = ["Yes", "No", "Sometimes"]
+
+// Helpers live outside the page component so typing never remounts the inputs.
+const inputClass = "w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+const labelClass = "text-text-muted text-[11px] font-medium uppercase tracking-wide"
+const sectionTitleClass = "font-heading italic text-lg text-accent-orange"
+
+function Field({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className={labelClass}>{label}</label>
+      {sub && <p className="text-text-muted/70 text-[10px]">{sub}</p>}
+      {children}
+    </div>
+  )
+}
+
+function ChipSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={`px-4 py-1.5 rounded-full text-xs font-medium border ${value === opt ? "bg-accent-orange text-bg-primary border-accent-orange" : "border-border-subtle text-text-muted"}`}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function PublicQuestionnairePage() {
   const [form, setForm] = useState<Record<string, string>>({
@@ -91,6 +124,8 @@ export default function PublicQuestionnairePage() {
     q64_gym_link: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploads, setUploads] = useState<Record<string, string[]>>({})
+  const setUpload = (key: string, paths: string[]) => setUploads((u) => ({ ...u, [key]: paths }))
   const [isDone, setIsDone] = useState(false)
 
   function set(key: string, val: string) {
@@ -108,7 +143,7 @@ export default function PublicQuestionnairePage() {
       const res = await fetch("/api/public/questionnaire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.q1_name, tel: form.q4_phone, ...form }),
+        body: JSON.stringify({ name: form.q1_name, tel: form.q4_phone, ...form, ...uploads }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -133,45 +168,14 @@ export default function PublicQuestionnairePage() {
     )
   }
 
-  const inputClass = "w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
-  const labelClass = "text-text-muted text-[11px] font-medium uppercase tracking-wide"
-  const sectionTitleClass = "font-heading italic text-lg text-accent-orange"
-
-  function Field({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
-    return (
-      <div className="space-y-1">
-        <label className={labelClass}>{label}</label>
-        {sub && <p className="text-text-muted/70 text-[10px]">{sub}</p>}
-        {children}
-      </div>
-    )
-  }
-
-  function ChipSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
-    return (
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium border ${value === opt ? "bg-accent-orange text-bg-primary border-accent-orange" : "border-border-subtle text-text-muted"}`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
   return (
     <PublicPageShell eyebrow="Aman Khurana Fitness" title="Lifestyle & Health Questionnaire">
       <div className="ledger p-5">
         <p className="text-text-muted text-xs leading-relaxed">
           This is the same detailed questionnaire Coach Aman uses to build every client&rsquo;s custom plan &mdash;
           fill it in before your consultation so he has your full picture ready. Takes about 10&ndash;15 minutes.
-          Answer honestly, no judgment. Where a question normally asks for a photo, paste a shareable link
-          (WhatsApp, Google Drive, Photos) instead &mdash; you can also send photos directly on WhatsApp.
+          Answer honestly, no judgment. Where a question asks for a photo or report, just tap the
+          upload button and pick it from your phone gallery, camera or files (PDF works too).
         </p>
       </div>
 
@@ -231,10 +235,10 @@ export default function PublicQuestionnairePage() {
           <Field label="Maximum number of meals manageable for you? (3–5)"><input type="number" min={3} max={5} value={form.q31_max_meals} onChange={(e) => set("q31_max_meals", e.target.value)} className={inputClass} /></Field>
           <Field label="Can you prepare & eat a pre-workout meal 60–90 min before workout?"><ChipSelect options={YES_NO_SOMETIMES} value={form.q32_preworkout_meal} onChange={(v) => set("q32_preworkout_meal", v)} /></Field>
           <Field label="Do you take any supplements? Mention which ones."><textarea value={form.q33_supplements} onChange={(e) => set("q33_supplements", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Whey, Creatine, Multivitamin, Omega 3..." /></Field>
-          <Field label="Supplement photo link (optional)"><input value={form.q33_supplements_link} onChange={(e) => set("q33_supplements_link", e.target.value)} className={inputClass} placeholder="Paste a shareable photo link" /></Field>
+          <Field label="Supplement photos (optional)"><PublicUploadField multiple buttonText="Add supplement photos" onChange={(p) => setUpload("q33_supplements_pics", p)} /></Field>
           <Field label="Would you take Whey Protein supplement?"><ChipSelect options={["Yes", "No", "Already taking"]} value={form.q34_whey_protein} onChange={(v) => set("q34_whey_protein", v)} /></Field>
           <Field label="Any food allergies?"><textarea value={form.q35_food_allergies} onChange={(e) => set("q35_food_allergies", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Peanuts, Gluten, Dairy..." /></Field>
-          <Field label="Food intolerance test report link (optional)"><input value={form.q35_allergy_reports_link} onChange={(e) => set("q35_allergy_reports_link", e.target.value)} className={inputClass} /></Field>
+          <Field label="Food intolerance test report (optional)" sub="Photo or PDF"><PublicUploadField multiple buttonText="Add report" onChange={(p) => setUpload("q35_allergy_reports", p)} /></Field>
         </div>
 
         <div className="ledger p-5 space-y-4">
@@ -261,9 +265,9 @@ export default function PublicQuestionnairePage() {
           <Field label="Morning Blood Pressure"><input value={form.q46_bp_morning} onChange={(e) => set("q46_bp_morning", e.target.value)} className={inputClass} placeholder="120/80 mmHg" /></Field>
           <Field label="Afternoon Blood Pressure"><input value={form.q46_bp_afternoon} onChange={(e) => set("q46_bp_afternoon", e.target.value)} className={inputClass} /></Field>
           <Field label="Night Blood Pressure"><input value={form.q46_bp_night} onChange={(e) => set("q46_bp_night", e.target.value)} className={inputClass} /></Field>
-          <Field label="Blood test / Urine Analysis / Dexa report link (if done within 3 months)"><input value={form.q47_blood_tests_link} onChange={(e) => set("q47_blood_tests_link", e.target.value)} className={inputClass} /></Field>
+          <Field label="Blood test / Urine Analysis / Dexa report (if done within 3 months)" sub="Photo or PDF"><PublicUploadField multiple buttonText="Add report" onChange={(p) => setUpload("q47_blood_tests", p)} /></Field>
           <Field label="Anything else you want to mention?"><textarea value={form.q48_anything_else} onChange={(e) => set("q48_anything_else", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field label="Progress photos link (front / back / side / favourite pose)" sub="Google Drive/Photos link, or send directly on WhatsApp"><input value={form.q49_54_progress_photos_link} onChange={(e) => set("q49_54_progress_photos_link", e.target.value)} className={inputClass} /></Field>
+          <Field label="Progress photos (front / back / side / favourite pose)" sub="Pick them from your gallery or take them now"><PublicUploadField multiple buttonText="Add progress photos" onChange={(p) => setUpload("q49_54_progress_pics", p)} /></Field>
           <Field label="Current Weight (kg)"><input type="number" step={0.1} value={form.q55_weight} onChange={(e) => set("q55_weight", e.target.value)} className={inputClass} /></Field>
           <Field label="Neck (cm)"><input type="number" step={0.5} value={form.q56_neck} onChange={(e) => set("q56_neck", e.target.value)} className={inputClass} /></Field>
           <Field label="Abdomen at navel (cm)"><input type="number" step={0.5} value={form.q57_abdomen} onChange={(e) => set("q57_abdomen", e.target.value)} className={inputClass} /></Field>
@@ -275,7 +279,7 @@ export default function PublicQuestionnairePage() {
           <Field label="When?"><input value={form.q62_lowest_when} onChange={(e) => set("q62_lowest_when", e.target.value)} className={inputClass} placeholder="e.g. June 2023" /></Field>
           <Field label="Heaviest body weight in last 3–5 years (kg)"><input value={form.q63_heaviest_weight} onChange={(e) => set("q63_heaviest_weight", e.target.value)} className={inputClass} /></Field>
           <Field label="When?"><input value={form.q63_heaviest_when} onChange={(e) => set("q63_heaviest_when", e.target.value)} className={inputClass} placeholder="e.g. December 2022" /></Field>
-          <Field label="Gym video/photos or gym website link" sub="Helps Coach see available gym machinery"><input value={form.q64_gym_link} onChange={(e) => set("q64_gym_link", e.target.value)} className={inputClass} /></Field>
+          <Field label="Gym photos (optional)" sub="Helps Coach see available gym machinery"><PublicUploadField multiple buttonText="Add gym photos" onChange={(p) => setUpload("q64_gym_pics", p)} /></Field>
         </div>
 
         <button

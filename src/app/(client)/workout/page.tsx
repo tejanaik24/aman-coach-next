@@ -222,10 +222,10 @@ export default function WorkoutPage() {
         </div>
         <div className="text-center space-y-1">
           <p className="text-text-primary font-heading font-bold text-lg">
-            No workout plan assigned
+            Plans from your coach show here
           </p>
           <p className="text-sm text-text-muted">
-            Your coach will assign a plan soon
+            Aman will send your plan soon
           </p>
         </div>
       </div>
@@ -537,7 +537,7 @@ export default function WorkoutPage() {
             const doc = new jsPDF();
             doc.setFont("helvetica", "bold");
             doc.setFontSize(22);
-            doc.text("AK FITNESS — WORKOUT PLAN", 20, 20);
+            doc.text("AMAN KHURANA FITNESS — WORKOUT PLAN", 20, 20);
             doc.setFontSize(12);
             doc.setFont("helvetica", "normal");
             doc.text(

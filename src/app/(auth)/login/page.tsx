@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useLayoutEffect, type FormEvent } from "react"
+import { loginIdentifierToEmail } from "@/lib/phone-login"
+import { useState, useRef, useLayoutEffect, useEffect, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { gsap } from "gsap"
@@ -47,14 +48,37 @@ export default function LoginPage() {
     return () => ctx.revert()
   }, [])
 
+  // Opened from a WhatsApp sign-in link: the session arrives in the URL hash, so finish signing in here.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.location.hash.includes("access_token")) return
+    let cancelled = false
+    setLoading(true)
+    ;(async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) throw new Error("no session")
+        const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single()
+        if (cancelled) return
+        router.replace(profile?.role === "coach" ? "/dashboard" : "/home")
+      } catch {
+        if (!cancelled) {
+          setLoading(false)
+          setError("This sign-in link has expired. Ask Aman to send a new one.")
+        }
+      }
+    })()
+    return () => { cancelled = true }
+  }, [router])
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError("")
-    if (!email.trim() || !password) { setError("Enter email and password"); return }
+    if (!email.trim() || !password) { setError("Enter your mobile number (or email) and password"); return }
     setLoading(true)
     try {
       const supabase = createClient()
-      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      const { error: err } = await supabase.auth.signInWithPassword({ email: loginIdentifierToEmail(email), password })
       if (err) { setError(err.message); return }
 
       const { data: { user } } = await supabase.auth.getUser()
@@ -100,7 +124,7 @@ export default function LoginPage() {
       <div ref={goldTextRef} className="relative z-10 px-6 pt-14 shrink-0">
         <div className="overflow-hidden">
           <p className="reveal-line text-[11px] font-semibold uppercase tracking-[0.25em] text-accent-orange">
-            AK Fitness Coach
+            Aman Khurana Fitness
           </p>
         </div>
         <div className="overflow-hidden mt-2">
@@ -129,11 +153,13 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="field-stagger flex flex-col gap-1.5">
               <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
-                Email Address
+                Mobile number or email
               </label>
               <input
-                type="email"
-                placeholder="e.g. client@akfitness.com"
+                type="text"
+                inputMode="text"
+                autoComplete="username"
+                placeholder="e.g. 98765 43210"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError("") }}
                 className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"

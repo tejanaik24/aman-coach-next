@@ -32,9 +32,10 @@ export type Invoice = {
   discount?: number
   rewardPointsRedeemed?: number
   amountPaid?: number
+  currency?: string
 }
 
-export const DEFAULT_UPI_ID = "9815690656@upi"
+export const DEFAULT_UPI_ID = "aman.khurana.1460-1@okhdfcbank" // same VPA shown to customers on /book
 
 /**
  * Generate a standard UPI payment URL link
@@ -127,12 +128,14 @@ function fmtDate(d?: string): string {
  */
 export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   const doc = new jsPDF()
-  const left = 16
-  const right = 194
+  const left = 14
+  const right = 196
   const width = right - left
-  const orange: [number, number, number] = [255, 106, 26]
-  const black: [number, number, number] = [15, 13, 12]
-  const gray: [number, number, number] = [100, 100, 100]
+  const gold: [number, number, number] = [218, 165, 32] // #DAA520 Luxury Dark Gold
+  const amber: [number, number, number] = [255, 184, 0] // #FFB800
+  const black: [number, number, number] = [18, 18, 18]
+  const gray: [number, number, number] = [95, 95, 95]
+  const lightGray: [number, number, number] = [248, 248, 248]
 
   const otherCharges = inv.otherCharges ?? 0
   const discount = inv.discount ?? 0
@@ -143,175 +146,250 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   const pendingAmount = Math.max(netPayable - amountPaid, 0)
   const isPaid = pendingAmount <= 0
 
+  // Currency resolution (Task B5)
+  const curr = (inv.currency || "INR").toUpperCase()
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    INR: "INR",
+    USD: "$",
+    EUR: "EUR",
+    GBP: "GBP",
+    AED: "AED",
+    CAD: "CAD",
+  }
+  const currSym = CURRENCY_SYMBOLS[curr] || curr
+  const fmtCurr = (val: number) => {
+    const sign = val < 0 ? "-" : ""
+    return `${sign}${currSym} ${Math.abs(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+
+  // Top Accent Bar
+  doc.setFillColor(...gold)
+  doc.rect(left, 10, width, 2.5, "F")
+
   // Logo + brand (top left)
   const logoBase64 = await getReceiptLogoBase64()
   if (logoBase64) {
-    doc.addImage(`data:image/jpeg;base64,${logoBase64}`, "JPEG", left, 14, 16, 16)
+    doc.addImage(`data:image/jpeg;base64,${logoBase64}`, "JPEG", left, 16, 18, 18)
   }
-  const brandX = logoBase64 ? left + 20 : left
+  const brandX = logoBase64 ? left + 22 : left
   doc.setTextColor(...black)
-  doc.setFontSize(14)
+  doc.setFontSize(16)
   doc.setFont("helvetica", "bold")
-  doc.text("AMAN KHURANA", brandX, 21)
+  doc.text("AMAN KHURANA FITNESS", brandX, 24)
   doc.setTextColor(...gray)
-  doc.setFontSize(7.5)
-  doc.setFont("helvetica", "normal")
-  doc.text("FITNESS & NUTRITION COACHING", brandX, 26)
-
-  // Diagonal ribbon + "INVOICE" title (top right)
-  const ribbonY = 12
-  const ribbonH = 14
-  doc.setFillColor(...orange)
-  doc.triangle(115, ribbonY, 128, ribbonY, 115, ribbonY + ribbonH, "F")
-  doc.rect(128, ribbonY, right - 128, ribbonH, "F")
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(19)
-  doc.setFont("helvetica", "bold")
-  doc.text("INVOICE", right - 2, ribbonY + ribbonH - 4, { align: "right" })
-
-  let y = 40
-  doc.setDrawColor(225, 225, 225)
-  doc.setLineWidth(0.3)
-  doc.line(left, y, right, y)
-  y += 8
-
-  // Invoice to / Invoice # + Date
-  doc.setTextColor(...gray)
-  doc.setFontSize(8)
-  doc.setFont("helvetica", "bold")
-  doc.text("INVOICE TO:", left, y)
-  doc.setFont("helvetica", "normal")
-  doc.text("Invoice#", 130, y)
-  doc.text("Date", 130, y + 5)
-
-  doc.setTextColor(...black)
-  doc.setFont("helvetica", "bold")
-  doc.text(inv.invoiceNumber, 155, y)
-  doc.setFont("helvetica", "normal")
-  doc.text(fmtDate(inv.createdAt), 155, y + 5)
-
-  y += 5
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "bold")
-  doc.text(inv.clientName || "Valued Client", left, y)
-  y += 5
   doc.setFontSize(8.5)
   doc.setFont("helvetica", "normal")
-  doc.setTextColor(...gray)
-  if (inv.clientPhone) { doc.text(inv.clientPhone, left, y); y += 4.5 }
-  doc.text(`Member ID: ${inv.memberNumber ?? "-"}`, left, y)
-  y += 12
+  doc.text("ELITE 1-ON-1 NUTRITION & PHYSIQUE COACHING", brandX, 30)
 
-  // Item table
-  const col = { sl: left, item: left + 10, start: 115, end: 148, total: right }
+  // Top Right: Modern INVOICE badge
+  const badgeW = 55
+  const badgeH = 16
+  const badgeX = right - badgeW
   doc.setFillColor(...black)
-  doc.rect(left, y, width, 8, "F")
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(8)
+  doc.roundedRect(badgeX, 16, badgeW, badgeH, 3, 3, "F")
+  doc.setTextColor(...amber)
+  doc.setFontSize(14)
   doc.setFont("helvetica", "bold")
-  doc.text("SL.", col.sl + 2, y + 5.3)
-  doc.text("ITEM DESCRIPTION", col.item, y + 5.3)
-  doc.text("START", col.start, y + 5.3)
-  doc.text("END", col.end, y + 5.3)
-  doc.text("AMOUNT", col.total - 2, y + 5.3, { align: "right" })
-  y += 8
+  doc.text("OFFICIAL INVOICE", badgeX + badgeW / 2, 26.5, { align: "center" })
 
-  type LineItem = { label: string; amount: number }
+  let y = 44
+  doc.setDrawColor(230, 230, 230)
+  doc.setLineWidth(0.4)
+  doc.line(left, y, right, y)
+  y += 7
+
+  // Client Info & Invoice Meta Grid
+  doc.setTextColor(...gray)
+  doc.setFontSize(8.5)
+  doc.setFont("helvetica", "bold")
+  doc.text("BILLED TO:", left, y)
+  doc.text("INVOICE DETAILS:", 128, y)
+
+  y += 5
+  doc.setTextColor(...black)
+  doc.setFontSize(12)
+  doc.setFont("helvetica", "bold")
+  doc.text(inv.clientName || "Valued Athlete", left, y)
+
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  doc.text("Invoice #:", 128, y)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...black)
+  doc.text(inv.invoiceNumber, 155, y)
+
+  y += 5
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  if (inv.clientPhone) {
+    doc.text(`Phone: ${inv.clientPhone}`, left, y)
+  }
+  doc.text("Issue Date:", 128, y)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...black)
+  doc.text(fmtDate(inv.createdAt), 155, y)
+
+  y += 5
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  doc.text(`Member ID: ${inv.memberNumber ?? "—"}`, left, y)
+  doc.text("Due Date:", 128, y)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...black)
+  doc.text(fmtDate(inv.dueDate), 155, y)
+
+  // Show package start & end date clearly (Task B5)
+  if (inv.startDate || inv.endDate) {
+    y += 5
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(...gold)
+    doc.text(`Package Duration: ${fmtDate(inv.startDate)} — ${fmtDate(inv.endDate)}`, left, y)
+  }
+  y += 10
+
+  // Item table header
+  const col = { sl: left, item: left + 12, dates: 110, total: right }
+  doc.setFillColor(...black)
+  doc.rect(left, y, width, 9, "F")
+  doc.setFillColor(...gold)
+  doc.rect(left, y + 8.5, width, 0.7, "F") // Gold bottom rule
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "bold")
+  doc.text("SL.", col.sl + 3, y + 6)
+  doc.text("PACKAGE & DESCRIPTION", col.item, y + 6)
+  doc.text("PACKAGE DURATION", col.dates, y + 6)
+  doc.text("AMOUNT", col.total - 3, y + 6, { align: "right" })
+  y += 10
+
+  type LineItem = { label: string; amount: number; isMainPackage?: boolean }
   const items: LineItem[] = [
-    { label: inv.packageName || "Coaching Package", amount: inv.amount },
+    { label: inv.packageName || "Personalized Fitness & Nutrition Coaching", amount: inv.amount, isMainPackage: true },
   ]
-  if (otherCharges) items.push({ label: "Other Charges", amount: otherCharges })
-  if (discount) items.push({ label: "Discount", amount: -discount })
+  if (otherCharges) items.push({ label: "Add-on / Other Charges", amount: otherCharges })
+  if (discount) items.push({ label: "Special Privilege Discount", amount: -discount })
   if (rewardPointsRedeemed) items.push({ label: "Reward Points Redeemed", amount: -rewardPointsRedeemed })
 
   items.forEach((item, i) => {
-    const rowH = 9
+    const rowH = 11
     if (i % 2 === 1) {
-      doc.setFillColor(245, 245, 245)
+      doc.setFillColor(...lightGray)
       doc.rect(left, y, width, rowH, "F")
     }
     doc.setTextColor(...black)
-    doc.setFontSize(8.5)
+    doc.setFontSize(9.5)
     doc.setFont("helvetica", "normal")
-    doc.text(String(i + 1), col.sl + 2, y + 6)
-    doc.text(item.label, col.item, y + 6)
-    if (i === 0) {
-      doc.text(fmtDate(inv.startDate), col.start, y + 6)
-      doc.text(fmtDate(inv.endDate), col.end, y + 6)
+    doc.text(String(i + 1), col.sl + 3, y + 7)
+    doc.text(item.label, col.item, y + 7)
+
+    if (item.isMainPackage) {
+      doc.setFontSize(8.5)
+      doc.setTextColor(...gray)
+      doc.text(`${fmtDate(inv.startDate)} to ${fmtDate(inv.endDate)}`, col.dates, y + 7)
+      doc.setFontSize(9.5)
     }
-    doc.text(`${item.amount < 0 ? "-" : ""}INR ${Math.abs(item.amount).toFixed(2)}`, col.total - 2, y + 6, { align: "right" })
+
+    doc.setTextColor(...black)
+    doc.setFont("helvetica", "bold")
+    doc.text(fmtCurr(item.amount), col.total - 3, y + 7, { align: "right" })
     y += rowH
   })
+
   doc.setDrawColor(225, 225, 225)
+  doc.setLineWidth(0.3)
   doc.line(left, y, right, y)
   y += 8
 
-  // Totals block (bottom right)
-  const labelX = 140
-  function totalRow(label: string, value: string, bold = false) {
-    doc.setTextColor(...(bold ? black : gray))
-    doc.setFontSize(9)
+  // Totals & Status Block (right column)
+  const labelX = 132
+  function totalRow(label: string, value: string, bold = false, textColor = black) {
+    doc.setTextColor(...(bold ? textColor : gray))
+    doc.setFontSize(9.5)
     doc.setFont("helvetica", bold ? "bold" : "normal")
     doc.text(label, labelX, y)
-    doc.text(value, right - 2, y, { align: "right" })
-    y += 6
+    doc.text(value, right - 3, y, { align: "right" })
+    y += 6.5
   }
-  totalRow("Sub Total:", `INR ${subtotal.toFixed(2)}`)
-  if (discount) totalRow("Discount:", `- INR ${discount.toFixed(2)}`)
-  if (rewardPointsRedeemed) totalRow("Reward Points:", `- INR ${rewardPointsRedeemed.toFixed(2)}`)
-  totalRow("Amount Paid:", `INR ${amountPaid.toFixed(2)}`)
+
+  const totalsStartY = y
+  totalRow("Sub Total:", fmtCurr(subtotal))
+  if (discount) totalRow("Discount:", `- ${fmtCurr(discount)}`, false, [200, 40, 40])
+  if (rewardPointsRedeemed) totalRow("Reward Points:", `- ${fmtCurr(rewardPointsRedeemed)}`)
+  totalRow("Amount Paid:", fmtCurr(amountPaid), true)
   y += 1
 
-  doc.setFillColor(...(isPaid ? [60, 180, 90] as [number, number, number] : orange))
-  doc.rect(labelX - 4, y - 5, right - labelX + 4, 9, "F")
+  // Prominent Payment Status Pill
+  const statusH = 11
+  const statusBoxW = right - labelX + 6
+  if (isPaid) {
+    doc.setFillColor(16, 185, 129) // Emerald Green #10B981
+  } else {
+    doc.setFillColor(245, 158, 11) // Amber #F59E0B
+  }
+  doc.roundedRect(labelX - 4, y - 5, statusBoxW, statusH, 2.5, 2.5, "F")
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(10)
+  doc.setFontSize(11)
   doc.setFont("helvetica", "bold")
-  doc.text(isPaid ? "PAID IN FULL" : "Balance Due:", labelX, y + 1)
-  doc.text(`INR ${pendingAmount.toFixed(2)}`, right - 2, y + 1, { align: "right" })
-  y += 16
+  doc.text(isPaid ? "PAID IN FULL" : "BALANCE DUE:", labelX, y + 2.5)
+  doc.text(fmtCurr(pendingAmount), right - 3, y + 2.5, { align: "right" })
+  y += 18
 
-  // Terms & Conditions + Payment Info (bottom left), aligned with totals block
-  const bottomBlockTop = y - 32
-  let ty = bottomBlockTop
+  // Terms & Conditions Card (Enlarged & Visually Highlighted per Task B5)
+  const tcWidth = 115
+  const tcY = totalsStartY
+  const tcCardHeight = 68
+  
+  // Highlighted Card Background + Gold Border
+  doc.setFillColor(254, 252, 245) // Subtle warm ivory
+  doc.setDrawColor(...gold)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(left, tcY, tcWidth, tcCardHeight, 3, 3, "FD")
+
+  // Header tag inside card
+  doc.setFillColor(...gold)
+  doc.roundedRect(left + 4, tcY + 4, 60, 5.5, 1.5, 1.5, "F")
+  doc.setTextColor(0, 0, 0)
+  doc.setFontSize(7.5)
+  doc.setFont("helvetica", "bold")
+  doc.text("TERMS & CONDITIONS", left + 34, tcY + 8, { align: "center" })
+
+  let currentTcY = tcY + 14
+  doc.setFontSize(7.5)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(60, 40, 20)
+
+  for (const clause of TERMS_AND_CONDITIONS) {
+    const lines = doc.splitTextToSize(clause, tcWidth - 8)
+    doc.text(lines, left + 4, currentTcY)
+    currentTcY += lines.length * 3.2 + 1.2
+  }
+
+  y = Math.max(y, tcY + tcCardHeight + 8)
+
+  // Authorised Signature Block
+  const signX = right - 48
+  doc.setDrawColor(...gray)
+  doc.setLineWidth(0.4)
+  doc.line(signX, y + 10, right, y + 10)
   doc.setTextColor(...black)
-  doc.setFontSize(9)
-  doc.setFont("helvetica", "bold")
-  doc.text("Thank you for choosing #teamAKF", left, ty)
-  ty += 6
-
   doc.setFontSize(8.5)
   doc.setFont("helvetica", "bold")
-  doc.text("Terms & Conditions", left, ty)
-  ty += 4
-  doc.setFontSize(6.3)
-  doc.setFont("helvetica", "italic")
-  doc.setTextColor(190, 60, 40)
-  for (const clause of TERMS_AND_CONDITIONS) {
-    const lines = doc.splitTextToSize(clause, 105)
-    doc.text(lines, left, ty)
-    ty += lines.length * 2.9 + 1.2
-  }
-  y = Math.max(y, ty + 4)
+  doc.text("Aman Khurana", signX + 24, y + 15, { align: "center" })
+  doc.setFontSize(7.5)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  doc.text("Authorised Signatory", signX + 24, y + 19, { align: "center" })
 
-  // Authorised Sign
-  doc.setDrawColor(...gray)
-  doc.setLineWidth(0.3)
-  doc.line(right - 45, y, right, y)
+  // Footer Rule & Brand Info
+  doc.setDrawColor(...gold)
+  doc.setLineWidth(1)
+  doc.line(left, 280, right, 280)
   doc.setTextColor(...gray)
   doc.setFontSize(8)
   doc.setFont("helvetica", "normal")
-  doc.text("Authorised Sign", right - 22.5, y + 5, { align: "center" })
-  y += 16
-
-  // Footer
-  doc.setDrawColor(...orange)
-  doc.setLineWidth(1.2)
-  doc.line(left, 280, right, 280)
-  doc.setTextColor(...gray)
-  doc.setFontSize(7.5)
-  doc.setFont("helvetica", "normal")
-  doc.text("+91 98156 90656  |  Chandigarh, India  |  www.amankhuranafitness.com", 105, 286, { align: "center" })
+  doc.text("+91 98156 90656   |   info@amankhuranafitness.com   |   www.amankhuranafitness.com", 105, 286, { align: "center" })
 
   return doc
 }

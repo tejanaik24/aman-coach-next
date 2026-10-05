@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     if (eventType === "new_client_welcome") {
       const name = value(payload.display_name), phone = value(payload.phone), email = value(payload.email), setupUrl = value(payload.setupUrl), onboardingUrl = value(payload.onboardingUrl)
       if (!name || !phone || !email || !setupUrl || !onboardingUrl) throw new Error("Invalid welcome event")
-      const whatsapp = await sendWhatsAppText(phone, `Welcome to AK Fitness! 🎉\nHi ${name}, set your password here: ${setupUrl}\nThen complete your joining form: ${onboardingUrl}`)
+      const whatsapp = await sendWhatsAppText(phone, `Welcome to Aman Khurana Fitness! 🎉\nHi ${name}, set your password here: ${setupUrl}\nThen complete your joining form: ${onboardingUrl}`)
       if (!whatsapp.success) throw new Error(whatsapp.error || "WhatsApp delivery failed")
       await sendWelcomeEmail(email, name, setupUrl)
     } else if (eventType === "coach_feedback") {

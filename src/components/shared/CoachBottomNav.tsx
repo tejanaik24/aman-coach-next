@@ -2,14 +2,13 @@
 
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "motion/react"
-import { LayoutDashboard, Users, CalendarRange, ClipboardCheck, Wallet, FileText } from "lucide-react"
+import { LayoutDashboard, Users, ClipboardList, Wallet } from "lucide-react"
 
 const tabs = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/clients", label: "Clients", icon: Users },
-  { href: "/submissions", label: "Forms", icon: FileText },
-  { href: "/checkins", label: "Check-ins", icon: ClipboardCheck },
-  { href: "/fees", label: "Fees", icon: Wallet },
+  { href: "/plans", label: "Plans", icon: ClipboardList },
+  { href: "/fees", label: "Money", icon: Wallet },
 ]
 
 export default function CoachBottomNav() {
@@ -39,7 +38,7 @@ export default function CoachBottomNav() {
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="text-[9px] tracking-tight">{label}</span>
+              <span className="text-xs tracking-tight">{label}</span>
             </span>
           </button>
         )
