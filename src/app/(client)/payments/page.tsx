@@ -8,12 +8,15 @@ import { createClient } from "@/lib/supabase/client"
 import { generateUpiPaymentUrl, generatePaymentReceiptPdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
 import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 import toast from "react-hot-toast"
+import { COACH_WHATSAPP } from "@/lib/coach-contact"
 
 export default function ClientPaymentsPage() {
   const supabase = createClient()
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  // Same source as the Home screen: the coach's fee records (invoices only exist once one is generated).
+  const [dueFee, setDueFee] = useState<{ amount: number; due_date: string } | null>(null)
   const [clientName, setClientName] = useState("")
   const [clientEmail, setClientEmail] = useState("")
   const [clientPhone, setClientPhone] = useState("")
@@ -30,6 +33,15 @@ export default function ClientPaymentsPage() {
 
     const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
     if (!client) { setLoading(false); return }
+
+    const { data: feeRows } = await supabase
+      .from("fees")
+      .select("amount, due_date")
+      .eq("client_id", client.id)
+      .in("status", ["pending", "overdue"])
+      .order("due_date")
+      .limit(1)
+    setDueFee((feeRows?.[0] as { amount: number; due_date: string } | undefined) ?? null)
 
     const { data: invRows } = await supabase
       .from("invoices")
@@ -128,6 +140,19 @@ export default function ClientPaymentsPage() {
               <Download className="size-4 text-accent-orange" /> Receipt
             </button>
           </div>
+        </div>
+      ) : dueFee ? (
+        <div className="rounded-2xl border border-accent-orange/40 bg-accent-orange/10 p-6 space-y-3">
+          <h3 className="font-bold text-base text-text-primary">Fee due: ₹{Number(dueFee.amount).toLocaleString("en-IN")}</h3>
+          <p className="text-xs text-text-muted">Due date: {format(new Date(dueFee.due_date), "dd MMMM yyyy")}</p>
+          <p className="text-xs text-text-muted">Pay by UPI to <span className="text-text-primary font-bold">{DEFAULT_UPI_ID}</span>, then send Aman a message so he can mark it paid.</p>
+          <a
+            href={`https://wa.me/${COACH_WHATSAPP}?text=${encodeURIComponent(`Hi Aman, I have paid my fee of Rs ${dueFee.amount}.`)}`}
+            target="_blank" rel="noopener noreferrer"
+            className="inline-block py-3 px-5 rounded-full bg-accent-orange text-black text-xs font-bold uppercase tracking-wider"
+          >
+            Message Aman I have paid
+          </a>
         </div>
       ) : (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/10 p-6 flex items-center gap-4 text-emerald-400">
