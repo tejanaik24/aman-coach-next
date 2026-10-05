@@ -426,3 +426,116 @@ export async function sendEnquiryAlert(
     `📅 Time: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
   return sendWhatsAppText(coachPhone, text);
 }
+
+/**
+ * Template Helper: Welcome Setup for New Client
+ */
+export async function sendWelcomeSetupTemplate(
+  phone: string,
+  name: string,
+  setupUrl: string,
+  onboardingUrl: string,
+) {
+  const var1 = (name || "").trim() || "Not given";
+  const var2 = (setupUrl || "").trim() || "Not given";
+  const var3 = (onboardingUrl || "").trim() || "Not given";
+
+  const components = [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: var1 },
+        { type: "text", text: var2 },
+        { type: "text", text: var3 },
+      ],
+    },
+  ];
+
+  try {
+    const templateResult = await sendWhatsAppTemplate(
+      phone,
+      "client_welcome_setup",
+      "en",
+      components,
+    );
+
+    if (templateResult.success) {
+      return templateResult;
+    }
+
+    console.error(
+      "[Meta WhatsApp] Template client_welcome_setup failed to send. Error:",
+      templateResult.error || templateResult.data || "Unknown template error",
+    );
+  } catch (err: any) {
+    console.error(
+      "[Meta WhatsApp] Exception sending template client_welcome_setup:",
+      err?.message || err,
+    );
+  }
+
+  // Fallback to free-text send if template send fails
+  console.warn(
+    "[Meta WhatsApp] Falling back to free-text message for welcome setup",
+  );
+  const text =
+    `Welcome to Aman Khurana Fitness! 🎉\n` +
+    `Hi ${name}, set your password here: ${setupUrl}\n` +
+    `Then complete your joining form: ${onboardingUrl}`;
+  return sendWhatsAppText(phone, text);
+}
+
+/**
+ * Template Helper: Check-in Reviewed for Client
+ */
+export async function sendCheckinReviewedTemplate(
+  phone: string,
+  name: string,
+  link: string,
+  feedback: string = "",
+) {
+  const var1 = (name || "").trim() || "Not given";
+  const var2 = (link || "").trim() || "Not given";
+
+  const components = [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: var1 },
+        { type: "text", text: var2 },
+      ],
+    },
+  ];
+
+  try {
+    const templateResult = await sendWhatsAppTemplate(
+      phone,
+      "checkin_reviewed",
+      "en",
+      components,
+    );
+
+    if (templateResult.success) {
+      return templateResult;
+    }
+
+    console.error(
+      "[Meta WhatsApp] Template checkin_reviewed failed to send. Error:",
+      templateResult.error || templateResult.data || "Unknown template error",
+    );
+  } catch (err: any) {
+    console.error(
+      "[Meta WhatsApp] Exception sending template checkin_reviewed:",
+      err?.message || err,
+    );
+  }
+
+  // Fallback to free-text send if template send fails
+  console.warn(
+    "[Meta WhatsApp] Falling back to free-text message for check-in reviewed",
+  );
+  const text = feedback
+    ? `Hi ${name} 👋\n\nCoach Aman has reviewed your check-in.\n\nFeedback: ${feedback}`
+    : `Hi ${name} 👋\n\nCoach Aman has reviewed your check-in.`;
+  return sendWhatsAppText(phone, text);
+}

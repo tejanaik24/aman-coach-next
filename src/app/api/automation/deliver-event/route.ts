@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { automationSupabase, isAuthorizedAutomationRequest } from "@/lib/automation"
 import { sendWelcomeEmail } from "@/lib/email"
-import { sendWhatsAppText } from "@/lib/whatsapp"
+import { sendCheckinReviewedTemplate, sendWelcomeSetupTemplate } from "@/lib/whatsapp"
 
 const value = (input: unknown) => typeof input === "string" ? input.trim() : ""
 
@@ -18,14 +18,15 @@ export async function POST(request: Request) {
   try {
     if (eventType === "new_client_welcome") {
       const name = value(payload.display_name), phone = value(payload.phone), email = value(payload.email), setupUrl = value(payload.setupUrl), onboardingUrl = value(payload.onboardingUrl)
-      if (!name || !phone || !email || !setupUrl || !onboardingUrl) throw new Error("Invalid welcome event")
-      const whatsapp = await sendWhatsAppText(phone, `Welcome to Aman Khurana Fitness! 🎉\nHi ${name}, set your password here: ${setupUrl}\nThen complete your joining form: ${onboardingUrl}`)
+      if (!name || !phone || !setupUrl || !onboardingUrl) throw new Error("Invalid welcome event")
+      const whatsapp = await sendWelcomeSetupTemplate(phone, name, setupUrl, onboardingUrl)
       if (!whatsapp.success) throw new Error(whatsapp.error || "WhatsApp delivery failed")
-      await sendWelcomeEmail(email, name, setupUrl)
+      if (email) await sendWelcomeEmail(email, name, setupUrl)
     } else if (eventType === "coach_feedback") {
       const name = value(payload.clientName), phone = value(payload.phone), feedback = value(payload.feedback)
       if (!name || !phone || !feedback) throw new Error("Invalid coach feedback event")
-      const whatsapp = await sendWhatsAppText(phone, `Hi ${name} 👋\n\nCoach Aman has reviewed your check-in.\n\nFeedback: ${feedback}`)
+      const link = "https://aman-coach-next.vercel.app/home"
+      const whatsapp = await sendCheckinReviewedTemplate(phone, name, link, feedback)
       if (!whatsapp.success) throw new Error(whatsapp.error || "WhatsApp delivery failed")
     } else throw new Error(`Unsupported automation event: ${eventType}`)
     const { error } = await automationSupabase.from("pending_webhooks").update({ status: "sent", last_error: null }).eq("id", deliveryId).eq("status", "pending")
