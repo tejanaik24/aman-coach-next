@@ -1,9 +1,8 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
 import { sendWhatsAppText } from "./whatsapp"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Logged-in session client (an anon client has no session, so RLS silently blocks writes).
+const supabase = createClient()
 
 export type Availability = {
   id: string
