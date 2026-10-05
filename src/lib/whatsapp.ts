@@ -19,16 +19,24 @@ interface MetaConfig {
 }
 
 function getMetaConfig(): MetaConfig | null {
-  if (!META_WA_TOKEN || !META_WA_PHONE_NUMBER_ID) {
+  const token =
+    process.env.META_WA_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
+  const phoneNumberId =
+    process.env.META_WA_PHONE_NUMBER_ID ||
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    "";
+  const apiVersion = process.env.META_WA_API_VERSION || "v21.0";
+
+  if (!token || !phoneNumberId) {
     console.error(
       "[Meta WhatsApp] META_WA_TOKEN and META_WA_PHONE_NUMBER_ID must be configured in environment",
     );
     return null;
   }
   return {
-    token: META_WA_TOKEN,
-    phoneNumberId: META_WA_PHONE_NUMBER_ID,
-    apiVersion: META_WA_API_VERSION,
+    token,
+    phoneNumberId,
+    apiVersion,
   };
 }
 
@@ -324,10 +332,52 @@ export async function sendEnquiryAlert(
   phone: string,
   interest: string,
 ) {
+  const var1 = (name || "").trim() || "Not given";
+  const var2 = (phone || "").trim() || "Not given";
+  const var3 = (interest || "").trim() || "Not given";
+
+  const components = [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: var1 },
+        { type: "text", text: var2 },
+        { type: "text", text: var3 },
+      ],
+    },
+  ];
+
+  try {
+    const templateResult = await sendWhatsAppTemplate(
+      coachPhone,
+      "new_enquiry_alert",
+      "en",
+      components,
+    );
+
+    if (templateResult.success) {
+      return templateResult;
+    }
+
+    console.error(
+      "[Meta WhatsApp] Template new_enquiry_alert failed to send. Error:",
+      templateResult.error || templateResult.data || "Unknown template error",
+    );
+  } catch (err: any) {
+    console.error(
+      "[Meta WhatsApp] Exception sending template new_enquiry_alert:",
+      err?.message || err,
+    );
+  }
+
+  // Fallback to free-text send if template send fails
+  console.warn(
+    "[Meta WhatsApp] Falling back to free-text message for enquiry alert",
+  );
   const text =
     `📝 *NEW ENQUIRY*\n\n` +
-    `👤 Name: *${name}*\n` +
-    `📱 Phone: ${phone}\n` +
+    `👤 Name: *${name || "Not given"}*\n` +
+    `📱 Phone: ${phone || "Not given"}\n` +
     `🎯 Interested In: ${interest || "—"}\n` +
     `📅 Time: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`;
   return sendWhatsAppText(coachPhone, text);
