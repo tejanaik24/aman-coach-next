@@ -269,13 +269,57 @@ export async function sendClientWelcomeMessage(
 /**
  * Template Helper: Check-in Reminder for Client
  */
-export async function sendCheckinReminder(phone: string, clientName: string) {
+export async function sendCheckinReminder(
+  phone: string,
+  clientName: string,
+  checkinUrl: string = "https://aman-coach-next.vercel.app/checkin",
+) {
+  const var1 = (clientName || "").trim() || "Not given";
+  const var2 = (checkinUrl || "").trim() || "Not given";
+
+  const components = [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: var1 },
+        { type: "text", text: var2 },
+      ],
+    },
+  ];
+
+  try {
+    const templateResult = await sendWhatsAppTemplate(
+      phone,
+      "checkin_reminder",
+      "en",
+      components,
+    );
+
+    if (templateResult.success) {
+      return templateResult;
+    }
+
+    console.error(
+      "[Meta WhatsApp] Template checkin_reminder failed to send. Error:",
+      templateResult.error || templateResult.data || "Unknown template error",
+    );
+  } catch (err: any) {
+    console.error(
+      "[Meta WhatsApp] Exception sending template checkin_reminder:",
+      err?.message || err,
+    );
+  }
+
+  // Fallback to free-text send if template send fails
+  console.warn(
+    "[Meta WhatsApp] Falling back to free-text message for check-in reminder",
+  );
   const text =
     `⏰ *WEEKLY CHECK-IN REMINDER*\n\n` +
-    `Hi ${clientName},\n` +
+    `Hi ${clientName || "Client"},\n` +
     `Your weekly check-in is due! Regular check-ins help Coach Aman track your progress, measurements, and adjust your nutrition & training plans.\n\n` +
     `📝 Complete your check-in form now (takes ~3 mins):\n` +
-    `https://aman-coach-next.vercel.app/checkin\n\n` +
+    `${checkinUrl || "https://aman-coach-next.vercel.app/checkin"}\n\n` +
     `Thank you!`;
   return sendWhatsAppText(phone, text);
 }
