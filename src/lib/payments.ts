@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { jsPDF } from "jspdf"
 import { sendWhatsAppText, sendWhatsAppFile } from "./whatsapp"
+import { createClient as createSessionClient } from "@/lib/supabase/client"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -397,21 +398,23 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
 /**
  * Mark Invoice / Fee as Paid & Send WhatsApp Receipt
  */
-export async function markInvoicePaid(invId: string, clientName: string, clientPhone?: string): Promise<boolean> {
+export async function markInvoicePaid(invId: string, _clientName?: string, _clientPhone?: string): Promise<boolean> {
+  // Must use the logged-in coach session: the module-level anon client has no session, so RLS
+  // silently blocks the write (0 rows, no error). Check the row count instead of trusting "no error".
   const paidAt = new Date().toISOString()
   try {
-    await supabase.from("invoices").update({ status: "paid", paid_at: paidAt }).eq("id", invId)
-    await supabase.from("fees").update({ status: "paid", paid_date: paidAt.split("T")[0] }).eq("id", invId)
-
-    if (clientPhone) {
-      const msg = `✅ *PAYMENT RECEIVED & CONFIRMED*\n\n` +
-        `Hi ${clientName},\n` +
-        `We have received your coaching fee payment.\n\n` +
-        `📄 Your payment receipt is available in your client portal:\n` +
-        `https://aman-coach-next.vercel.app/payments\n\n` +
-        `Thank you!`
-      sendWhatsAppText(clientPhone, msg).catch(e => console.error("Payment WA receipt note:", e))
+    const session = createSessionClient()
+    const { data, error } = await session
+      .from("fees")
+      .update({ status: "paid", paid_date: paidAt.split("T")[0] })
+      .eq("id", invId)
+      .select("id")
+    if (error || !data || data.length === 0) {
+      console.error("Mark paid error:", error?.message ?? "no row updated")
+      return false
     }
+    // Keep the invoice row in sync if one exists (optional, ignore result).
+    await session.from("invoices").update({ status: "paid", paid_at: paidAt }).eq("id", invId)
     return true
   } catch (e) {
     console.error("Mark paid error:", e)

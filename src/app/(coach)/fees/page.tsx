@@ -167,7 +167,7 @@ export default function FeesPage() {
   async function handleMarkPaid(f: FeeWithClient) {
     const success = await markInvoicePaid(f.id, f.clientName, f.clientPhone)
     if (success) {
-      toast.success(`Fee for ${f.clientName} marked as paid & receipt sent!`)
+      toast.success(`Fee for ${f.clientName} marked as paid`)
       setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "paid" } : item)))
     } else {
       toast.error("Failed to mark fee as paid")
