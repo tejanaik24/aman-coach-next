@@ -143,12 +143,19 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(overlay);
   }
 
-  window.addEventListener("load", () => {
+  let hidden = false;
+  const hideLoader = () => {
+    if (hidden) return;
+    hidden = true;
     setTimeout(() => {
       overlay.classList.remove("active");
       setTimeout(() => overlay.remove(), 400);
     }, 150);
-  });
+  };
+
+  // Hide on DOMContentLoaded instead of waiting for every image, with a 1.5s safety timeout
+  hideLoader();
+  setTimeout(hideLoader, 1500);
 
   initServicesFilter();
 });

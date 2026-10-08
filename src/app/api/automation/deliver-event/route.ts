@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { automationSupabase, isAuthorizedAutomationRequest } from "@/lib/automation"
-import { sendWelcomeEmail } from "@/lib/email"
-import { sendCheckinReviewedTemplate, sendWelcomeSetupTemplate } from "@/lib/whatsapp"
+import { isAuthorizedAutomationRequest } from "@/lib/automation"
+import { deliverAutomationEvent } from "@/lib/automation-delivery"
 
 const value = (input: unknown) => typeof input === "string" ? input.trim() : ""
 
@@ -12,26 +11,10 @@ export async function POST(request: Request) {
   const eventType = value(body?.eventType)
   const payload = body?.payload as Record<string, unknown> | undefined
   if (!deliveryId || !payload) return NextResponse.json({ error: "Invalid automation event" }, { status: 400 })
-  const { data: pending, error: pendingError } = await automationSupabase.from("pending_webhooks").select("id").eq("id", deliveryId).eq("status", "pending").maybeSingle()
-  if (pendingError) return NextResponse.json({ error: pendingError.message }, { status: 500 })
-  if (!pending) return NextResponse.json({ success: true, duplicate: true })
+
   try {
-    if (eventType === "new_client_welcome") {
-      const name = value(payload.display_name), phone = value(payload.phone), email = value(payload.email), setupUrl = value(payload.setupUrl), onboardingUrl = value(payload.onboardingUrl)
-      if (!name || !phone || !setupUrl || !onboardingUrl) throw new Error("Invalid welcome event")
-      const whatsapp = await sendWelcomeSetupTemplate(phone, name, setupUrl, onboardingUrl)
-      if (!whatsapp.success) throw new Error(whatsapp.error || "WhatsApp delivery failed")
-      if (email) await sendWelcomeEmail(email, name, setupUrl)
-    } else if (eventType === "coach_feedback") {
-      const name = value(payload.clientName), phone = value(payload.phone), feedback = value(payload.feedback)
-      if (!name || !phone || !feedback) throw new Error("Invalid coach feedback event")
-      const link = "https://aman-coach-next.vercel.app/home"
-      const whatsapp = await sendCheckinReviewedTemplate(phone, name, link, feedback)
-      if (!whatsapp.success) throw new Error(whatsapp.error || "WhatsApp delivery failed")
-    } else throw new Error(`Unsupported automation event: ${eventType}`)
-    const { error } = await automationSupabase.from("pending_webhooks").update({ status: "sent", last_error: null }).eq("id", deliveryId).eq("status", "pending")
-    if (error) throw error
-    return NextResponse.json({ success: true })
+    const result = await deliverAutomationEvent(deliveryId, eventType, payload)
+    return NextResponse.json(result)
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Automation delivery failed" }, { status: 502 })
   }

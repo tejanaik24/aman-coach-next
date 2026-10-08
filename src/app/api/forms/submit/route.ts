@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createClient as createServerClient } from "@/lib/supabase/server"
 import { withRetry } from "@/lib/db-retry"
+import { sendCoachFormAlert } from "@/lib/whatsapp"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -98,10 +99,24 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. WhatsApp coach alert is sent by the local n8n worker (outbox pattern):
-    // it polls /api/automation/pending-alerts and sends via WAHA, then marks
-    // coach_alert_sent_at. Vercel cannot reach the local WAHA instance, so the
-    // alert is intentionally queued in the DB instead of sent here.
+    // 4. WhatsApp coach alert is now sent directly here via Meta Cloud API
+    const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
+    if (coachPhoneRaw) {
+      try {
+        const coachPhone = coachPhoneRaw.replace(/\D/g, "")
+        const alertRes = await sendCoachFormAlert(coachPhone, formType, clientName)
+        if (alertRes?.success && insertedId) {
+          await withRetry(() =>
+            supabase
+              .from("form_submissions")
+              .update({ coach_alert_sent_at: new Date().toISOString() })
+              .eq("id", insertedId)
+          )
+        }
+      } catch (alertErr) {
+        console.error("Coach form alert error:", alertErr)
+      }
+    }
 
     return NextResponse.json({
       success: true,

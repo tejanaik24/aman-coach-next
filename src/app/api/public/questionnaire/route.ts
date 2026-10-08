@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { withRetry } from "@/lib/db-retry"
 import { isRateLimited } from "@/lib/request-guards"
+import { sendCoachFormAlert } from "@/lib/whatsapp"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -21,7 +22,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Name and phone are required" }, { status: 400 })
     }
 
-    const { error: insertError } = await withRetry(() =>
+    let insertedQuestId: string | null = null
+    const { data: insertedQuest, error: insertError } = await withRetry(() =>
       supabase.from("form_submissions").insert({
         user_id: null,
         client_id: null,
@@ -29,12 +31,31 @@ export async function POST(request: Request) {
         form_data: { name, tel, ...body },
         status: "submitted",
         submitted_at: new Date().toISOString(),
-      })
+      }).select("id").maybeSingle()
     )
 
     if (insertError) {
       console.error("Public questionnaire insert error:", insertError.message)
       return NextResponse.json({ error: "Failed to save questionnaire" }, { status: 500 })
+    }
+    if (insertedQuest?.id) insertedQuestId = insertedQuest.id
+
+    const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
+    if (coachPhoneRaw) {
+      try {
+        const coachPhone = coachPhoneRaw.replace(/\D/g, "")
+        const alertRes = await sendCoachFormAlert(coachPhone, "standard_joining", name)
+        if (alertRes?.success && insertedQuestId) {
+          await withRetry(() =>
+            supabase
+              .from("form_submissions")
+              .update({ coach_alert_sent_at: new Date().toISOString() })
+              .eq("id", insertedQuestId)
+          )
+        }
+      } catch (alertErr) {
+        console.error("Coach questionnaire alert error:", alertErr)
+      }
     }
 
     return NextResponse.json({ success: true, message: "Questionnaire submitted and queued for coach review" })

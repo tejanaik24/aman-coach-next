@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { withRetry } from "@/lib/db-retry"
 import { isAllowedImage, isRateLimited } from "@/lib/request-guards"
+import { sendCoachFormAlert } from "@/lib/whatsapp"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -41,7 +42,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const { error: insertError } = await withRetry(() =>
+    let insertedBookingId: string | null = null
+    const { data: insertedBooking, error: insertError } = await withRetry(() =>
       supabase.from("form_submissions").insert({
         user_id: null,
         client_id: null,
@@ -49,12 +51,31 @@ export async function POST(request: Request) {
         form_data: { name, countryCode, phone, email, screenshotPath: screenshotUrl },
         status: "submitted",
         submitted_at: new Date().toISOString(),
-      })
+      }).select("id").maybeSingle()
     )
 
     if (insertError) {
       console.error("Consultation booking insert error:", insertError.message)
       return NextResponse.json({ error: "Failed to save booking" }, { status: 500 })
+    }
+    if (insertedBooking?.id) insertedBookingId = insertedBooking.id
+
+    const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
+    if (coachPhoneRaw) {
+      try {
+        const coachPhone = coachPhoneRaw.replace(/\D/g, "")
+        const alertRes = await sendCoachFormAlert(coachPhone, "consultation_booking", name)
+        if (alertRes?.success && insertedBookingId) {
+          await withRetry(() =>
+            supabase
+              .from("form_submissions")
+              .update({ coach_alert_sent_at: new Date().toISOString() })
+              .eq("id", insertedBookingId)
+          )
+        }
+      } catch (alertErr) {
+        console.error("Coach consultation booking alert error:", alertErr)
+      }
     }
 
     return NextResponse.json({ success: true, message: "Consultation call booking submitted and queued for coach review" })

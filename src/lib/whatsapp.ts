@@ -349,6 +349,74 @@ export async function sendCoachSubmissionAlert(
 }
 
 /**
+ * Template Helper: Alert Aman when a client sends a form
+ */
+export async function sendCoachFormAlert(
+  coachPhone: string,
+  formLabel: string,
+  clientName: string,
+) {
+  const formLabels: Record<string, string> = {
+    standard_joining: "Standard Joining Questionnaire",
+    antenatal_joining: "AN-PN Pregnancy Questionnaire",
+    checkin: "Weekly Check-in Form",
+    consultation_booking: "Consultation Call Booking",
+  };
+
+  const resolvedLabel = formLabels[formLabel] || formLabel || "Form Submission";
+  const var1 = (resolvedLabel || "").trim() || "Form";
+  const var2 = (clientName || "").trim() || "Client";
+  const var3 = "https://aman-coach-next.vercel.app/dashboard";
+
+  const components = [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: var1 },
+        { type: "text", text: var2 },
+        { type: "text", text: var3 },
+      ],
+    },
+  ];
+
+  try {
+    const templateResult = await sendWhatsAppTemplate(
+      coachPhone,
+      "client_form_received",
+      "en",
+      components,
+    );
+
+    if (templateResult.success) {
+      return templateResult;
+    }
+
+    console.error(
+      "[Meta WhatsApp] Template client_form_received failed to send. Error:",
+      templateResult.error || templateResult.data || "Unknown template error",
+    );
+  } catch (err: any) {
+    console.error(
+      "[Meta WhatsApp] Exception sending template client_form_received:",
+      err?.message || err,
+    );
+  }
+
+  // Fallback to free-text send if template send fails
+  console.warn(
+    "[Meta WhatsApp] Falling back to free-text message for coach form alert",
+  );
+  const text =
+    `🚨 *NEW FORM SUBMISSION*\n\n` +
+    `👤 Client: *${var2}*\n` +
+    `📋 Form: *${var1}*\n` +
+    `📅 Time: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n\n` +
+    `🔗 Review in Coach App:\n` +
+    `${var3}`;
+  return sendWhatsAppText(coachPhone, text);
+}
+
+/**
  * Template Helper: New Consultation Call Booking Alert for Coach
  */
 export async function sendConsultationBookingAlert(
@@ -454,7 +522,7 @@ export async function sendWelcomeSetupTemplate(
   try {
     const templateResult = await sendWhatsAppTemplate(
       phone,
-      "client_welcome_setup",
+      "client_welcome_v2",
       "en",
       components,
     );
@@ -464,12 +532,12 @@ export async function sendWelcomeSetupTemplate(
     }
 
     console.error(
-      "[Meta WhatsApp] Template client_welcome_setup failed to send. Error:",
+      "[Meta WhatsApp] Template client_welcome_v2 failed to send. Error:",
       templateResult.error || templateResult.data || "Unknown template error",
     );
   } catch (err: any) {
     console.error(
-      "[Meta WhatsApp] Exception sending template client_welcome_setup:",
+      "[Meta WhatsApp] Exception sending template client_welcome_v2:",
       err?.message || err,
     );
   }

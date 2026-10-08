@@ -4,22 +4,24 @@ import { NextResponse, type NextRequest } from "next/server"
 const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule", "/submissions"]
 const CLIENT_PATHS = ["/home", "/more", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding"]
 
-async function getRole(supabase: ReturnType<typeof import("@supabase/ssr").createServerClient>, userId: string): Promise<string> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single()
-  return data?.role ?? "client"
+interface ProfileAuthData {
+  role: string
+  mustReset: boolean
 }
 
-async function getMustReset(supabase: ReturnType<typeof import("@supabase/ssr").createServerClient>, userId: string): Promise<boolean> {
+async function getProfileAuthData(
+  supabase: ReturnType<typeof import("@supabase/ssr").createServerClient>,
+  userId: string
+): Promise<ProfileAuthData> {
   const { data } = await supabase
     .from("profiles")
-    .select("must_reset_password")
+    .select("role, must_reset_password")
     .eq("id", userId)
     .single()
-  return data?.must_reset_password === true
+  return {
+    role: data?.role ?? "client",
+    mustReset: data?.must_reset_password === true,
+  }
 }
 
 export default async function proxy(request: NextRequest) {
@@ -38,39 +40,36 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Only run profile read for coach, client, or login paths (not public pages, not /api)
+  const needsProfileRead = Boolean(user && (isCoachPath || isClientPath || isLoginPath))
+  const profile = needsProfileRead ? await getProfileAuthData(supabase, user!.id) : null
+
   // Authenticated on login page → redirect based on profiles table role
-  if (user && isLoginPath) {
-    const role = await getRole(supabase, user.id)
-    const mustReset = await getMustReset(supabase, user.id)
+  if (user && isLoginPath && profile) {
     const url = request.nextUrl.clone()
-    if (mustReset) { url.pathname = "/reset-password"; return NextResponse.redirect(url) }
-    if (role === "coach") url.pathname = "/dashboard"
-    else if (role === "client") url.pathname = "/home"
+    if (profile.mustReset) { url.pathname = "/reset-password"; return NextResponse.redirect(url) }
+    if (profile.role === "coach") url.pathname = "/dashboard"
+    else if (profile.role === "client") url.pathname = "/home"
     else url.pathname = "/onboarding"
     return NextResponse.redirect(url)
   }
 
   // Authenticated but must reset password → force redirect (except on reset page itself)
-  if (user && !isResetPath && !isLoginPath) {
-    const mustReset = await getMustReset(supabase, user.id)
-    if (mustReset) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/reset-password"
-      return NextResponse.redirect(url)
-    }
+  if (user && !isResetPath && !isLoginPath && profile?.mustReset) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/reset-password"
+    return NextResponse.redirect(url)
   }
 
   // Role-based route protection using profiles table
-  if (user) {
-    const role = await getRole(supabase, user.id)
-
-    if (isClientPath && role === "coach") {
+  if (user && profile) {
+    if (isClientPath && profile.role === "coach") {
       const url = request.nextUrl.clone()
       url.pathname = "/dashboard"
       return NextResponse.redirect(url)
     }
 
-    if (isCoachPath && role !== "coach") {
+    if (isCoachPath && profile.role !== "coach") {
       const url = request.nextUrl.clone()
       url.pathname = "/home"
       return NextResponse.redirect(url)
@@ -82,6 +81,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|sw.js|css|js).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons|images|manifest.json|sw.js|css|js|.*\\.(?:png|svg|jpg|jpeg|webp|mp4|html)$).*)",
   ],
 }
