@@ -59,52 +59,45 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col justify-between p-6 bg-cream min-h-full">
-      <div className="flex flex-col items-center mt-12 space-y-2 animate-fade-in-up">
-        <div className="w-16 h-16 rounded-full bg-charcoal-deep flex items-center justify-center font-montserrat text-lime-electric font-black text-3xl tracking-tight">
-          AK
-        </div>
-        <h1 className="font-montserrat font-black text-2xl uppercase tracking-wider text-charcoal-deep">
-          First Login
-        </h1>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-red-700 bg-red-50 px-3 py-1.5 rounded-full border border-red-200">
-          Security Gate
-        </span>
+    <div className="flex-1 flex flex-col justify-center gap-8 p-6 bg-bg-primary min-h-full">
+      <div className="flex flex-col items-center text-center space-y-2">
+        <p className="font-heading font-bold text-2xl text-text-primary">Aman Khurana</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent-orange">Fitness Coaching</p>
       </div>
 
-      <div className="bg-white rounded-card-mobile p-6 shadow-premium space-y-6 animate-card-slide-up">
+      <div className="rounded-[28px] border border-border-subtle bg-bg-surface p-6 space-y-5">
         <div className="space-y-1">
-          <h2 className="font-montserrat font-extrabold text-lg text-charcoal-deep">Update Password</h2>
-          <p className="text-xs text-charcoal-muted font-medium">To protect your account, please replace your default credentials.</p>
+          <h1 className="font-heading font-bold text-lg text-text-primary">Set your password</h1>
+          <p className="text-xs text-text-muted">Choose a password you will remember. You will use it with your mobile number to log in.</p>
         </div>
 
         {error && (
-          <div className="p-3.5 bg-red-50 text-red-700 border border-red-100 rounded-xl text-xs font-semibold">
+          <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg">
             {error}
-          </div>
+          </p>
         )}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">New Password</label>
+            <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">New password</label>
             <input
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input px-4 py-3 text-xs font-semibold text-charcoal-deep shadow-inner transition-all outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
               required
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-charcoal-deep uppercase tracking-wider">Confirm Password</label>
+            <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Confirm password</label>
             <input
               type="password"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-cream focus:bg-white border-2 border-transparent focus:border-lime-electric rounded-input px-4 py-3 text-xs font-semibold text-charcoal-deep shadow-inner transition-all outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
               required
             />
           </div>
@@ -113,19 +106,13 @@ export default function ResetPasswordPage() {
             type="submit"
             disabled={loading}
             whileTap={{ scale: 0.97 }}
-            className="w-full bg-lime-electric text-charcoal-deep font-montserrat font-black text-xs uppercase tracking-widest py-4 px-6 rounded-full shadow-bento hover:bg-lime-electric/95 transition-colors cursor-pointer pt-4 disabled:opacity-50 flex items-center justify-center"
+            className="w-full bg-accent-orange text-bg-primary font-heading font-bold text-sm py-4 rounded-full disabled:opacity-50 flex items-center justify-center"
           >
             {loading
-              ? <div className="w-4 h-4 border-2 border-charcoal-deep/30 border-t-charcoal-deep rounded-full animate-spin" />
-              : "Set Password & Continue"}
+              ? <div className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+              : "Set password & continue"}
           </motion.button>
         </form>
-      </div>
-
-      <div className="text-center pb-6 animate-fade-in-up">
-        <p className="text-[10px] text-charcoal-muted font-medium">
-          Aman Khurana Fitness Security Protection Protocol
-        </p>
       </div>
     </div>
   )
