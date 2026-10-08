@@ -5,6 +5,7 @@ import {
   sendWelcomeEmail,
 } from "@/lib/email"
 import { isAuthorizedAutomationRequest } from "@/lib/automation"
+import { SITE_URL } from "@/lib/site"
 
 export async function POST(request: Request) {
   if (!isAuthorizedAutomationRequest(request)) {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   try {
     switch (body?.type) {
       case "welcome":
-        await sendWelcomeEmail(to, name, typeof body.loginUrl === "string" ? body.loginUrl : "https://aman-coach-next.vercel.app/auth/login")
+        await sendWelcomeEmail(to, name, typeof body.loginUrl === "string" ? body.loginUrl : `${SITE_URL}/auth/login`)
         break
       case "payment_reminder":
         await sendPaymentReminderEmail(to, name, Number(body.amount), String(body.dueDate || ""), Number(body.dayNumber))

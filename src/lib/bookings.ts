@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client"
 import { sendWhatsAppText } from "./whatsapp"
+import { SITE_URL } from "@/lib/site"
 
 // Logged-in session client (an anon client has no session, so RLS silently blocks writes).
 const supabase = createClient()
@@ -145,7 +146,7 @@ export async function createBooking(data: {
       `📆 Date: *${data.bookingDate}*\n` +
       `⏰ Time: *${data.startTime} - ${data.endTime}*\n` +
       `📝 Note: ${data.notes || "None"}\n\n` +
-      `View in Coach Schedule: https://aman-coach-next.vercel.app/coach/schedule`
+      `View in Coach Schedule: ${SITE_URL}/coach/schedule`
 
     sendWhatsAppText(coachPhone, bookingMsg).catch(e => console.error("Booking WA alert note:", e))
 

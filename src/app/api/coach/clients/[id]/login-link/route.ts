@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient as createServerClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
+import { SITE_URL } from "@/lib/site"
 
 // Coach taps "Send login link" on a client: returns a one-time sign-in link the client opens
 // from WhatsApp (no password to remember). Same host the welcome/reset links already use.
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://aman-coach-next.vercel.app"
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL
 
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -29,10 +30,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo: `${APP_URL}/login` },
+    options: { redirectTo: `${SITE_URL}/home` },
   })
-  const link = data?.properties?.action_link
-  if (error || !link) return NextResponse.json({ error: "Could not create the login link" }, { status: 500 })
+  const hashedToken = data?.properties?.hashed_token
+  if (error || !hashedToken) return NextResponse.json({ error: "Could not create the login link" }, { status: 500 })
+
+  const link = `${SITE_URL}/auth/confirm?token_hash=${hashedToken}&type=magiclink&next=/home`
 
   // This client signs in by link, so they never need the first-time password step.
   await admin.from("profiles").update({ must_reset_password: false }).eq("id", client.user_id)

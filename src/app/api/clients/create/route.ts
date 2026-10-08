@@ -5,6 +5,7 @@ import { withRetry } from "@/lib/db-retry"
 import { randomBytes } from "crypto"
 import { queueWebhook } from "@/lib/webhook-queue"
 import { phoneEmail } from "@/lib/phone-login"
+import { SITE_URL } from "@/lib/site"
 
 function calculateFirstDueDate(feeDueDay: number, startDate: string): string {
   const d = new Date(startDate)
@@ -104,12 +105,14 @@ export async function POST(request: Request) {
     const { data: recoveryData, error: recoveryError } = await admin.auth.admin.generateLink({
       type: "recovery",
       email,
-      options: { redirectTo: "https://aman-coach-next.vercel.app/reset-password" },
+      options: { redirectTo: `${SITE_URL}/reset-password` },
     })
-    if (recoveryError || !recoveryData.properties.action_link) {
+    const hashedToken = recoveryData?.properties?.hashed_token
+    if (recoveryError || !hashedToken) {
       await admin.auth.admin.deleteUser(newUserId)
       return NextResponse.json({ error: "Failed to create secure account setup link" }, { status: 500 })
     }
+    const setupUrl = `${SITE_URL}/auth/confirm?token_hash=${hashedToken}&type=recovery&next=/reset-password`
 
     const { data: clientData, error: clientError } = await withRetry(() =>
       supabase
@@ -161,9 +164,9 @@ export async function POST(request: Request) {
       phone: typeof phone === "string" ? phone.replace(/\D/g, "") : "",
       clientType,
       onboardingUrl: clientType === "antenatal"
-        ? "https://aman-coach-next.vercel.app/onboarding/antenatal"
-        : "https://aman-coach-next.vercel.app/onboarding",
-      setupUrl: recoveryData.properties.action_link,
+        ? `${SITE_URL}/onboarding/antenatal`
+        : `${SITE_URL}/onboarding`,
+      setupUrl,
     }).catch((webhookError) => {
       console.error("New client welcome queued for retry:", webhookError)
     })

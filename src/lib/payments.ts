@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { jsPDF } from "jspdf"
 import { sendWhatsAppText, sendWhatsAppFile } from "./whatsapp"
 import { createClient as createSessionClient } from "@/lib/supabase/client"
+import { SITE_URL } from "@/lib/site"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -441,7 +442,7 @@ export async function sendPaymentReminderWhatsApp(phone: string, clientName: str
   }
 
   const upiLink = generateUpiPaymentUrl(amount, clientName, "REMINDER")
-  const fullMsg = `${title}\n\n${body}\n\n📲 *Pay via UPI Link*:\n${upiLink}\n\nOr view details in portal:\nhttps://aman-coach-next.vercel.app/payments`
+  const fullMsg = `${title}\n\n${body}\n\n📲 *Pay via UPI Link*:\n${upiLink}\n\nOr view details in portal:\n${SITE_URL}/payments`
 
   return sendWhatsAppText(phone, fullMsg)
 }

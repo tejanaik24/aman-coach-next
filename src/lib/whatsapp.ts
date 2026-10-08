@@ -4,6 +4,8 @@
  * No third-party middlemen or local Docker containers required.
  */
 
+import { SITE_URL } from "@/lib/site";
+
 const META_WA_TOKEN =
   process.env.META_WA_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
 const META_WA_PHONE_NUMBER_ID =
@@ -261,7 +263,7 @@ export async function sendClientWelcomeMessage(
     `Hi ${clientName},\n` +
     `Coach Aman Khurana has added you to the client portal.\n\n` +
     `📋 Please complete your onboarding questionnaire to get started:\n` +
-    `https://aman-coach-next.vercel.app/onboarding\n\n` +
+    `${SITE_URL}/onboarding\n\n` +
     `Let's get started on your transformation! 💪`;
   return sendWhatsAppText(phone, text);
 }
@@ -272,7 +274,7 @@ export async function sendClientWelcomeMessage(
 export async function sendCheckinReminder(
   phone: string,
   clientName: string,
-  checkinUrl: string = "https://aman-coach-next.vercel.app/checkin",
+  checkinUrl: string = `${SITE_URL}/checkin`,
 ) {
   const var1 = (clientName || "").trim() || "Not given";
   const var2 = (checkinUrl || "").trim() || "Not given";
@@ -319,7 +321,7 @@ export async function sendCheckinReminder(
     `Hi ${clientName || "Client"},\n` +
     `Your weekly check-in is due! Regular check-ins help Coach Aman track your progress, measurements, and adjust your nutrition & training plans.\n\n` +
     `📝 Complete your check-in form now (takes ~3 mins):\n` +
-    `${checkinUrl || "https://aman-coach-next.vercel.app/checkin"}\n\n` +
+    `${checkinUrl || `${SITE_URL}/checkin`}\n\n` +
     `Thank you!`;
   return sendWhatsAppText(phone, text);
 }
@@ -344,7 +346,7 @@ export async function sendCoachSubmissionAlert(
     `📋 Form: *${formLabels[formType] || formType}*\n` +
     `📅 Time: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}\n\n` +
     `🔗 Review Submission in Coach Portal:\n` +
-    `https://aman-coach-next.vercel.app/submissions`;
+    `${SITE_URL}/submissions`;
   return sendWhatsAppText(coachPhone, text);
 }
 
@@ -366,7 +368,7 @@ export async function sendCoachFormAlert(
   const resolvedLabel = formLabels[formLabel] || formLabel || "Form Submission";
   const var1 = (resolvedLabel || "").trim() || "Form";
   const var2 = (clientName || "").trim() || "Client";
-  const var3 = "https://aman-coach-next.vercel.app/dashboard";
+  const var3 = `${SITE_URL}/dashboard`;
 
   const components = [
     {

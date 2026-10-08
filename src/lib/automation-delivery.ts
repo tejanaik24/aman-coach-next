@@ -1,6 +1,7 @@
 import { automationSupabase } from "@/lib/automation"
 import { sendWelcomeEmail } from "@/lib/email"
 import { sendCheckinReviewedTemplate, sendWelcomeSetupTemplate } from "@/lib/whatsapp"
+import { SITE_URL } from "@/lib/site"
 
 const value = (input: unknown) => typeof input === "string" ? input.trim() : ""
 
@@ -54,7 +55,7 @@ export async function deliverAutomationEvent(
         throw new Error("Invalid coach feedback event")
       }
 
-      const link = "https://aman-coach-next.vercel.app/home"
+      const link = `${SITE_URL}/home`
       const whatsapp = await sendCheckinReviewedTemplate(phone, name, link, feedback)
       if (!whatsapp.success) {
         throw new Error(whatsapp.error || "WhatsApp delivery failed")

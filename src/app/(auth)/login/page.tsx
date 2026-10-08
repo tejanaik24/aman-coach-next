@@ -2,7 +2,7 @@
 
 import { loginIdentifierToEmail } from "@/lib/phone-login"
 import { useState, useRef, useLayoutEffect, useEffect, type FormEvent } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { gsap } from "gsap"
 import { createClient } from "@/lib/supabase/client"
@@ -14,6 +14,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const searchParams = useSearchParams()
+  const isLinkExpired = searchParams.get("error") === "link_expired"
 
   const heroPhotoRef = useRef<HTMLDivElement>(null)
   const goldTextRef = useRef<HTMLDivElement>(null)
@@ -149,6 +152,12 @@ export default function LoginPage() {
           <div className="field-stagger space-y-1">
             <p className="text-xs text-text-muted">Log in to check progress, diet, and training.</p>
           </div>
+
+          {isLinkExpired && (
+            <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg">
+              This link has expired. Log in with your mobile number, or ask Coach Aman for a new link.
+            </p>
+          )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="field-stagger flex flex-col gap-1.5">
