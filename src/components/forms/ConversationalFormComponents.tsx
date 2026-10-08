@@ -563,7 +563,7 @@ export function FormFooter({
   showSkip?: boolean
 }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-md border-t border-zinc-900 px-4 py-3">
+    <div className="fixed bottom-0 left-0 right-0 z-[60] bg-[#0A0A0A]/95 backdrop-blur-md border-t border-zinc-900 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="max-w-xl mx-auto flex items-center gap-3">
         {showSkip && onSkip && (
           <button
