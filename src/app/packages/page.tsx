@@ -114,7 +114,7 @@ const PACKAGES: PackageItem[] = [
   {
     name: 'Offline "Exercise Training Execution Camp" (3-5 Days)',
     category: "Posing & Camp",
-    image: "/images/aman-training-camp.webp",
+    image: "/images/aman-training-camp-v2.webp",
     tag: "Hands-on Intense",
   },
 ];

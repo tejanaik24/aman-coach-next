@@ -28,6 +28,9 @@ export default function ClientHomePage() {
   const router = useRouter()
   const { t, toggle } = useLang()
   const [data, setData] = useState<HomeData | null>(null)
+  // Set after mount: the page is pre-built, so a build-time greeting would be wrong.
+  const [greeting, setGreeting] = useState<TKey | null>(null)
+  useEffect(() => setGreeting(greetingKey()), [])
 
   useEffect(() => {
     let cancelled = false
@@ -76,7 +79,7 @@ export default function ClientHomePage() {
         <div>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-text-muted text-base">{t(greetingKey())}</p>
+              <p className="text-text-muted text-base">{greeting ? t(greeting) : "\u00a0"}</p>
               <h1 className="font-heading italic text-4xl mt-1">{first || t("welcome")}</h1>
             </div>
             <button type="button" onClick={toggle} className="h-10 px-4 rounded-full bg-white/10 text-white text-base font-semibold cursor-pointer">{t("langButton")}</button>

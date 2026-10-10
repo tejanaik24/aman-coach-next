@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { Dumbbell, Salad, FileText, Upload, Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { openUrl } from "@/lib/utils"
 
 type Kind = "workout" | "diet"
 
@@ -94,7 +95,7 @@ export default function PlansLibraryPage() {
     const res = await fetch(`/api/documents/${id}/url`)
     const body = await res.json().catch(() => ({}))
     if (!res.ok || !body.url) { toast.error("Could not open the file"); return }
-    window.open(body.url, "_blank", "noopener")
+    openUrl(body.url)
   }
 
   async function remove(t: Template) {

@@ -247,7 +247,7 @@ export default function ClientSchedulePage() {
       {/* Success Modal */}
       <AnimatePresence>
         {successBooking && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm rounded-2xl border border-accent-orange/50 bg-bg-card p-6 text-center space-y-4 shadow-2xl">
               <div className="size-14 mx-auto rounded-full bg-accent-orange/20 border border-accent-orange flex items-center justify-center text-accent-orange">
                 <CheckCircle2 className="size-8" />

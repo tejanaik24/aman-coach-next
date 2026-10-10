@@ -54,7 +54,7 @@ export async function getWorkoutPlan(clientId: string): Promise<WorkoutPlan | nu
     .select("*")
     .eq("client_id", clientId)
     .eq("is_active", true)
-    .single()
+    .maybeSingle()
   if (error || !data) return null
   return data as WorkoutPlan
 }
@@ -65,7 +65,7 @@ export async function getNutritionPlan(clientId: string): Promise<NutritionPlan 
     .select("*")
     .eq("client_id", clientId)
     .eq("is_active", true)
-    .single()
+    .maybeSingle()
   if (error || !data) return null
   return data as NutritionPlan
 }

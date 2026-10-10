@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
-import { ClipboardCheck, ChevronRight } from "lucide-react"
+import { ClipboardCheck, ChevronRight, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import toast from "react-hot-toast"
@@ -91,6 +91,16 @@ export default function CheckinsPage() {
     fetchData()
   }, [fetchData])
 
+  async function handleDeleteCheckin(e: React.MouseEvent, cId: string, clientName: string) {
+    e.stopPropagation()
+    if (!window.confirm(`Are you sure you want to delete this check-in for ${clientName}?`)) return
+    const { error } = await supabase.from("checkins").delete().eq("id", cId)
+    if (error) { toast.error("Could not delete check-in: " + error.message); return }
+    setPending((prev) => prev.filter((c) => c.id !== cId))
+    setReviewed((prev) => prev.filter((c) => c.id !== cId))
+    toast.success("Check-in deleted")
+  }
+
   const activeList = tab === "pending" ? pending : reviewed
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -173,7 +183,7 @@ export default function CheckinsPage() {
                       <div className="min-w-0">
                         <p className="text-[#181310] font-heading font-bold text-xs truncate">{checkin.clientName}</p>
                         <p className="text-[#8A7F70] text-[10px] mt-0.5">
-                          Week {checkin.week_number ?? "?"} · {format(new Date(checkin.submitted_at), "d MMM yyyy")}
+                          {checkin.week_number ? `Week ${checkin.week_number} · ` : ""}{format(new Date(checkin.submitted_at), "d MMM yyyy")}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
@@ -182,6 +192,14 @@ export default function CheckinsPage() {
                         ) : (
                           <span className="text-[9px] text-bg-primary bg-accent-orange px-2 py-0.5 rounded-full font-bold uppercase">Review</span>
                         )}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteCheckin(e, checkin.id, checkin.clientName)}
+                          className="p-1 rounded text-[#8A7F70] hover:text-red-500 hover:bg-red-500/10 transition-colors ml-1 cursor-pointer"
+                          title="Delete check-in"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                         <ChevronRight className="size-3.5 text-[#8A7F70]" />
                       </div>
                     </div>

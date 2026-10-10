@@ -303,6 +303,7 @@ mm.add('(min-width: 769px)', () => {
       // Switch images with a plain CSS class + transition (see note above on
       // why this isn't a GSAP tween).
       images.forEach(function(img, i) { img.classList.toggle('active', i === idx); });
+      document.querySelectorAll('.hover-slider-panel').forEach(function(p) { p.classList.toggle('active', parseInt(p.dataset.index) === idx); });
     }
 
     item.addEventListener('mouseenter', activate);

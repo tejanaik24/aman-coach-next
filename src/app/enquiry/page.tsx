@@ -109,7 +109,8 @@ function EnquiryForm() {
             <label className="text-text-muted text-[11px] font-medium uppercase tracking-wide">Mobile Number*</label>
             <input
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              inputMode="numeric"
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
               className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
               required
             />

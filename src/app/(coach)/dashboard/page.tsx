@@ -8,6 +8,7 @@ import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
 import ProfileMenu from "@/components/shared/ProfileMenu"
+import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import { markInvoicePaid } from "@/lib/payments"
 import { fetchQuickManage, waLink, TILE_LABELS, TILE_ORDER, type QMRow, type TileKey } from "@/lib/quick-manage"
 
@@ -44,6 +45,7 @@ export default function QuickManagePage() {
   const [todayStr, setTodayStr] = useState("")
   const [sheetRow, setSheetRow] = useState<QMRow | null>(null)
   const [pickingDate, setPickingDate] = useState(false)
+  const [dateRow, setDateRow] = useState<QMRow | null>(null)
   const [busy, setBusy] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -128,6 +130,26 @@ export default function QuickManagePage() {
     removeRow(sheetRow.id)
     setSheetRow(null)
     setPickingDate(false)
+  }
+
+  async function saveFollowupDate(newDate: string) {
+    if (!dateRow || dateRow.action.kind !== "followup") return
+    const supabase = createClient()
+    const { error } = await supabase.from("followups").update({ due_date: newDate }).eq("id", dateRow.action.followupId)
+    if (error) { toast.error("Could not update date. Try again."); return }
+    toast.success("Follow-up date updated")
+    removeRow(dateRow.id)
+    setDateRow(null)
+  }
+
+  async function removeFollowup(r: QMRow) {
+    if (r.action.kind !== "followup") return
+    if (!window.confirm(`Are you sure you want to remove this follow-up for ${r.name}?`)) return
+    const supabase = createClient()
+    const { error } = await supabase.from("followups").delete().eq("id", r.action.followupId)
+    if (error) { toast.error("Could not remove follow-up. Try again."); return }
+    toast.success("Follow-up removed")
+    removeRow(r.id)
   }
 
   const visible = (rows ?? []).filter((r) => r.tile === openTile)
@@ -242,6 +264,24 @@ export default function QuickManagePage() {
                         </button>
                       )}
                     </div>
+                    {r.action.kind === "followup" && (
+                      <div className="flex items-center justify-end gap-3 mt-2.5 pt-2 border-t border-border-subtle/50">
+                        <button
+                          type="button"
+                          onClick={() => setDateRow(r)}
+                          className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
+                        >
+                          Change date
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFollowup(r)}
+                          className="text-xs text-red-400 font-semibold hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )
               })
@@ -278,6 +318,9 @@ export default function QuickManagePage() {
       <AddClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={load} />
 
       {/* Follow-up result sheet: one tap logs the outcome */}
+      {dateRow && (
+        <ChangeDateSheet title="Move follow-up to" subtitle={dateRow.name} current={new Date().toISOString().slice(0, 10)} onSave={saveFollowupDate} onClose={() => setDateRow(null)} />
+      )}
       {sheetRow && (
         <div className="fixed inset-0 z-[60] flex items-end bg-black/70" onClick={() => setSheetRow(null)}>
           <div className="w-full max-w-lg mx-auto rounded-t-3xl bg-bg-card border-t border-border-subtle p-5 pb-8" onClick={(e) => e.stopPropagation()}>

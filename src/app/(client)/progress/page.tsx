@@ -122,7 +122,7 @@ export default function ProgressPage() {
   }
 
   const chartData: ChartEntry[] = checkins.map((c) => ({
-    week: `W${c.week_number ?? "?"}`,
+    week: c.week_number ? `W${c.week_number}` : format(new Date(c.submitted_at), "d MMM"),
     weight: measurementWeight(c),
     workout: c.adherence_workout,
     nutrition: c.adherence_nutrition,
@@ -320,7 +320,7 @@ export default function ProgressPage() {
           {[...checkins].reverse().map((c) => (
             <div key={c.id} className="reveal-item px-4 py-3.5 flex items-center justify-between">
               <div>
-                <p className="text-gray-900 text-sm font-bold">Week {c.week_number ?? "?"}</p>
+                <p className="text-gray-900 text-sm font-bold">{c.week_number ? `Week ${c.week_number}` : "Check-in"}</p>
                 <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(c.submitted_at), "d MMM yyyy")}</p>
               </div>
               <div className="flex items-center gap-3 text-right">

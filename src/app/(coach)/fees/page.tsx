@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { IndianRupee, Download, QrCode, X, Receipt, MessageCircle, Check, ChevronDown } from "lucide-react"
+import { IndianRupee, Download, QrCode, X, Receipt, MessageCircle, Check, ChevronDown, Edit, Trash2, Plus } from "lucide-react"
 import { format, differenceInCalendarDays } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { generatePaymentReceiptPdf, generateUpiPaymentUrl, markInvoicePaid, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
 import { waLink } from "@/lib/quick-manage"
 import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
+import PaymentModal from "@/components/coach/PaymentModal"
 
 interface FeeWithClient {
   id: string
@@ -57,6 +58,9 @@ export default function FeesPage() {
   const [billingModalFee, setBillingModalFee] = useState<FeeWithClient | null>(null)
   const [billingForm, setBillingForm] = useState({ otherCharges: "0", discount: "0", rewardPointsRedeemed: "0", amountPaid: "0" })
   const [isSavingBilling, setIsSavingBilling] = useState(false)
+  const [clientOptions, setClientOptions] = useState<{ id: string; name: string }[]>([])
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [editingFee, setEditingFee] = useState<FeeWithClient | null>(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -119,6 +123,7 @@ export default function FeesPage() {
         }
       })
       setFees(mapped)
+      setClientOptions(clients.map((c: any) => ({ id: c.id, name: resolveClient(c.id).name })))
     } catch {
       toast.error("Failed to load fees")
     } finally {
@@ -129,6 +134,22 @@ export default function FeesPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  async function handleUndoPaid(f: FeeWithClient) {
+    if (!window.confirm(`Undo paid status for ${f.clientName}? It will be marked as pending.`)) return
+    const { error } = await supabase.from("fees").update({ status: "pending", paid_date: null }).eq("id", f.id)
+    if (error) { toast.error("Could not update fee: " + error.message); return }
+    setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "pending" } : item)))
+    toast.success("Marked as pending")
+  }
+
+  async function handleDeleteFee(f: FeeWithClient) {
+    if (!window.confirm(`Are you sure you want to delete this payment record for ${f.clientName}?`)) return
+    const { error } = await supabase.from("fees").delete().eq("id", f.id)
+    if (error) { toast.error("Could not delete payment: " + error.message); return }
+    setFees((prev) => prev.filter((item) => item.id !== f.id))
+    toast.success("Payment deleted")
+  }
 
   function openBillingModal(f: FeeWithClient) {
     setBillingForm({
@@ -232,7 +253,16 @@ export default function FeesPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       <div className="px-5 pt-8 pb-32 max-w-lg mx-auto space-y-5">
-        <h1 className="font-heading italic text-4xl">Money</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-heading italic text-4xl">Money</h1>
+          <button
+            type="button"
+            onClick={() => { setEditingFee(null); setPaymentModalOpen(true) }}
+            className="h-11 px-4 rounded-full bg-accent-orange text-black font-bold text-sm flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <Plus className="size-4" /> Add payment
+          </button>
+        </div>
 
         {isLoading ? (
           <div className="grid grid-cols-3 gap-3">
@@ -335,6 +365,17 @@ export default function FeesPage() {
                       <button onClick={() => openBillingModal(f)} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
                         <Receipt className="size-4 text-accent-orange" /> Edit bill
                       </button>
+                      <button onClick={() => { setEditingFee(f); setPaymentModalOpen(true) }} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
+                        <Edit className="size-4 text-accent-orange" /> Edit payment
+                      </button>
+                      {f.status === "paid" && (
+                        <button onClick={() => handleUndoPaid(f)} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
+                          Undo Paid
+                        </button>
+                      )}
+                      <button onClick={() => handleDeleteFee(f)} className="h-11 px-4 rounded-xl bg-red-500/20 text-red-400 text-base font-semibold flex items-center gap-2 cursor-pointer">
+                        <Trash2 className="size-4 text-red-400" /> Delete
+                      </button>
                     </div>
                   )}
                 </div>
@@ -347,7 +388,7 @@ export default function FeesPage() {
       {/* UPI Link Modal */}
       <AnimatePresence>
         {upiModalFee && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -388,7 +429,7 @@ export default function FeesPage() {
       {/* Billing Details Modal */}
       <AnimatePresence>
         {billingModalFee && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -454,6 +495,15 @@ export default function FeesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => { setPaymentModalOpen(false); setEditingFee(null) }}
+        mode={editingFee ? "edit" : "add"}
+        clientOptions={clientOptions}
+        initialFee={editingFee}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

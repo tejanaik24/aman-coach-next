@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 import { PublicPageShell } from "@/components/shared/PublicPageShell"
 import PublicUploadField from "@/components/forms/PublicUploadField"
+import { createClient } from "@/lib/supabase/client"
 
 const DIET_OPTIONS = ["Vegetarian", "Vegan", "Non-Vegetarian", "Eggetarian"]
 const URINE_OPTIONS = ["Clear", "Light Yellow", "Yellow", "Dark Yellow", "Orange"]
@@ -127,6 +128,21 @@ export default function PublicQuestionnairePage() {
   const [uploads, setUploads] = useState<Record<string, string[]>>({})
   const setUpload = (key: string, paths: string[]) => setUploads((u) => ({ ...u, [key]: paths }))
   const [isDone, setIsDone] = useState(false)
+  // Coach mode: /questionnaire?client=<id> fills the form on a client's behalf and saves it on their profile.
+  const [forClient, setForClient] = useState<{ id: string; name: string } | null>(null)
+  useEffect(() => {
+    const cid = new URLSearchParams(window.location.search).get("client")
+    if (!cid) return
+    ;(async () => {
+      const supabase = createClient()
+      const { data: c } = await supabase.from("clients").select("id, user_id").eq("id", cid).maybeSingle()
+      if (!c) return
+      const { data: p } = await supabase.from("profiles").select("name, phone").eq("id", c.user_id).maybeSingle()
+      const phone = (p?.phone ?? "").replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "")
+      setForClient({ id: c.id, name: p?.name || "this client" })
+      setForm((f) => ({ ...f, q1_name: f.q1_name || p?.name || "", q4_phone: f.q4_phone || phone }))
+    })()
+  }, [])
 
   function set(key: string, val: string) {
     setForm((prev) => ({ ...prev, [key]: val }))
@@ -140,7 +156,7 @@ export default function PublicQuestionnairePage() {
     }
     setIsSubmitting(true)
     try {
-      const res = await fetch("/api/public/questionnaire", {
+      const res = await fetch(forClient ? `/api/coach/clients/${forClient.id}/questionnaire` : "/api/public/questionnaire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: form.q1_name, tel: form.q4_phone, ...form, ...uploads }),
@@ -163,14 +179,31 @@ export default function PublicQuestionnairePage() {
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
         <CheckCircle2 className="size-14 text-accent-orange" />
         <p className="font-heading text-2xl text-text-primary">Questionnaire Submitted</p>
-        <p className="text-text-muted text-sm max-w-xs">Coach Aman will review your details and get back to you.</p>
+        <p className="text-text-muted text-sm max-w-xs">
+          {forClient ? `Saved on ${forClient.name}'s profile.` : "Coach Aman will review your details and get back to you."}
+        </p>
+        {forClient && (
+          <a href={`/clients/${forClient.id}`} className="mt-2 inline-block rounded-full bg-accent-orange px-6 py-3 text-sm font-bold text-bg-primary">Back to client</a>
+        )}
       </div>
     )
   }
 
   return (
     <PublicPageShell eyebrow="Aman Khurana Fitness" title="Lifestyle & Health Questionnaire">
+      {forClient && (
+        <div className="ledger p-5 border border-accent-orange/40">
+          <p className="text-text-primary text-sm">
+            You are filling this form for <strong>{forClient.name}</strong>. It will be saved on their profile.
+          </p>
+        </div>
+      )}
       <div className="ledger p-5">
+        {!forClient && (
+        <p className="text-text-primary text-sm leading-relaxed mb-3">
+          Hi, I warmly welcome you to #teamAKF. Pleased to have you in the team 😊 Please fill out the details below. After getting all the details, I shall take roughly 7 – 15 days to get back to you with your customised plans.
+        </p>
+        )}
         <p className="text-text-muted text-xs leading-relaxed">
           This is the same detailed questionnaire Coach Aman uses to build every client&rsquo;s custom plan &mdash;
           fill it in before your consultation so he has your full picture ready. Takes about 10&ndash;15 minutes.
@@ -185,7 +218,7 @@ export default function PublicQuestionnairePage() {
           <Field label="Your Full Name*"><input value={form.q1_name} onChange={(e) => set("q1_name", e.target.value)} className={inputClass} required /></Field>
           <Field label="Your Email ID"><input type="email" value={form.q2_email} onChange={(e) => set("q2_email", e.target.value)} className={inputClass} /></Field>
           <Field label="Your Complete Residence Address"><textarea value={form.q3_address} onChange={(e) => set("q3_address", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field label="Your Primary Contact Number (WhatsApp)*"><input value={form.q4_phone} onChange={(e) => set("q4_phone", e.target.value)} className={inputClass} required /></Field>
+          <Field label="Your Primary Contact Number (WhatsApp)*"><input value={form.q4_phone} inputMode="tel" onChange={(e) => set("q4_phone", e.target.value.replace(/[^\d+ ]/g, ""))} className={inputClass} required /></Field>
           <Field label="Alternate Contact Number"><input value={form.q5_alt_phone} onChange={(e) => set("q5_alt_phone", e.target.value)} className={inputClass} /></Field>
           <Field label="Date of Birth"><input type="date" value={form.q6_dob} onChange={(e) => set("q6_dob", e.target.value)} className={inputClass} /></Field>
           <Field label="Age (years)"><input type="number" value={form.q6_age} onChange={(e) => set("q6_age", e.target.value)} className={inputClass} /></Field>

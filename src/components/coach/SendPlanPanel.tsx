@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
-import { Dumbbell, Salad, FileText, MessageCircle, Upload, Bookmark } from "lucide-react"
+import { Dumbbell, Salad, FileText, MessageCircle, Upload, Bookmark, Trash2, RefreshCw } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { waLink } from "@/lib/quick-manage"
+import { openUrl } from "@/lib/utils"
 
-type Kind = "workout" | "diet"
+type Kind = "workout" | "diet" | "cycle"
 
 interface Doc {
   id: string
@@ -23,13 +24,14 @@ interface Props {
   clientId: string
   clientName: string
   phone: string | null | undefined
+  showCycle?: boolean // contest-prep clients get a third PDF: the cycle
 }
 
 const BUCKET = "client-documents"
 const MAX_BYTES = 15 * 1024 * 1024
-const KIND_LABEL: Record<Kind, string> = { workout: "Workout plan", diet: "Diet plan" }
+const KIND_LABEL: Record<Kind, string> = { workout: "Workout plan", diet: "Diet plan", cycle: "Cycle plan" }
 
-export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
+export default function SendPlanPanel({ clientId, clientName, phone, showCycle = false }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [pickKind, setPickKind] = useState<Kind>("workout")
   const [docs, setDocs] = useState<Doc[]>([])
@@ -88,7 +90,7 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
       if (!user) throw new Error("Not signed in")
       const base = { coach_id: user.id, kind: pending.kind, title: title.trim() || KIND_LABEL[pending.kind], file_path: path, note: note.trim() || null }
       const rows = [{ ...base, client_id: clientId, is_template: false }]
-      if (saveTemplate) rows.push({ ...base, client_id: null as unknown as string, is_template: true })
+      if (saveTemplate && pending.kind !== "cycle") rows.push({ ...base, client_id: null as unknown as string, is_template: true })
       const ins = await supabase.from("client_documents").insert(rows)
       if (ins.error) throw ins.error
 
@@ -96,7 +98,10 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
       setPending(null)
       load()
     } catch (e) {
-      toast.error(e instanceof Error && e.message ? e.message : "Upload failed. Try again.")
+      // Supabase errors are plain objects with a message, not Error instances
+      const m = typeof e === "object" && e !== null && "message" in e ? String((e as { message: unknown }).message) : ""
+      // The cycle slot needs a one-line database change; never show the raw database error to Aman.
+      toast.error(m.includes("client_documents_kind_check") ? "Cycle PDF is not switched on yet. Please tell Teja." : m || "Upload failed. Try again.")
     } finally {
       setBusy(false)
     }
@@ -120,12 +125,22 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
     const res = await fetch(`/api/documents/${id}/url`)
     const data = await res.json()
     if (!res.ok) { toast.error("Could not open the file"); return }
-    window.open(data.url, "_blank", "noopener")
+    openUrl(data.url)
+  }
+
+  // Removes the plan from this client only. The file stays: saved templates can share it.
+  async function remove(d: Doc) {
+    if (!window.confirm(`Delete "${d.title}" for ${clientName.split(" ")[0]}? They will no longer see it in the app.`)) return
+    const supabase = createClient()
+    const { error } = await supabase.from("client_documents").delete().eq("id", d.id)
+    if (error) { toast.error("Could not delete. Try again."); return }
+    setDocs((ds) => ds.filter((x) => x.id !== d.id))
+    toast.success("Plan deleted")
   }
 
   const first = clientName.split(" ")[0]
   const msg = (d: Doc) =>
-    `Hi ${first}, your ${d.kind === "workout" ? "workout" : "diet"} plan "${d.title}" is ready 💪 Open it in your app: ${typeof window !== "undefined" ? window.location.origin : ""}/${d.kind === "workout" ? "workout" : "diet"}`
+    `Hi ${first}, your ${d.kind} plan "${d.title}" is ready 💪 Open it in your app: ${typeof window !== "undefined" ? window.location.origin : ""}/${d.kind === "diet" ? "diet" : "workout"}`
 
   return (
     <div className="space-y-4">
@@ -138,6 +153,11 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
         <button type="button" onClick={() => choose("diet")} className="h-24 rounded-2xl bg-accent-orange text-black font-bold text-base flex flex-col items-center justify-center gap-1.5 cursor-pointer">
           <Salad className="size-6" /> Send diet plan
         </button>
+        {showCycle && (
+          <button type="button" onClick={() => choose("cycle")} className="col-span-2 h-16 rounded-2xl bg-white/10 border border-accent-orange/40 text-white font-bold text-base flex items-center justify-center gap-2 cursor-pointer">
+            <RefreshCw className="size-5 text-accent-orange" /> Send cycle PDF
+          </button>
+        )}
       </div>
       <p className="text-text-muted text-sm">Pick a PDF (or a photo of the plan) from your phone.</p>
 
@@ -165,7 +185,7 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
                   <div className="min-w-0">
                     <p className="text-lg font-semibold leading-tight">{d.title}</p>
                     <p className="text-text-muted text-sm mt-0.5">{KIND_LABEL[d.kind]} · {format(new Date(d.created_at), "d MMM yyyy")}</p>
-                    {d.note && <p className="text-text-muted text-base mt-1">{d.note}</p>}
+                    {d.note && <p className="text-text-muted text-base mt-1 whitespace-pre-line">{d.note}</p>}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-3">
@@ -178,6 +198,9 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
                   )}
                   <button type="button" onClick={() => open(d.id)} className="h-12 rounded-xl bg-white/10 text-white font-bold text-base cursor-pointer">Open</button>
                 </div>
+                <button type="button" onClick={() => remove(d)} className="w-full h-11 mt-2 rounded-xl border border-danger/40 text-danger font-semibold text-base flex items-center justify-center gap-2 cursor-pointer">
+                  <Trash2 className="size-4" /> Delete
+                </button>
               </div>
             )
           })
@@ -192,11 +215,13 @@ export default function SendPlanPanel({ clientId, clientName, phone }: Props) {
             <h3 className="font-heading italic text-2xl mb-4">{KIND_LABEL[pending.kind]}</h3>
             <p className="text-sm text-text-muted mb-1">File: {pending.file.name}</p>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name of the plan" className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mt-2 mb-3" />
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for the client (optional)" className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mb-4" />
-            <label className="flex items-center gap-3 text-base mb-5 cursor-pointer">
-              <input type="checkbox" checked={saveTemplate} onChange={(e) => setSaveTemplate(e.target.checked)} className="size-6 accent-[#FF6A1A]" />
-              Also save to reuse for other clients
-            </label>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Note for the client (optional)" className="w-full rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 py-3 text-white text-base outline-none focus:border-[#C9A84C] mb-4 resize-none" />
+            {pending.kind !== "cycle" ? (
+              <label className="flex items-center gap-3 text-base mb-5 cursor-pointer">
+                <input type="checkbox" checked={saveTemplate} onChange={(e) => setSaveTemplate(e.target.checked)} className="size-6 accent-[#FF6A1A]" />
+                Also save to reuse for other clients
+              </label>
+            ) : <div className="mb-5" />}
             <button type="button" disabled={busy} onClick={upload} className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer">
               <Upload className="size-5" /> {busy ? "Uploading…" : "Upload"}
             </button>

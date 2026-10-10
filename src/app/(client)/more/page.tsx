@@ -183,13 +183,13 @@ export default function ClientHomePage() {
             .select("*")
             .eq("client_id", client.id)
             .eq("is_active", true)
-            .single(),
+            .maybeSingle(),
           supabase
             .from("nutrition_plans")
             .select("*")
             .eq("client_id", client.id)
             .eq("is_active", true)
-            .single(),
+            .maybeSingle(),
           supabase
             .from("checkins")
             .select("*")
@@ -211,7 +211,7 @@ export default function ClientHomePage() {
             .from("profiles")
             .select("name")
             .eq("id", client.coach_id)
-            .single();
+            .maybeSingle();
           if (coachProfile) setCoachName(coachProfile.name);
         }
 
@@ -438,10 +438,10 @@ export default function ClientHomePage() {
                   <img
                     src={profile.avatar_url}
                     alt={name}
-                    className="w-11 h-11 rounded-full object-cover border-2 border-accent-orange shadow-[0_0_20px_rgba(255, 106, 26,0.3)]"
+                    className="w-11 h-11 rounded-full object-cover border-2 border-accent-orange shadow-[0_0_20px_rgba(255,106,26,0.3)]"
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-bg-elevated border-2 border-accent-orange shadow-[0_0_20px_rgba(255, 106, 26,0.3)] flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-full bg-bg-elevated border-2 border-accent-orange shadow-[0_0_20px_rgba(255,106,26,0.3)] flex items-center justify-center">
                     <span className="text-accent-orange text-sm font-heading font-bold">
                       {initials}
                     </span>

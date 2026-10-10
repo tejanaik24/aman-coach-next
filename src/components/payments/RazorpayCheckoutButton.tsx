@@ -112,7 +112,7 @@ export function RazorpayCheckoutButton({
           contact: clientPhone || "",
         },
         theme: {
-          color: "#FFB800", // Gold accent matching AK Fitness design system
+          color: "#FFB800", // Gold accent matching Aman Khurana Fitness design system
           backdrop_color: "#0A0A0A",
         },
         modal: {

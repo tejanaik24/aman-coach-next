@@ -22,10 +22,10 @@ export type ClientBadge = {
 }
 
 export const DEFAULT_BADGES: Badge[] = [
-  { id: "first_checkin", slug: "first-checkin", title: "First Check-in", description: "Submitted your first weekly check-in form", icon: "CheckCircle2", category: "milestone" },
-  { id: "streak_4w", slug: "streak-4w", title: "4-Week Streak", description: "Completed 4 consecutive weekly check-ins", icon: "Flame", category: "streak" },
-  { id: "streak_8w", slug: "streak-8w", title: "8-Week Streak", description: "Completed 8 consecutive weekly check-ins", icon: "Trophy", category: "streak" },
-  { id: "streak_12w", slug: "streak-12w", title: "12-Week Master", description: "Completed 12 consecutive weekly check-ins", icon: "Crown", category: "streak" },
+  { id: "first_checkin", slug: "first-checkin", title: "First Check-in", description: "Submitted your first check-in form", icon: "CheckCircle2", category: "milestone" },
+  { id: "streak_4w", slug: "streak-4w", title: "4-Week Streak", description: "Completed 4 check-ins in a row", icon: "Flame", category: "streak" },
+  { id: "streak_8w", slug: "streak-8w", title: "8-Week Streak", description: "Completed 8 check-ins in a row", icon: "Trophy", category: "streak" },
+  { id: "streak_12w", slug: "streak-12w", title: "12-Week Master", description: "Completed 12 check-ins in a row", icon: "Crown", category: "streak" },
   { id: "weight_loss_5kg", slug: "weight-loss-5kg", title: "5kg Milestone", description: "Achieved your first 5kg weight loss", icon: "Scale", category: "progress" },
   { id: "workout_80", slug: "workout-80", title: "Iron Commitment", description: "Achieved 80%+ workout completion rate", icon: "Dumbbell", category: "performance" },
   { id: "diet_90", slug: "diet-90", title: "Nutrition Master", description: "Maintained 90%+ diet adherence", icon: "Utensils", category: "performance" },

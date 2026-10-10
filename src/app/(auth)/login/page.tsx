@@ -82,7 +82,7 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
       const { error: err } = await supabase.auth.signInWithPassword({ email: loginIdentifierToEmail(email), password })
-      if (err) { setError(err.message); return }
+      if (err) { setError(err.message === "Invalid login credentials" ? "Wrong mobile number or password. Please try again." : "Could not sign in. Please try again."); return }
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setError("Login failed. Try again."); return }
@@ -146,7 +146,7 @@ export default function LoginPage() {
       <div className="relative z-10 flex-1 px-4 min-h-0">
         <div
           ref={formCardRef}
-          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255, 106, 26,0.06)]"
+          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255,106,26,0.06)]"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
         >
           <div className="field-stagger space-y-1">
@@ -210,7 +210,7 @@ export default function LoginPage() {
           </form>
 
           <p className="field-stagger text-center text-[10px] text-text-muted">
-            Premium Fitness Coaching PWA. Designed for results.
+            Premium Fitness Coaching. Designed for results.
           </p>
         </div>
       </div>

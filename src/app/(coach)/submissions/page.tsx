@@ -6,11 +6,13 @@ import { getAllSubmissions } from "@/lib/store"
 import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "motion/react"
 import {
-  FileText, Search, Clock, ChevronRight, X, CheckCircle2
+  FileText, Search, Clock, ChevronRight, X, CheckCircle2, Trash2
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { SignedImage } from "@/components/shared/SignedImage"
 import { isPhotoPathValue } from "@/components/forms/ConversationalFormComponents"
+import { openUrl } from "@/lib/utils"
+import Link from "next/link"
 
 type Submission = {
   id: string
@@ -22,6 +24,11 @@ type Submission = {
   formData: Record<string, unknown>
 }
 
+// "q6_dob" / "t3_workout_deviation" -> "dob" / "workout deviation" (labels are uppercased by CSS)
+function fieldLabel(key: string): string {
+  return key.replace(/^[a-z]\d+_/, "").replace(/_/g, " ")
+}
+
 export default function CoachSubmissionsPage() {
   const { user } = useAuth()
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -29,6 +36,10 @@ export default function CoachSubmissionsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFormType, setSelectedFormType] = useState<string>("all")
   const [activeSubmission, setActiveSubmission] = useState<Submission | null>(null)
+  // "Attach to a client": a joining form someone filled from the public link has no client yet.
+  const [clientOptions, setClientOptions] = useState<{ id: string; user_id: string; name: string }[]>([])
+  const [attachTo, setAttachTo] = useState("")
+  const [attaching, setAttaching] = useState(false)
 
   useEffect(() => {
     if (!user?.id) return
@@ -36,6 +47,10 @@ export default function CoachSubmissionsPage() {
     getAllSubmissions(user.id).then(res => {
       setSubmissions(res)
       setLoading(false)
+      // /submissions?open=<id> (from a client profile) opens that form straight away
+      const openId = new URLSearchParams(window.location.search).get("open")
+      const hit = openId ? res.find((s) => s.id === openId) : null
+      if (hit) setActiveSubmission(hit)
     }).catch(() => setLoading(false))
   }, [user?.id])
 
@@ -47,6 +62,37 @@ export default function CoachSubmissionsPage() {
       return matchesSearch && matchesType
     })
   }, [submissions, searchTerm, selectedFormType])
+
+  const isJoining = (t: string) => t === "standard_joining" || t === "antenatal_joining"
+
+  useEffect(() => { setAttachTo("") }, [activeSubmission?.id])
+
+  useEffect(() => {
+    if (!activeSubmission || clientOptions.length) return
+    if (!isJoining(activeSubmission.formType) || activeSubmission.clientId) return
+    const supabase = createClient()
+    ;(async () => {
+      const { data: cs } = await supabase.from("clients").select("id, user_id").order("created_at", { ascending: false })
+      const rows = (cs ?? []) as { id: string; user_id: string }[]
+      const { data: ps } = await supabase.from("profiles").select("id, name").in("id", rows.map((c) => c.user_id))
+      const names = new Map(((ps ?? []) as { id: string; name: string }[]).map((p) => [p.id, p.name]))
+      setClientOptions(rows.map((c) => ({ id: c.id, user_id: c.user_id, name: names.get(c.user_id) || "Client" })))
+    })()
+  }, [activeSubmission, clientOptions.length])
+
+  async function handleAttach(sub: Submission) {
+    const c = clientOptions.find((x) => x.id === attachTo)
+    if (!c || attaching) return
+    setAttaching(true)
+    const supabase = createClient()
+    const { error } = await supabase.from("form_submissions").update({ client_id: c.id, user_id: c.user_id }).eq("id", sub.id)
+    setAttaching(false)
+    if (error) { toast.error("Could not attach. Try again."); return }
+    const next = { ...sub, clientId: c.id, clientName: c.name }
+    setSubmissions((prev) => prev.map((s) => (s.id === sub.id ? next : s)))
+    setActiveSubmission(next)
+    toast.success(`Attached to ${c.name}`)
+  }
 
   async function handleMarkContacted(sub: Submission) {
     const supabase = createClient()
@@ -60,11 +106,32 @@ export default function CoachSubmissionsPage() {
     toast.success("Marked as contacted")
   }
 
+  async function handleDeleteSubmission(sub: Submission) {
+    if (!window.confirm(`Are you sure you want to delete this submission for ${sub.clientName}? Any uploaded photos and private medical files will be permanently removed.`)) {
+      return
+    }
+    try {
+      const res = await fetch(`/api/coach/submissions/${sub.id}`, { method: "DELETE" })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error || "Could not delete submission")
+        return
+      }
+      toast.success("Submission deleted")
+      setSubmissions((prev) => prev.filter((s) => s.id !== sub.id))
+      if (activeSubmission?.id === sub.id) {
+        setActiveSubmission(null)
+      }
+    } catch {
+      toast.error("Could not delete submission")
+    }
+  }
+
   const getFormLabel = (type: string) => {
     switch (type) {
       case "standard_joining": return "Standard Joining Questionnaire"
       case "antenatal_joining": return "AN-PN Questionnaire"
-      case "checkin": return "Weekly Check-in Form"
+      case "checkin": return "Check-in Form"
       case "enquiry": return "New Enquiry"
       default: return type
     }
@@ -98,7 +165,7 @@ export default function CoachSubmissionsPage() {
             <p className="text-accent-orange text-xs font-bold uppercase tracking-widest">Coach Dashboard</p>
             <h1 className="font-heading text-3xl text-text-primary tracking-wide">CLIENT SUBMISSIONS</h1>
             <p className="text-xs text-text-muted mt-1">
-              View and review new leads, onboarding questionnaires, and weekly check-in forms.
+              View and review new leads, onboarding questionnaires, and check-in forms.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -170,6 +237,17 @@ export default function CoachSubmissionsPage() {
                       </p>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSubmission(sub)
+                    }}
+                    className="p-1.5 rounded-lg text-[#8A7F70] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    title="Delete submission"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-[#181310]/[0.08]">
@@ -201,7 +279,7 @@ export default function CoachSubmissionsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+              className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
             >
               <motion.div
                 initial={{ scale: 0.95, y: 20 }}
@@ -236,7 +314,7 @@ export default function CoachSubmissionsPage() {
                     if (typeof value === "string" && value.startsWith("data:image")) {
                       return (
                         <div key={key} className="space-y-2">
-                          <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{key.replace(/_/g, " ")}</p>
+                          <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{fieldLabel(key)}</p>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={value} alt={key} className="max-h-60 rounded-xl border border-[#181310]/[0.08] object-contain bg-[#181310]/5" />
                         </div>
@@ -246,7 +324,7 @@ export default function CoachSubmissionsPage() {
                     if (typeof value === "string" && isPhotoPathValue(value)) {
                       return (
                         <div key={key} className="space-y-2">
-                          <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{key.replace(/_/g, " ")}</p>
+                          <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{fieldLabel(key)}</p>
                           <SignedImage path={value} alt={key} className="max-h-60 rounded-xl border border-[#181310]/[0.08] object-contain bg-[#181310]/5" />
                         </div>
                       )
@@ -255,7 +333,7 @@ export default function CoachSubmissionsPage() {
                     if (Array.isArray(value) && value.some(v => typeof v === "string" && (v.startsWith("data:") || isPhotoPathValue(v) || /^[^/]+\/[^/]+\.pdf$/i.test(v)))) {
                       return (
                         <div key={key} className="space-y-2">
-                          <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{key.replace(/_/g, " ")} ({value.length} files)</p>
+                          <p className="text-xs font-bold text-accent-orange uppercase tracking-wider">{fieldLabel(key)} ({value.length} files)</p>
                           <div className="flex flex-wrap gap-2">
                             {value.map((f, i) => (
                               f.startsWith("data:image") ? (
@@ -270,7 +348,7 @@ export default function CoachSubmissionsPage() {
                                   onClick={async () => {
                                     const res = await fetch(`/api/checkin/photo-url?path=${encodeURIComponent(f)}`)
                                     const d = await res.json().catch(() => ({}))
-                                    if (d.url) window.open(d.url, "_blank", "noopener")
+                                    if (d.url) openUrl(d.url)
                                   }}
                                   className="p-3 rounded-lg border border-[#181310]/[0.08] bg-[#181310]/5 text-xs text-accent-orange flex items-center gap-2 cursor-pointer"
                                 >
@@ -286,12 +364,12 @@ export default function CoachSubmissionsPage() {
                     if (typeof value === "object" && !Array.isArray(value)) {
                       return (
                         <div key={key} className="p-4 rounded-xl border border-[#181310]/[0.08] bg-[#181310]/5 space-y-3">
-                          <h4 className="font-bold text-xs uppercase tracking-wider text-accent-orange">{key.toUpperCase()}</h4>
+                          <h4 className="font-bold text-xs uppercase tracking-wider text-accent-orange">{fieldLabel(key)}</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                             {Object.entries(value as Record<string, unknown>).map(([subK, subV]) => (
                               subV ? (
                                 <div key={subK} className="space-y-1">
-                                  <span className="text-[#8A7F70] uppercase text-[10px] font-semibold block">{subK.replace(/_/g, " ")}</span>
+                                  <span className="text-[#8A7F70] uppercase text-[10px] font-semibold block">{fieldLabel(subK)}</span>
                                   <span className="text-[#181310] font-medium block">{String(subV)}</span>
                                 </div>
                               ) : null
@@ -303,29 +381,70 @@ export default function CoachSubmissionsPage() {
 
                     return (
                       <div key={key} className="border-b border-[#181310]/[0.08] pb-2">
-                        <span className="text-[11px] font-bold text-accent-orange uppercase tracking-wider block">{key.replace(/_/g, " ")}</span>
+                        <span className="text-[11px] font-bold text-accent-orange uppercase tracking-wider block">{fieldLabel(key)}</span>
                         <p className="text-xs text-[#181310] mt-1 whitespace-pre-wrap">{String(value)}</p>
                       </div>
                     )
                   })}
                 </div>
 
+                {isJoining(activeSubmission.formType) && (
+                  <div className="px-4 py-3 border-t border-[#181310]/[0.08] bg-[#F3EDE2]">
+                    {activeSubmission.clientId ? (
+                      <p className="text-sm text-[#181310]">
+                        Saved on client profile:{" "}
+                        <Link href={`/clients/${activeSubmission.clientId}`} className="font-bold text-accent-orange underline">{activeSubmission.clientName}</Link>
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold uppercase tracking-wider text-[#8A7F70]">Not on any client yet</p>
+                        <div className="flex gap-2">
+                          <select
+                            value={attachTo}
+                            onChange={(e) => setAttachTo(e.target.value)}
+                            className="flex-1 min-w-0 h-11 rounded-xl bg-white border border-[#181310]/15 px-3 text-sm text-[#181310]"
+                          >
+                            <option value="">Attach to a client…</option>
+                            {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                          <button
+                            onClick={() => handleAttach(activeSubmission)}
+                            disabled={!attachTo || attaching}
+                            className="px-5 h-11 rounded-xl bg-accent-orange text-sm font-bold text-bg-primary disabled:opacity-50"
+                          >
+                            {attaching ? "Attaching…" : "Attach"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Modal Footer */}
-                <div className="p-4 border-t border-[#181310]/[0.08] bg-[#181310]/5 flex justify-end gap-3">
-                  {activeSubmission.formType === "enquiry" && activeSubmission.status !== "contacted" && (
-                    <button
-                      onClick={() => handleMarkContacted(activeSubmission)}
-                      className="px-6 py-2.5 rounded-full bg-emerald-500 text-xs font-bold uppercase tracking-wider text-white hover:bg-emerald-600 transition-all flex items-center gap-2"
-                    >
-                      <CheckCircle2 className="size-4" /> Mark Contacted
-                    </button>
-                  )}
+                <div className="p-4 border-t border-[#181310]/[0.08] bg-[#181310]/5 flex items-center justify-between gap-3">
                   <button
-                    onClick={() => setActiveSubmission(null)}
-                    className="px-6 py-2.5 rounded-full bg-accent-orange text-xs font-bold uppercase tracking-wider text-bg-primary hover:bg-accent-orange/90 transition-all"
+                    type="button"
+                    onClick={() => handleDeleteSubmission(activeSubmission)}
+                    className="px-4 py-2.5 rounded-full bg-red-600/15 text-xs font-bold uppercase tracking-wider text-red-600 hover:bg-red-600/25 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    Close Review
+                    <Trash2 className="size-4" /> Delete Submission
                   </button>
+                  <div className="flex items-center gap-2">
+                    {activeSubmission.formType === "enquiry" && activeSubmission.status !== "contacted" && (
+                      <button
+                        onClick={() => handleMarkContacted(activeSubmission)}
+                        className="px-6 py-2.5 rounded-full bg-emerald-500 text-xs font-bold uppercase tracking-wider text-white hover:bg-emerald-600 transition-all flex items-center gap-2"
+                      >
+                        <CheckCircle2 className="size-4" /> Mark Contacted
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setActiveSubmission(null)}
+                      className="px-6 py-2.5 rounded-full bg-accent-orange text-xs font-bold uppercase tracking-wider text-bg-primary hover:bg-accent-orange/90 transition-all cursor-pointer"
+                    >
+                      Close Review
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

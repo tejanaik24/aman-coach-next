@@ -94,7 +94,7 @@ export default function NutritionPage() {
           .select("*")
           .eq("client_id", client.id)
           .eq("is_active", true)
-          .single()
+          .maybeSingle()
         if (planError || !planData) { setHasNoPlan(true); return }
         setPlan(planData as NutritionPlan)
       } finally {

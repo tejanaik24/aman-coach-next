@@ -15,7 +15,7 @@ const DICT = {
   workoutSub: { en: "Your training plan", hi: "Aapka training plan" },
   food: { en: "Today's food", hi: "Aaj ka khana" },
   foodSub: { en: "Your diet plan", hi: "Aapka diet plan" },
-  checkin: { en: "Weekly check-in", hi: "Weekly check-in" },
+  checkin: { en: "Check In / Feedback", hi: "Check In / Feedback" },
   checkinSub: { en: "Takes about 3 minutes", hi: "Sirf 3 minute lagte hain" },
   messageFromAman: { en: "Message from Aman", hi: "Aman ka sandesh" },
   feeDue: { en: "Fee due", hi: "Fees baaki hai" },

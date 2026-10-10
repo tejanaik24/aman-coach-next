@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { FileText } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { openUrl } from "@/lib/utils"
 
 interface Doc {
   id: string
@@ -14,7 +15,7 @@ interface Doc {
 }
 
 // "Your plan from Aman": PDFs the coach uploaded for this client, one tap to open.
-export default function PlanDocuments({ kind }: { kind: "workout" | "diet" }) {
+export default function PlanDocuments({ kind }: { kind: "workout" | "diet" | "cycle" }) {
   const [docs, setDocs] = useState<Doc[]>([])
 
   useEffect(() => {
@@ -44,14 +45,14 @@ export default function PlanDocuments({ kind }: { kind: "workout" | "diet" }) {
     const res = await fetch(`/api/documents/${id}/url`)
     const body = await res.json().catch(() => ({}))
     if (!res.ok || !body.url) { toast.error("Could not open the plan. Try again."); return }
-    window.open(body.url, "_blank", "noopener")
+    openUrl(body.url)
   }
 
   if (docs.length === 0) return null
 
   return (
-    <div className="space-y-3 mb-6">
-      <p className="text-sm text-text-muted">Your {kind === "workout" ? "workout" : "diet"} plan from Aman</p>
+    <div data-plan-docs={kind === "cycle" ? undefined : ""} className="space-y-3 mb-6">
+      <p className="text-sm text-text-muted">Your {kind} plan from Aman</p>
       {docs.map((d, i) => (
         <button
           key={d.id}
@@ -62,7 +63,7 @@ export default function PlanDocuments({ kind }: { kind: "workout" | "diet" }) {
           <FileText className="size-8 shrink-0" />
           <span className="min-w-0">
             <span className="block text-xl font-bold leading-tight">{d.title}</span>
-            <span className={`block text-base mt-0.5 ${i === 0 ? "text-black/70" : "text-text-muted"}`}>
+            <span className={`block text-base mt-0.5 whitespace-pre-line ${i === 0 ? "text-black/70" : "text-text-muted"}`}>
               {format(new Date(d.created_at), "d MMM yyyy")}{d.note ? ` · ${d.note}` : ""}
             </span>
             <span className="block text-base font-semibold mt-1">Tap to open</span>

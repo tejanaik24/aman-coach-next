@@ -1,4 +1,4 @@
-const CACHE_NAME = "ak-coach-v12";
+const CACHE_NAME = "ak-coach-v14";
 const OFFLINE_URLS = [
   "/",
   "/home",
@@ -39,6 +39,9 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  // Leave other sites (Google Fonts, Supabase, Razorpay) to the browser: the
+  // worker's CSP blocks them and the /home fallback would be served as their body.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(event.request)

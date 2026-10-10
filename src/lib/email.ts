@@ -49,7 +49,7 @@ export async function sendWelcomeEmail(to: string, name: string, loginUrl: strin
     <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 8px">Here's what to expect:</p>
     <ul style="color:#a1a1aa;font-size:13px;line-height:1.8;margin:0 0 16px;padding-left:20px">
       <li>Custom workout & diet plans</li>
-      <li>Weekly check-ins to track progress</li>
+      <li>Timely scheduled check-ins to track progress</li>
       <li>Direct messaging with your coach</li>
       <li>Payment & invoice management</li>
     </ul>

@@ -212,7 +212,7 @@ export default function PlansPage() {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => openModal("nutrition")}
-          className="relative rounded-2xl bg-accent-orange/10 border border-accent-orange/40 shadow-[0_0_24px_rgba(255, 106, 26,0.15)] backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
+          className="relative rounded-2xl bg-accent-orange/10 border border-accent-orange/40 shadow-[0_0_24px_rgba(255,106,26,0.15)] backdrop-blur-xl p-4 h-[110px] flex flex-col justify-between text-left cursor-pointer"
         >
           <Apple className="w-6 h-6 text-accent-orange" />
           <span className="font-heading font-bold text-xs text-text-primary uppercase leading-tight">Create<br />Diet Plan</span>

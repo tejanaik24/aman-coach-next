@@ -109,7 +109,7 @@ export default function BadgesGrid({ unlockedBadges, title = "Badges & Milestone
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4"
+            className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4"
             onClick={() => setActiveBadge(null)}
           >
             <motion.div

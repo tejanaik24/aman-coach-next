@@ -15,6 +15,9 @@ import {
   MessageCircle,
   Phone,
   CalendarPlus,
+  Edit,
+  Trash2,
+  Plus,
 } from "lucide-react"
 import { format, differenceInDays } from "date-fns"
 import toast from "react-hot-toast"
@@ -23,13 +26,24 @@ import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import BadgesGrid from "@/components/client/BadgesGrid"
 import { getClientBadges, type ClientBadge } from "@/lib/badges"
 import AddFollowupSheet from "@/components/coach/AddFollowupSheet"
+import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import SendPlanPanel from "@/components/coach/SendPlanPanel"
+import EditClientSheet from "@/components/coach/EditClientSheet"
+import PaymentModal from "@/components/coach/PaymentModal"
 import { waLink } from "@/lib/quick-manage"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
+import { openUrl } from "@/lib/utils"
 
 type Tab = "overview" | "checkins" | "plans" | "fees"
 
 const FOLLOWUP_LABEL: Record<string, string> = { checkin: "Check-in", payment: "Payment", renewal: "Renewal", feedback: "Feedback", birthday: "Birthday", other: "Follow-up" }
+
+// Check-ins come in two shapes: older ones nest answers (form_data.training...), the current
+// 27-step form saves flat keys (t3_workout_deviation...). Read whichever is there.
+function flatField(c: Checkin, key: string): string | undefined {
+  const v = (c.form_data as unknown as Record<string, unknown> | null)?.[key]
+  return v == null || v === "" ? undefined : String(v)
+}
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -84,6 +98,9 @@ export default function ClientDetailPage() {
   const [savingFeedback, setSavingFeedback] = useState<string | null>(null)
   const [followups, setFollowups] = useState<{ id: string; type: string; due_date: string; note: string | null }[]>([])
   const [followupOpen, setFollowupOpen] = useState(false)
+  const [sendingLink, setSendingLink] = useState(false)
+  const [dateFor, setDateFor] = useState<{ id: string; due: string } | null>(null)
+  const [joiningForms, setJoiningForms] = useState<{ id: string; form_type: string; submitted_at: string }[]>([])
 
   const actionsRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
@@ -122,7 +139,19 @@ export default function ClientDetailPage() {
     fetchData()
   }, [fetchData])
 
+  useEffect(() => {
+    createClient()
+      .from("form_submissions")
+      .select("id, form_type, submitted_at")
+      .eq("client_id", id)
+      .in("form_type", ["standard_joining", "antenatal_joining"])
+      .order("submitted_at", { ascending: false })
+      .then(({ data }: { data: unknown }) => setJoiningForms((data ?? []) as { id: string; form_type: string; submitted_at: string }[]))
+  }, [id])
+
   async function sendLoginLink() {
+    if (sendingLink) return
+    setSendingLink(true)
     try {
       const res = await fetch(`/api/coach/clients/${id}/login-link`, { method: "POST" })
       const data = await res.json().catch(() => ({}))
@@ -131,9 +160,11 @@ export default function ClientDetailPage() {
       const text = `Hi ${first}, tap this link to open your Aman Khurana Fitness app (no password needed): ${data.url}`
       const wa = waLink(client?.profile?.phone ?? null, text)
       if (!wa) { await navigator.clipboard.writeText(data.url); toast.success("No number saved. Link copied."); return }
-      if (!window.open(wa, "_blank", "noopener")) window.location.href = wa
+      openUrl(wa)
     } catch {
       toast.error("Could not make the login link")
+    } finally {
+      setSendingLink(false)
     }
   }
 
@@ -161,6 +192,58 @@ export default function ClientDetailPage() {
     setCheckins((prev) => prev.map((c) => (c.id === checkinId ? { ...c, coach_feedback: feedback.trim(), reviewed_at: now } : c)))
     setFeedbackDraft((prev) => ({ ...prev, [checkinId]: "" }))
     toast.success("Feedback saved")
+  }
+
+  const [editSheetOpen, setEditSheetOpen] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [editingFee, setEditingFee] = useState<Fee | null>(null)
+
+  const handleRemoveFollowup = async (fId: string) => {
+    if (!window.confirm("Are you sure you want to remove this follow-up?")) return
+    const supabase = createClient()
+    const { error } = await supabase.from("followups").delete().eq("id", fId)
+    if (error) { toast.error("Could not remove follow-up"); return }
+    setFollowups((prev) => prev.filter((f) => f.id !== fId))
+    toast.success("Follow-up removed")
+  }
+
+  const handleChangeFollowupDate = (fId: string, currentDue: string) => setDateFor({ id: fId, due: currentDue })
+
+  const saveFollowupDate = async (newDate: string) => {
+    if (!dateFor) return
+    const supabase = createClient()
+    const { error } = await supabase.from("followups").update({ due_date: newDate }).eq("id", dateFor.id)
+    if (error) { toast.error("Could not update date"); return }
+    setFollowups((prev) => prev.map((f) => (f.id === dateFor.id ? { ...f, due_date: newDate } : f)))
+    setDateFor(null)
+    toast.success("Date updated")
+  }
+
+  const handleDeleteCheckin = async (cId: string) => {
+    if (!window.confirm("Are you sure you want to delete this check-in?")) return
+    const supabase = createClient()
+    const { error } = await supabase.from("checkins").delete().eq("id", cId)
+    if (error) { toast.error("Could not delete check-in"); return }
+    setCheckins((prev) => prev.filter((c) => c.id !== cId))
+    toast.success("Check-in deleted")
+  }
+
+  const handleUndoPaid = async (feeId: string) => {
+    if (!window.confirm("Undo paid status for this fee? It will be marked as pending.")) return
+    const supabase = createClient()
+    const { error } = await supabase.from("fees").update({ status: "pending", paid_date: null }).eq("id", feeId)
+    if (error) { toast.error("Could not update fee"); return }
+    setFees((prev) => prev.map((f) => (f.id === feeId ? { ...f, status: "pending" as const, paid_date: null } : f)))
+    toast.success("Marked as pending")
+  }
+
+  const handleDeleteFee = async (feeId: string) => {
+    if (!window.confirm("Are you sure you want to delete this payment record?")) return
+    const supabase = createClient()
+    const { error } = await supabase.from("fees").delete().eq("id", feeId)
+    if (error) { toast.error("Could not delete payment record"); return }
+    setFees((prev) => prev.filter((f) => f.id !== feeId))
+    toast.success("Payment deleted")
   }
 
   const name = client?.profile?.name ?? "Unknown"
@@ -241,9 +324,28 @@ export default function ClientDetailPage() {
         )}
 
         {!isLoading && phone && (
-          <button type="button" onClick={sendLoginLink} className="h-12 rounded-xl bg-white/5 text-text-muted font-semibold text-base cursor-pointer">
-            Send app login link on WhatsApp
+          <button type="button" onClick={sendLoginLink} disabled={sendingLink} className="h-12 rounded-xl bg-white/5 border border-border-subtle text-text-primary font-semibold text-base cursor-pointer disabled:opacity-60">
+            {sendingLink ? "Making link..." : "Send app login link on WhatsApp"}
           </button>
+        )}
+
+        {!isLoading && client && (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setEditSheetOpen(true)}
+              className="h-12 rounded-xl bg-accent-orange/15 border border-accent-orange/30 text-accent-orange font-semibold text-base flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Edit className="size-4" /> Edit client
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(`/questionnaire?client=${id}`)}
+              className="h-12 rounded-xl bg-white/5 border border-border-subtle text-text-primary font-semibold text-base flex items-center justify-center gap-1.5 cursor-pointer text-center px-2"
+            >
+              Fill joining form
+            </button>
+          </div>
         )}
 
         {/* Next follow-ups */}
@@ -251,10 +353,28 @@ export default function ClientDetailPage() {
           <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 space-y-2">
             <p className="text-sm text-text-muted">Next follow-ups</p>
             {followups.slice(0, 3).map((f) => (
-              <p key={f.id} className="text-base">
-                <span className="font-semibold">{format(new Date(f.due_date + "T00:00:00"), "d MMM")}</span>
-                <span className="text-text-muted"> · {FOLLOWUP_LABEL[f.type] ?? "Follow-up"}{f.note ? ` · ${f.note}` : ""}</span>
-              </p>
+              <div key={f.id} className="flex items-center justify-between text-base py-1">
+                <div className="min-w-0 pr-2">
+                  <span className="font-semibold">{format(new Date(f.due_date + "T00:00:00"), "d MMM")}</span>
+                  <span className="text-text-muted"> · {FOLLOWUP_LABEL[f.type] ?? "Follow-up"}{f.note ? ` · ${f.note}` : ""}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleChangeFollowupDate(f.id, f.due_date)}
+                    className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
+                  >
+                    Change date
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFollowup(f.id)}
+                    className="text-xs text-red-400 font-semibold hover:underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -283,9 +403,8 @@ export default function ClientDetailPage() {
         </div>
 
         {/* Tab content */}
-        <AnimatePresence mode="wait">
-          <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            {activeTab === "overview" && (
+        <div>
+          {activeTab === "overview" && (
               <div className="space-y-4">
                 <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 space-y-3">
                   <h3 className="font-heading font-bold text-xs text-[#181310] uppercase tracking-wider border-b border-[#181310]/[0.08] pb-2 flex items-center gap-1.5">
@@ -312,6 +431,21 @@ export default function ClientDetailPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 space-y-2">
+                  <h3 className="font-heading font-bold text-xs text-[#181310] uppercase tracking-wider border-b border-[#181310]/[0.08] pb-2 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-accent-orange" />
+                    Joining forms
+                  </h3>
+                  {joiningForms.length === 0 ? (
+                    <p className="text-[#8A7F70] text-sm">No joining form yet. Use &ldquo;Fill joining form&rdquo; above, or attach one from Forms and enquiries.</p>
+                  ) : joiningForms.map((f) => (
+                    <button key={f.id} type="button" onClick={() => router.push(`/submissions?open=${f.id}`)} className="w-full flex items-center justify-between py-2 text-left cursor-pointer">
+                      <span className="text-[#181310] text-sm font-semibold">{f.form_type === "antenatal_joining" ? "AN-PN joining form" : "Joining form"}</span>
+                      <span className="text-[#8A7F70] text-xs">{format(new Date(f.submitted_at), "d MMM yyyy")} · View</span>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Client Badges & Achievements — stays dark, BadgesGrid is built for the dark theme */}
@@ -364,7 +498,7 @@ export default function ClientDetailPage() {
                       <table className="w-full text-left text-xs font-semibold">
                         <thead>
                           <tr className="text-[9px] text-[#8A7F70] uppercase tracking-wider border-b border-[#181310]/[0.08]">
-                            <th className="py-1">Week</th>
+                            <th className="py-1">Date</th>
                             <th className="py-1">Weight</th>
                             <th className="py-1">Abdomen</th>
                             <th className="py-1">Hips</th>
@@ -373,12 +507,14 @@ export default function ClientDetailPage() {
                         <tbody className="divide-y divide-[#181310]/[0.08] text-[#181310] font-heading">
                           {[...checkins].reverse().map((c) => {
                             const m = c.form_data?.measurements
+                            const abdomen = m?.abdomen ?? flatField(c, "w2_abdomen")
+                            const hips = m?.hips ?? flatField(c, "w3_hips")
                             return (
                               <tr key={c.id}>
-                                <td className="py-2.5 text-[#8A7F70]">W{c.week_number ?? "?"}</td>
+                                <td className="py-2.5 text-[#8A7F70]">{c.week_number ? `W${c.week_number}` : format(new Date(c.submitted_at), "d MMM")}</td>
                                 <td className="py-2.5">{m?.weight ?? c.weight ?? "—"}{(m?.weight ?? c.weight) ? " kg" : ""}</td>
-                                <td className="py-2.5">{m?.abdomen ? `${m.abdomen} cm` : "—"}</td>
-                                <td className="py-2.5">{m?.hips ? `${m.hips} cm` : "—"}</td>
+                                <td className="py-2.5">{abdomen ? `${abdomen} cm` : "—"}</td>
+                                <td className="py-2.5">{hips ? `${hips} cm` : "—"}</td>
                               </tr>
                             )
                           })}
@@ -409,7 +545,7 @@ export default function ClientDetailPage() {
                           className="w-full flex items-center justify-between p-4 text-left cursor-pointer"
                         >
                           <div>
-                            <p className="text-[#181310] text-sm font-bold">Week {c.week_number ?? "—"}</p>
+                            <p className="text-[#181310] text-sm font-bold">{c.week_number ? `Week ${c.week_number}` : "Check-in"}</p>
                             <p className="text-[#8A7F70] text-xs mt-0.5">{format(new Date(c.submitted_at), "d MMM yyyy, h:mm a")}</p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -429,9 +565,9 @@ export default function ClientDetailPage() {
                           <div className="px-4 pb-4 space-y-3 border-t border-[#181310]/[0.08] pt-3">
                             {c.form_data ? (
                               <div className="space-y-2 text-xs">
-                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Workout deviation:</span> {c.form_data.training.workout_deviation || "—"}</p>
-                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Diet:</span> {c.form_data.diet.diet_deviation}</p>
-                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Sleep:</span> {c.form_data.general.sleep_quality || "—"}</p>
+                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Workout deviation:</span> {c.form_data.training?.workout_deviation || flatField(c, "t3_workout_deviation") || "—"}</p>
+                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Diet:</span> {c.form_data.diet?.diet_deviation || flatField(c, "d1_diet_deviation") || "—"}</p>
+                                <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Sleep:</span> {c.form_data.general?.sleep_quality || flatField(c, "g2_sleep_quality") || "—"}</p>
                               </div>
                             ) : null}
                             <div className="space-y-2">
@@ -469,6 +605,15 @@ export default function ClientDetailPage() {
                                 </motion.button>
                               </div>
                             )}
+                            <div className="pt-2 flex justify-end border-t border-[#181310]/[0.08]">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCheckin(c.id)}
+                                className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-semibold cursor-pointer py-1 px-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 className="size-3.5" /> Delete check-in
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -480,7 +625,7 @@ export default function ClientDetailPage() {
 
             {activeTab === "plans" && (
               <div className="space-y-6">
-                <SendPlanPanel clientId={id} clientName={name} phone={phone} />
+                <SendPlanPanel clientId={id} clientName={name} phone={phone} showCycle={/contest prep/i.test(`${client?.package_name ?? ""} ${client?.goal ?? ""}`)} />
                 <details className="rounded-2xl border border-border-subtle p-4">
                   <summary className="text-base font-semibold cursor-pointer">Plans built inside the app (advanced)</summary>
                   <div className="mt-4">
@@ -542,12 +687,21 @@ export default function ClientDetailPage() {
 
             {activeTab === "fees" && (
               <div className="space-y-3">
-                {fees.length > 0 && (
-                  <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex justify-between items-center">
-                    <span className="text-[#8A7F70] text-sm font-semibold">Total Paid</span>
-                    <span className="text-accent-orange font-heading font-bold text-lg">₹{totalPaid.toLocaleString("en-IN")}</span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center gap-2">
+                  {fees.length > 0 && (
+                    <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex-1 flex justify-between items-center">
+                      <span className="text-[#8A7F70] text-sm font-semibold">Total Paid</span>
+                      <span className="text-accent-orange font-heading font-bold text-lg">₹{totalPaid.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setEditingFee(null); setPaymentModalOpen(true) }}
+                    className="h-14 px-5 rounded-2xl bg-accent-orange text-black font-bold text-sm flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <Plus className="size-4" /> Add payment
+                  </button>
+                </div>
 
                 {fees.length === 0 ? (
                   <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-10 text-center">
@@ -576,15 +730,61 @@ export default function ClientDetailPage() {
                         </div>
                       </div>
                       {f.notes && <p className="text-[#8A7F70] text-xs mt-2">{f.notes}</p>}
+                      <div className="mt-3 pt-3 border-t border-[#181310]/[0.08] flex items-center justify-end gap-2">
+                        {f.status === "paid" && (
+                          <button
+                            type="button"
+                            onClick={() => handleUndoPaid(f.id)}
+                            className="px-3 py-1 rounded-lg bg-[#181310]/5 text-[#181310] text-xs font-semibold hover:bg-[#181310]/10 cursor-pointer"
+                          >
+                            Undo Paid
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => { setEditingFee(f); setPaymentModalOpen(true) }}
+                          className="px-3 py-1 rounded-lg bg-[#181310]/5 text-[#181310] text-xs font-semibold hover:bg-[#181310]/10 cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFee(f.id)}
+                          className="px-3 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-semibold hover:bg-red-200 cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
+        </div>
       </div>
 
+      {client && (
+        <EditClientSheet
+          isOpen={editSheetOpen}
+          onClose={() => setEditSheetOpen(false)}
+          client={client}
+          onSuccess={fetchData}
+          onDeleted={() => router.push("/clients")}
+        />
+      )}
+
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => { setPaymentModalOpen(false); setEditingFee(null) }}
+        mode={editingFee ? "edit" : "add"}
+        clientId={id}
+        initialFee={editingFee}
+        onSuccess={fetchData}
+      />
+
+      {dateFor && (
+        <ChangeDateSheet title="Move follow-up to" subtitle={name} current={dateFor.due} onSave={saveFollowupDate} onClose={() => setDateFor(null)} />
+      )}
       {followupOpen && (
         <AddFollowupSheet
           isOpen

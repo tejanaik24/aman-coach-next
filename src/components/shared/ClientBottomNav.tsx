@@ -1,9 +1,9 @@
 "use client";
 
 import {
+  ClipboardCheck,
   Dumbbell,
   Home,
-  MoreHorizontal,
   TrendingUp,
   Utensils,
 } from "lucide-react";
@@ -16,13 +16,17 @@ const tabs = [
   { href: "/workout", label: "navWorkout" as TKey, icon: Dumbbell },
   { href: "/diet", label: "navDiet" as TKey, icon: Utensils },
   { href: "/progress", label: "navProgress" as TKey, icon: TrendingUp },
-  { href: "/checkin", label: "navCheckin" as TKey, icon: MoreHorizontal },
+  { href: "/checkin", label: "navCheckin" as TKey, icon: ClipboardCheck },
 ];
 
 export default function ClientBottomNav() {
   const { t } = useLang();
   const pathname = usePathname();
   const router = useRouter();
+
+  if (pathname === "/checkin" || pathname.startsWith("/onboarding")) {
+    return null;
+  }
 
   const handleTabClick = (href: string) => {
     if (typeof window !== "undefined" && "vibrate" in navigator) {

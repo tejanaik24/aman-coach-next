@@ -21,11 +21,11 @@ export function FormHeader({
   const percentage = Math.round(((currentStep + 1) / totalSteps) * 100)
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 bg-[#0A0A0A]/90 backdrop-blur-md border-b border-zinc-900 px-4 py-3">
+    <div className="fixed top-0 left-0 right-0 z-40 bg-[#0A0A0A] border-b border-zinc-900 px-4 py-3">
       {/* Top Gold Progress Fill */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-900 overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-[#C2470A] via-[#FF6A1A] to-[#FFA66B] transition-all duration-300 ease-out shadow-[0_0_12px_rgba(255, 106, 26,0.5)]"
+          className="h-full bg-gradient-to-r from-[#C2470A] via-[#FF6A1A] to-[#FFA66B] transition-all duration-300 ease-out shadow-[0_0_12px_rgba(255,106,26,0.5)]"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -107,7 +107,7 @@ export function QuestionWrapper({
   return (
     <div className="w-full max-w-xl mx-auto space-y-6 animate-fade-in">
       <div className="space-y-2 text-left">
-        <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white leading-tight tracking-wide">
+        <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white leading-tight tracking-wide break-words">
           {title}
         </h2>
         {subtitle && <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">{subtitle}</p>}
@@ -156,7 +156,7 @@ export function ImageCardPicker({
             onClick={() => onChange(opt.value)}
             className={`flex items-center gap-3.5 p-4 rounded-xl text-left border transition-all duration-200 ${
               isSelected
-                ? "bg-[#FF6A1A]/15 border-[#FF6A1A] ring-1 ring-[#FF6A1A]/50 shadow-[0_0_15px_rgba(255, 106, 26,0.15)]"
+                ? "bg-[#FF6A1A]/15 border-[#FF6A1A] ring-1 ring-[#FF6A1A]/50 shadow-[0_0_15px_rgba(255,106,26,0.15)]"
                 : "bg-[#141414] border-zinc-800 hover:border-zinc-700 hover:bg-[#1A1A1A]"
             }`}
           >
@@ -220,7 +220,7 @@ export function ChipMultiSelect({
             onClick={() => toggle(opt)}
             className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all border ${
               isSelected
-                ? "bg-[#FF6A1A] text-white border-[#FF6A1A] shadow-[0_0_12px_rgba(255, 106, 26,0.3)] scale-105"
+                ? "bg-[#FF6A1A] text-white border-[#FF6A1A] shadow-[0_0_12px_rgba(255,106,26,0.3)] scale-105"
                 : "bg-[#141414] text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-[#1A1A1A]"
             }`}
           >
@@ -255,7 +255,7 @@ export function ChipSingleSelect({
             onClick={() => onChange(opt)}
             className={`px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide transition-all border ${
               isSelected
-                ? "bg-[#FF6A1A] text-white border-[#FF6A1A] shadow-[0_0_12px_rgba(255, 106, 26,0.3)] scale-105"
+                ? "bg-[#FF6A1A] text-white border-[#FF6A1A] shadow-[0_0_12px_rgba(255,106,26,0.3)] scale-105"
                 : "bg-[#141414] text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-[#1A1A1A]"
             }`}
           >
@@ -289,7 +289,7 @@ export function GoldSlider({
   return (
     <div className="space-y-6 bg-[#141414] p-6 rounded-2xl border border-zinc-800">
       <div className="text-center space-y-1">
-        <span className="text-4xl font-extrabold text-[#FF6A1A] font-heading drop-shadow-[0_0_10px_rgba(255, 106, 26,0.4)]">
+        <span className="text-4xl font-extrabold text-[#FF6A1A] font-heading drop-shadow-[0_0_10px_rgba(255,106,26,0.4)]">
           {value}
           <span className="text-lg text-zinc-400 font-sans ml-1">{unit}</span>
         </span>
@@ -445,7 +445,6 @@ export function PhotoUploadScreen({
   files,
   onFilesChange,
   multiple = false,
-  userId,
 }: {
   label: string
   subtitle?: string
@@ -459,7 +458,8 @@ export function PhotoUploadScreen({
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploaded = Array.from(e.target.files || [])
-    if (!uploaded.length || !userId) return
+    // The upload API uses the signed-in session; the joining forms never pass userId.
+    if (!uploaded.length) return
 
     const startIdx = multiple ? files.length : 0
     const localPreviews: Record<number, string> = {}

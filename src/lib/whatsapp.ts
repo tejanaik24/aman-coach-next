@@ -317,9 +317,9 @@ export async function sendCheckinReminder(
     "[Meta WhatsApp] Falling back to free-text message for check-in reminder",
   );
   const text =
-    `⏰ *WEEKLY CHECK-IN REMINDER*\n\n` +
+    `⏰ *CHECK-IN REMINDER*\n\n` +
     `Hi ${clientName || "Client"},\n` +
-    `Your weekly check-in is due! Regular check-ins help Coach Aman track your progress, measurements, and adjust your nutrition & training plans.\n\n` +
+    `Your check-in is due! Regular check-ins help Coach Aman track your progress, measurements, and adjust your nutrition & training plans.\n\n` +
     `📝 Complete your check-in form now (takes ~3 mins):\n` +
     `${checkinUrl || `${SITE_URL}/checkin`}\n\n` +
     `Thank you!`;
@@ -337,7 +337,7 @@ export async function sendCoachSubmissionAlert(
   const formLabels: Record<string, string> = {
     standard_joining: "Standard Joining Questionnaire",
     antenatal_joining: "AN-PN Pregnancy Questionnaire",
-    checkin: "Weekly Check-in Form",
+    checkin: "Check-in Form",
   };
 
   const text =
@@ -361,7 +361,7 @@ export async function sendCoachFormAlert(
   const formLabels: Record<string, string> = {
     standard_joining: "Standard Joining Questionnaire",
     antenatal_joining: "AN-PN Pregnancy Questionnaire",
-    checkin: "Weekly Check-in Form",
+    checkin: "Check-in Form",
     consultation_booking: "Consultation Call Booking",
   };
 

@@ -152,6 +152,12 @@ export default function StandardOnboardingPage() {
     } catch {}
   }, [user?.id])
 
+  // Remember the step too, so "Resume" goes back to where the client stopped.
+  useEffect(() => {
+    if (!user?.id || step === 0) return
+    try { localStorage.setItem(`draft_standard_joining_${user.id}_step`, String(step)) } catch {}
+  }, [step, user?.id])
+
   const handleNext = () => {
     if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
@@ -201,9 +207,9 @@ export default function StandardOnboardingPage() {
             <Sparkles className="size-10 text-[#FF6A1A]" />
           </div>
           <div>
-            <span className="text-[#FF6A1A] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">#TeamAKF</span>
-            <h2 className="font-heading text-3xl font-extrabold text-white">WELCOME TO #TEAMAKF! 🎉</h2>
-            <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-3">Coach Aman will review your details personally and build your custom plan within 24 hours.</p>
+            <span className="text-[#FF6A1A] font-heading font-extrabold text-2xl tracking-widest block mb-2">#teamAKF</span>
+            <h2 className="font-heading text-3xl font-extrabold text-white">WELCOME TO #teamAKF! 🎉</h2>
+            <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-3">Coach Aman will review your details personally. He will take roughly 7 – 15 days to get back to you with your customised plans.</p>
           </div>
           <button onClick={() => router.push("/home")} className="w-full max-w-xs py-4 rounded-2xl bg-[#FF6A1A] text-xs font-bold uppercase tracking-wider text-black">Go to Home</button>
         </div>
@@ -219,6 +225,7 @@ export default function StandardOnboardingPage() {
             try {
               const saved = localStorage.getItem(`draft_standard_joining_${user?.id}`)
               if (saved) setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
+              setStep(Number(localStorage.getItem(`draft_standard_joining_${user?.id}_step`)) || 0)
             } catch {}
             setShowResumeBanner(false)
           }}
@@ -231,13 +238,14 @@ export default function StandardOnboardingPage() {
 
       {step > 0 && <FormHeader currentStep={step - 1} totalSteps={TOTAL_STEPS} onBack={handlePrev} />}
 
-      <div className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center px-4 max-w-xl mx-auto w-full">
+      <div className="min-h-[85vh] pt-16 pb-36 flex flex-col justify-center px-4 max-w-xl mx-auto w-full">
         {step === 0 && (
           <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FF6A1A]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
-            <div><span className="inline-block text-xs font-heading font-extrabold text-[#FF6A1A] uppercase tracking-widest bg-[#FF6A1A]/10 px-3 py-1 rounded-full border border-[#FF6A1A]/30">#TeamAKF</span></div>
+            <div><span className="inline-block text-xs font-heading font-extrabold text-[#FF6A1A] tracking-widest bg-[#FF6A1A]/10 px-3 py-1 rounded-full border border-[#FF6A1A]/30">#teamAKF</span></div>
             <div className="text-6xl sm:text-7xl animate-bounce pt-2">👊</div>
             <div>
-              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Welcome to #TeamAKF 👊</h1>
+              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Hi, I warmly welcome you to #teamAKF 👊</h1>
+              <p className="text-xs sm:text-sm text-zinc-200 mt-2 max-w-sm mx-auto">Pleased to have you in the team 😊 Please fill out the details below. After getting all the details, I shall take roughly 7 – 15 days to get back to you with your customised plans.</p>
               <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Coach Aman reviews every answer personally to build your custom training & nutrition plan.</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -249,7 +257,7 @@ export default function StandardOnboardingPage() {
               <p className="text-xs sm:text-sm text-zinc-300 italic">"Fill every section honestly — the more detail you give, the better your plan. No judgment here."</p>
               <p className="text-xs font-bold text-[#FF6A1A] text-right mt-1">— Coach Aman Khurana</p>
             </div>
-            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255, 106, 26,0.4)]">Let's Begin 💪</button>
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255,106,26,0.4)]">Let's Begin 💪</button>
             <p className="text-xs text-zinc-500 font-mono">64 questions • Saves automatically</p>
           </div>
         )}

@@ -250,12 +250,19 @@ export default function CheckinFormPage() {
     } catch {}
   }, [user?.id])
 
+  // Remember the step too, so "Resume" goes back to where the client stopped.
+  useEffect(() => {
+    if (!user?.id || step === 0) return
+    try { localStorage.setItem(`draft_checkin_${user.id}_step`, String(step)) } catch {}
+  }, [step, user?.id])
+
   const handleResumeDraft = () => {
     if (!user?.id) return
     try {
       const saved = localStorage.getItem(`draft_checkin_${user.id}`)
       if (saved) {
         setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
+        setStep(Number(localStorage.getItem(`draft_checkin_${user.id}_step`)) || 0)
         toast.success("Resumed saved draft!")
       }
     } catch {}
@@ -321,7 +328,7 @@ export default function CheckinFormPage() {
 
     doc.setTextColor(255, 106, 26)
     doc.setFontSize(18)
-    doc.text("AMAN KHURANA FITNESS — WEEKLY CHECK-IN REPORT", 15, 20)
+    doc.text("AMAN KHURANA FITNESS — CHECK-IN REPORT", 15, 20)
 
     doc.setFontSize(10)
     doc.setTextColor(200, 200, 200)
@@ -390,7 +397,7 @@ export default function CheckinFormPage() {
       } catch {}
 
       setDone(true)
-      toast.success("Weekly check-in submitted successfully!")
+      toast.success("Check-in submitted successfully!")
     } catch (err: unknown) {
       console.error(err)
       toast.error("Error submitting check-in. Please try again.")
@@ -440,8 +447,8 @@ export default function CheckinFormPage() {
             <Sparkles className="size-10 text-[#FF6A1A]" />
           </div>
           <div>
-            <span className="text-[#FF6A1A] font-heading font-extrabold text-2xl uppercase tracking-widest block mb-2">
-              #TeamAKF
+            <span className="text-[#FF6A1A] font-heading font-extrabold text-2xl tracking-widest block mb-2">
+              #teamAKF
             </span>
             <h2 className="font-heading text-3xl sm:text-4xl text-white font-extrabold tracking-wide">
               GREAT JOB THIS WEEK! 🎉
@@ -489,23 +496,20 @@ export default function CheckinFormPage() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="min-h-[85vh] pt-16 pb-24 flex flex-col justify-center max-w-xl mx-auto w-full"
+        className="min-h-[85vh] pt-16 pb-36 flex flex-col justify-center max-w-xl mx-auto w-full"
       >
         {/* STEP 0: WELCOME INTRO SCREEN */}
         {step === 0 && (
           <div className="w-full rounded-3xl bg-[#111111]/95 border border-[#FF6A1A]/25 p-6 sm:p-8 space-y-6 text-center shadow-2xl backdrop-blur-xl">
             <div>
               <span className="inline-block text-xs font-heading font-extrabold text-[#FF6A1A] uppercase tracking-widest bg-[#FF6A1A]/10 px-3 py-1 rounded-full border border-[#FF6A1A]/30">
-                WEEK CHECK-IN
+                CHECK IN / FEEDBACK
               </span>
             </div>
             <div className="text-6xl sm:text-7xl animate-bounce pt-2">🔥</div>
             <div>
               <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white leading-tight">Time to Check In 🔥</h1>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Good week or tough week — your coach needs the truth to keep your plan on track.</p>
-            </div>
-            <div className="inline-flex items-center gap-2 bg-[#FF6A1A]/10 border border-[#FF6A1A]/30 px-4 py-2 rounded-2xl text-xs font-extrabold text-[#FF6A1A] tracking-wide">
-              <span>🔥</span> 7 Day Check-in Streak
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-sm mx-auto">Good weeks or tough weeks — your coach needs the truth to keep your plan on track.</p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-[#141414] border border-zinc-800 rounded-xl p-2.5 text-center"><span className="text-xs font-bold text-zinc-300 block">⏱ ~5 mins</span></div>
@@ -516,7 +520,7 @@ export default function CheckinFormPage() {
               <p className="text-xs sm:text-sm text-zinc-300 italic">"Don't sugarcoat it. If you had a bad week, tell me why — that's how we fix it together."</p>
               <p className="text-xs font-bold text-[#FF6A1A] text-right">— Coach Aman Khurana</p>
             </div>
-            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-white hover:bg-[#FF8540] shadow-[0_0_20px_rgba(255, 106, 26,0.4)] transition-all">
+            <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-white hover:bg-[#FF8540] shadow-[0_0_20px_rgba(255,106,26,0.4)] transition-all">
               Let's Go 💪
             </button>
             <p className="text-xs text-zinc-500 font-mono">27 questions • Your coach will review within 24hrs</p>

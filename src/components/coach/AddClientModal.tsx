@@ -1,5 +1,7 @@
 "use client"
 
+import { goalForPackage, isAntenatalPackage } from "@/lib/package-goal"
+
 import { useState, type FormEvent } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X } from "lucide-react"
@@ -31,12 +33,12 @@ interface FormErrors {
   feeAmount?: string
 }
 
-interface Package {
+export interface Package {
   name: string
   days: number
 }
 
-const PACKAGES: Package[] = [
+export const PACKAGES: Package[] = [
   { name: "One Time On-Call Consult", days: 1 },
   { name: "Bodybuilding Contest Prep 12 Weeks", days: 84 },
   { name: "Bodybuilding Contest Prep 24 Weeks", days: 168 },
@@ -57,19 +59,10 @@ const PACKAGES: Package[] = [
 
 const CURRENCY_SYMBOL: Record<string, string> = { INR: "₹", USD: "$", EUR: "€", GBP: "£", AED: "AED", CAD: "CA$" }
 
-function isAntenatalPackage(packageName: string): boolean {
-  return packageName.startsWith("Antenatal") || packageName.startsWith("Postpartum")
-}
+// isAntenatalPackage / goalForPackage live in a plain file so server routes can use them too.
+export { isAntenatalPackage, goalForPackage }
 
-// Goal is derived from the package so Aman never has to pick it.
-function goalForPackage(packageName: string): string {
-  if (packageName.includes("Contest Prep") || packageName.includes("Posing")) return "Contest Prep"
-  if (isAntenatalPackage(packageName)) return "Antenatal/Postnatal"
-  if (packageName.startsWith("Child Nutrition")) return "Child Nutrition"
-  return "Lifestyle Coaching"
-}
-
-function calculateEndDate(startDate: string, days: number): string {
+export function calculateEndDate(startDate: string, days: number): string {
   const d = new Date(startDate)
   d.setDate(d.getDate() + days)
   return d.toISOString().split("T")[0]

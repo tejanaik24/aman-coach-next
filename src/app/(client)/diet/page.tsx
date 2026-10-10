@@ -70,7 +70,7 @@ export default function ClientDietPage() {
           .select("*")
           .eq("client_id", client.id)
           .eq("is_active", true)
-          .single()
+          .maybeSingle()
         if (planError || !planData) { setHasNoPlan(true); return }
         const activePlan = planData as NutritionPlan
         setPlan(activePlan)
@@ -130,7 +130,7 @@ export default function ClientDietPage() {
 
   if (hasNoPlan || !plan) {
     return (
-      <div className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-bg-primary">
+      <div data-plan-empty className="px-5 flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-bg-primary">
         <div className="size-16 rounded-full bg-accent-orange/10 border border-accent-orange/30 flex items-center justify-center">
           <Apple className="size-8 text-accent-orange" />
         </div>
