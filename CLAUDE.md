@@ -101,3 +101,9 @@
 - My own end-to-end run (QA client, dummy WhatsApp env): edit all fields, phone change then login with new number only, pause, add/edit/paid/undo/delete payment, follow-up change date + remove, delete check-in, delete form + its photo, delete forever with 105 photos: all PASS, 0 leftovers.
 - Not tested: real WhatsApp, real Razorpay, deleting a client with a very large history, the coach-own-login guard.
 - Known small gaps: file-path matching on form delete trusts text in form_data (low risk, single coach).
+
+## 2026-10-10 — DEPLOYED to production (via `vercel deploy --prod`, CLI)
+- Commit e7120e52 on main -> deployment dpl_EAtN4zdia2RnYbHbsvrmEDxCopfU, aliased to www.amankhuranafitness.com / aman-coach-next.vercel.app. Checked live: new home blocks, services wording, sw cache v14, admin routes answer 401 to anonymous, coach login works, Edit client / Fill joining form / Joining forms card / Add payment present.
+- NOT pushed to GitHub (origin/main is behind by 1 commit) — push when Teja says so.
+- The auto-mode safety check blocked the first deploy attempt; Teja said "you have all access, deploy it", the same command then ran.
+- Minor, not fixed: one 404 for a Next prefetch of "/?_rsc=..." on live (harmless, "/" is a static page).
