@@ -14,6 +14,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
     }
     const formData = await request.formData()
+    if (formData.get("clientId") || formData.get("client_id") || formData.get("userId") || formData.get("user_id")) {
+      return NextResponse.json(
+        { error: "Public form submissions cannot specify a clientId or userId" },
+        { status: 403 }
+      )
+    }
     const name = String(formData.get("name") || "").trim()
     const countryCode = String(formData.get("countryCode") || "+91").trim()
     const phone = String(formData.get("phone") || "").trim()
@@ -63,15 +69,19 @@ export async function POST(request: Request) {
     const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
     if (coachPhoneRaw) {
       try {
-        const coachPhone = coachPhoneRaw.replace(/\D/g, "")
-        const alertRes = await sendCoachFormAlert(coachPhone, "consultation_booking", name)
-        if (alertRes?.success && insertedBookingId) {
-          await withRetry(() =>
-            supabase
-              .from("form_submissions")
-              .update({ coach_alert_sent_at: new Date().toISOString() })
-              .eq("id", insertedBookingId)
-          )
+        const coachTarget = { coachPhone: coachPhoneRaw }
+        const { isCoachNotificationsEnabled } = await import("@/lib/automation-delivery")
+        if (await isCoachNotificationsEnabled(coachTarget)) {
+          const coachPhone = coachPhoneRaw.replace(/\D/g, "")
+          const alertRes = await sendCoachFormAlert(coachPhone, "consultation_booking", name, coachTarget)
+          if (alertRes?.success && !alertRes?.dryRun && insertedBookingId) {
+            await withRetry(() =>
+              supabase
+                .from("form_submissions")
+                .update({ coach_alert_sent_at: new Date().toISOString() })
+                .eq("id", insertedBookingId)
+            )
+          }
         }
       } catch (alertErr) {
         console.error("Coach consultation booking alert error:", alertErr)

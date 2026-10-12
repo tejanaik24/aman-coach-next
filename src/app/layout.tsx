@@ -23,9 +23,9 @@ const dancingScript = Dancing_Script({
 });
 
 export const metadata: Metadata = {
-  title: "Aman Khurana Fitness — Premium 1-on-1 Coaching",
+  title: "Aman Khurana Fitness — One stop for all your health & Physique goals",
   description:
-    "Elite fitness coaching platform by Aman Khurana. Track workouts, nutrition, and progress.",
+    "One stop for all your health & Physique goals. Elite fitness coaching platform by Aman Khurana.",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",

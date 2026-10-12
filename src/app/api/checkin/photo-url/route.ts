@@ -16,8 +16,8 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url)
   const path = searchParams.get("path")
-  if (!path) {
-    return NextResponse.json({ error: "Missing path" }, { status: 400 })
+  if (!path || path.includes("..") || path.startsWith("/") || path.split("/").length !== 2) {
+    return NextResponse.json({ error: "Invalid or missing path" }, { status: 400 })
   }
 
   const ownerUserId = path.split("/")[0]

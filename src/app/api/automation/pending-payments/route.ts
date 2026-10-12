@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { automationSupabase, daysBetween, getUserEmailMap, isAuthorizedAutomationRequest, todayInIndia } from "@/lib/automation"
+import { amountDue } from "@/lib/fee-math"
 
 const REMINDER_DAYS = [3, 7, 10]
 
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
   const today = todayInIndia()
   const { data: fees, error: feesError } = await automationSupabase
     .from("fees")
-    .select("id, client_id, amount, due_date, status")
+    .select("id, client_id, amount, amount_paid, due_date, status")
     .in("status", ["pending", "overdue"])
     .lte("due_date", today)
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
   const userIds = (clients ?? []).map((client) => client.user_id).filter(Boolean)
   const { data: profiles, error: profilesError } = userIds.length
-    ? await automationSupabase.from("profiles").select("id, name, phone").in("id", userIds)
+    ? await automationSupabase.from("profiles").select("id, name, phone, notifications_enabled").in("id", userIds)
     : { data: [], error: null }
   if (profilesError) return NextResponse.json({ error: profilesError.message }, { status: 500 })
 
@@ -38,18 +39,20 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     fees.flatMap((fee) => {
+      const due = amountDue(fee)
+      if (due <= 0) return []
       const daysOverdue = daysBetween(fee.due_date, today)
       const reminderDay = REMINDER_DAYS.find((day) => day <= daysOverdue && !sent.has(`${fee.id}:payment_reminder_${day}`))
       const profile = profileById.get(clientById.get(fee.client_id)?.user_id ?? "")
       const email = emailByUserId.get(clientById.get(fee.client_id)?.user_id ?? "")
-      if (!reminderDay || !profile?.phone || !email) return []
+      if (!reminderDay || !profile?.phone || !email || profile.notifications_enabled === false) return []
       return [{
         id: fee.id,
         client_id: fee.client_id,
         display_name: profile.name || "Client",
         phone: profile.phone.replace(/\D/g, ""),
         email,
-        amount: Number(fee.amount),
+        amount: due,
         dueDate: fee.due_date,
         days_overdue: reminderDay,
       }]

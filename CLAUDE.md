@@ -107,3 +107,37 @@
 - NOT pushed to GitHub (origin/main is behind by 1 commit) — push when Teja says so.
 - The auto-mode safety check blocked the first deploy attempt; Teja said "you have all access, deploy it", the same command then ran.
 - Minor, not fixed: one 404 for a Next prefetch of "/?_rsc=..." on live (harmless, "/" is a static page).
+
+## 2026-10-11 — Aman's 23-point delivery release (LOCAL, uncommitted; DB migration applied after backup)
+- **DB Backup & Migration (`supabase/migrations/20261011000001_package_fees_and_settings.sql`):**
+  - Full pre-migration dump saved at `/root/backups/aman-coach-pre-20261011-1550.sql` (`447,551 bytes`) and locally.
+  - Created `package_fees` (`package_name` PK, `fee_amount`, `currency`, `updated_at`) with `is_coach()` RLS.
+  - Added `fees.package_fee` (backfilled `= amount + discount - other_charges`), updated `invoices.upi_id` default to `'9815690656@upi'`, added `profiles.notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE`, and added composite indexes on `clients`, `fees`, `followups`, `checkins`, `form_submissions`, `client_documents`.
+- **Money & Billing (#1–#9):**
+  - Single UPI source of truth in `src/lib/upi.ts`: `COACH_UPI_ID = "9815690656@upi"`, `COACH_UPI_NAME = "Aman Khurana Fitness"`, manual `generateUpiLink(amount, note)` (`@` unencoded, `%20` spaces, 2-decimal `am`, `cu=INR`, short `tn` always present). Replaced all legacy `okhdfcbank` / `amankhurana@upi` strings across repo (`0` grep hits).
+  - Fixed Package Fees modal on `/fees` (`package_fees` table) + auto-fill on `AddClientModal` and `PaymentModal` (override allowed).
+  - Discount support (`₹` or `%` toggle -> saved as rupees in `fees.discount` + base fee in `fees.package_fee`).
+  - Invoice PDF (`src/lib/payments.ts`): kept approved gold/black layout, added `Package Fee`, `Discount`, and `Final Amount` rows, fixed UTC date shift, added package/duration selector in `Edit bill`, and embedded Aman's blue handwritten signature (`public/images/aman/signature.png` extracted from WhatsApp `1011-0054-0C7C86.jpg`) above `Authorised Signatory`.
+  - Removed non-working `"Pay online"` (`RazorpayCheckoutButton`) from Admin `/fees` and Client `/payments`. Added `"Send bill on WhatsApp"` (`wa.me` prefilled summary + UPI link) on each admin bill card.
+  - Client `/payments` shows Coaching Fee, Discount, Final Amount, Due Date, working `"Pay by UPI"` (`upi://pay`) + Copy UPI ID + `"I have paid"` even when `invoices` has 0 rows, matching Home, Money tab, and Invoice PDF.
+- **Website Content (#10–#15):**
+  - Hero subline updated to `"One stop for all your health & Physique goals"` (`0` grep hits for `"health, fitness &"`).
+  - Antenatal/Postnatal (`public/index.html` & `public/services.html`): merged 2nd line into 1st, added `"Specialized Labour Prep for Normal Vaginal Birth"` and `"Strategic Training in case of Breech Presentation"`, and replaced `"Maternal & child nutrition guidance"` with `"Trimester wise Strategic Nutritional & Supplementation Intervention"` (`0` grep hits for old string).
+  - Home page conditions block compacted to ONLY the 6 conditions (`PCOS / PCOD`, `Hypertension`, `Dyslipidemia`, `Pre-Diabetic / Type 2 Diabetes`, `Sarcopenia (Muscle Loss with Aging)`, `Perimenopause / Menopause`).
+  - Visually verified and replaced all squat photos (`aman-training-camp.webp` -> `aman-training-camp-v2.webp`; `aman-online-coaching-24wk.webp` & `1yr.webp` -> `aman-on-call-consultation.webp`; `event-08.webp` removed from About Moments). Restored sharp arm definition from `aman-07.jpeg` onto `aman-hero-01.webp` and sharpened `aman-posing-coaching.webp`, `aman-muscle-building-2.webp`, `aman-fatloss.webp`.
+  - Before/after athlete collage pairing (#15) held for Aman's confirmation (no guessing).
+- **Forms, Messages, Auth & Speed (#16–#22):**
+  - Questionnaire (#16): client profile now has both `"+ Fill questionnaire"` and an inline `"Attach a filled questionnaire"` dropdown + `"Attach"` button; `/submissions` also has a `"Fill questionnaire for a client"` bar and fixed `getAllSubmissions` `clientId` bug so unlinked forms always show the attach dropdown. Welcome text (`#teamAKF`, `7 – 15 days`) always displays.
+  - Follow-ups (#17): fixed `/api/automation/followups` date window (`0 <= daysBetween <= 2`) across all follow-up types and added `"Save & Send on WhatsApp now"` (`wa.me` prefilled) in `AddFollowupSheet` + `"Send on WhatsApp"` on client profile follow-ups while Meta WABA display name/payment method remain pending.
+  - Broadcast (#18): added `"Broadcast message"` modal (`BroadcastModal.tsx` + `/api/coach/broadcast`) on Coach Dashboard with Write & Pick -> Preview -> Confirm steps and per-client `wa.me` send buttons.
+  - Login & Settings (#19–#21): added `"Forgot password?"` on `/login` (`/api/auth/forgot-password`, supporting 10-digit phone placeholder emails), `"Change Admin ID / Password"` in `ProfileMenu` (`/api/coach/account`, verifying current password), and DB-backed `"Notifications"` ON/OFF toggle (`profiles.notifications_enabled`) respected by all send paths.
+  - Speed (#22): added DB composite indexes, parallelized `ClientDetailPage` and `getAllSubmissions` queries, switched coach tabs to `getSession()` fast-path, and enabled `<Link prefetch>` in `CoachBottomNav.tsx`. `sw.js` cache bumped to `ak-coach-v15`.
+
+# If Aman is locked out
+1. Make sure `SETUP_SECRET`, `SETUP_COACH_EMAIL`, and `SETUP_COACH_PASSWORD` are set in Vercel Production Environment Variables (`SETUP_COACH_EMAIL` + `SETUP_COACH_PASSWORD` will become Aman's reset login credentials).
+2. If you changed any of those three variables in Vercel, redeploy production so the live serverless function picks them up.
+3. Call `curl -X POST https://www.amankhuranafitness.com/api/admin/setup-coach -H "x-setup-secret: <SETUP_SECRET>"`.
+4. Check that the JSON response is `{"success":true,"action":"reset_existing_coach","id":"640e5cd9-89e3-4303-9c6f-ff351276250d"}` (same coach ID, never a new account).
+5. Have Aman open `https://www.amankhuranafitness.com/login` and sign in with `SETUP_COACH_EMAIL` and `SETUP_COACH_PASSWORD` — he will land on his Coach Dashboard with all existing clients, payments, check-ins, and forms intact.
+6. Once inside, Aman can open his top-right profile menu → "Change Admin ID / Password" to set his own password (and real email if desired).
+

@@ -190,21 +190,27 @@ export async function getAllSubmissions(coachId: string): Promise<{
     formData: Record<string, unknown>
   }[] = []
 
-  // 1. Query form_submissions
   try {
-    const { data: subs } = await supabase
-      .from("form_submissions")
-      .select("*, profiles:user_id(name)")
-      .order("submitted_at", { ascending: false })
+    const [subsRes, checkinsRes] = await Promise.all([
+      supabase
+        .from("form_submissions")
+        .select("*, profiles:user_id(name)")
+        .order("submitted_at", { ascending: false }),
+      supabase
+        .from("checkins")
+        .select("*, clients!inner(id, coach_id, user_id, profiles:user_id(name))")
+        .order("submitted_at", { ascending: false }),
+    ])
 
+    const subs = subsRes.data
     if (subs) {
       subs.forEach((s: Record<string, unknown>) => {
         const prof = s.profiles as { name?: string } | null
         const formData = (s.form_data as Record<string, unknown>) || {}
         results.push({
           id: s.id as string,
-          clientId: (s.client_id as string) || (s.user_id as string),
-          clientName: prof?.name || (formData.name as string) || "Client",
+          clientId: (s.client_id as string) || "",
+          clientName: prof?.name || (formData.q1_name as string) || (formData.name as string) || "Client",
           formType: s.form_type as "standard_joining" | "antenatal_joining" | "checkin" | "enquiry",
           status: (s.status as string) || "submitted",
           submittedAt: (s.submitted_at as string) || new Date().toISOString(),
@@ -212,15 +218,8 @@ export async function getAllSubmissions(coachId: string): Promise<{
         })
       })
     }
-  } catch {}
 
-  // 2. Also query checkins for form_data check-in submissions if not in form_submissions
-  try {
-    const { data: checkins } = await supabase
-      .from("checkins")
-      .select("*, clients!inner(id, coach_id, user_id, profiles:user_id(name))")
-      .order("submitted_at", { ascending: false })
-
+    const checkins = checkinsRes.data
     if (checkins) {
       checkins.forEach((c: Record<string, unknown>) => {
         const clientObj = c.clients as { id: string; user_id: string; profiles?: { name: string } } | null

@@ -18,6 +18,8 @@ import {
   Edit,
   Trash2,
   Plus,
+  Download,
+  Send,
 } from "lucide-react"
 import { format, differenceInDays } from "date-fns"
 import toast from "react-hot-toast"
@@ -30,7 +32,11 @@ import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import SendPlanPanel from "@/components/coach/SendPlanPanel"
 import EditClientSheet from "@/components/coach/EditClientSheet"
 import PaymentModal from "@/components/coach/PaymentModal"
-import { waLink } from "@/lib/quick-manage"
+import { waLink, buildFollowupWaText } from "@/lib/quick-manage"
+import { generatePaymentReceiptPdf, generateUpiPaymentUrl, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
+import { COACH_UPI_ID } from "@/lib/upi"
+import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
+import { mapFeeToBill, type MappedBill } from "@/lib/bill-validation"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
 import { openUrl } from "@/lib/utils"
 
@@ -101,30 +107,34 @@ export default function ClientDetailPage() {
   const [sendingLink, setSendingLink] = useState(false)
   const [dateFor, setDateFor] = useState<{ id: string; due: string } | null>(null)
   const [joiningForms, setJoiningForms] = useState<{ id: string; form_type: string; submitted_at: string }[]>([])
+  const [unattachedForms, setUnattachedForms] = useState<{ id: string; form_type: string; submitted_at: string; senderName: string }[]>([])
+  const [selectedFormId, setSelectedFormId] = useState("")
+  const [attachingForm, setAttachingForm] = useState(false)
 
   const actionsRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
-    const { data: clientRow } = await supabase.from("clients").select("*").eq("id", id).single()
-
-    if (!clientRow) { setIsLoading(false); return }
-
-    let profile = null
-    if (clientRow.user_id) {
-      const { data } = await supabase.from("profiles").select("*").eq("id", clientRow.user_id).single()
-      profile = data
-    }
-    setClient({ ...clientRow, profile })
-
-    const [r1, r2, r3, r4, badges, r5] = await Promise.allSettled([
+    const [clientRes, r1, r2, r3, r4, badges, r5, formsRes, unattachedRes] = await Promise.allSettled([
+      supabase.from("clients").select("*, profile:profiles!user_id(*)").eq("id", id).single(),
       supabase.from("checkins").select("*").eq("client_id", id).order("submitted_at", { ascending: false }),
       supabase.from("fees").select("*").eq("client_id", id).order("due_date", { ascending: false }),
       supabase.from("workout_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       supabase.from("nutrition_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       getClientBadges(id),
-      supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).order("due_date").limit(3),
+      supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).order("due_date").limit(5),
+      supabase.from("form_submissions").select("id, form_type, submitted_at").eq("client_id", id).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }),
+      supabase.from("form_submissions").select("id, form_type, submitted_at, sender:form_data->>q1_name").is("client_id", null).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }).limit(30),
     ])
+
+    if (clientRes.status === "fulfilled" && clientRes.value.data) {
+      const raw = clientRes.value.data as unknown as ClientWithProfile & { profile: ClientWithProfile["profile"] | ClientWithProfile["profile"][] }
+      const prof = Array.isArray(raw.profile) ? raw.profile[0] ?? null : raw.profile
+      setClient({ ...raw, profile: prof })
+    } else {
+      setIsLoading(false)
+      return
+    }
 
     if (r1.status === "fulfilled") setCheckins(r1.value.data ?? [])
     if (r2.status === "fulfilled") setFees(r2.value.data ?? [])
@@ -132,6 +142,16 @@ export default function ClientDetailPage() {
     if (r4.status === "fulfilled") setNutritionPlans(r4.value.data ?? [])
     if (badges.status === "fulfilled") setClientBadges(badges.value)
     if (r5.status === "fulfilled") setFollowups(r5.value.data ?? [])
+    if (formsRes.status === "fulfilled") setJoiningForms((formsRes.value.data ?? []) as { id: string; form_type: string; submitted_at: string }[])
+    if (unattachedRes.status === "fulfilled") {
+      const list = ((unattachedRes.value.data ?? []) as unknown as { id: string; form_type: string; submitted_at: string; sender: string | null }[]).map((u) => ({
+        id: u.id,
+        form_type: u.form_type,
+        submitted_at: u.submitted_at,
+        senderName: u.sender || "Questionnaire",
+      }))
+      setUnattachedForms(list)
+    }
     setIsLoading(false)
   }, [id])
 
@@ -139,15 +159,23 @@ export default function ClientDetailPage() {
     fetchData()
   }, [fetchData])
 
-  useEffect(() => {
-    createClient()
+  async function handleAttachQuestionnaire() {
+    if (!selectedFormId || !client || attachingForm) return
+    setAttachingForm(true)
+    const supabase = createClient()
+    const { error } = await supabase
       .from("form_submissions")
-      .select("id, form_type, submitted_at")
-      .eq("client_id", id)
-      .in("form_type", ["standard_joining", "antenatal_joining"])
-      .order("submitted_at", { ascending: false })
-      .then(({ data }: { data: unknown }) => setJoiningForms((data ?? []) as { id: string; form_type: string; submitted_at: string }[]))
-  }, [id])
+      .update({ client_id: client.id, user_id: client.user_id })
+      .eq("id", selectedFormId)
+    setAttachingForm(false)
+    if (error) {
+      toast.error("Could not attach questionnaire")
+      return
+    }
+    toast.success("Questionnaire attached to client profile")
+    setSelectedFormId("")
+    fetchData()
+  }
 
   async function sendLoginLink() {
     if (sendingLink) return
@@ -171,9 +199,16 @@ export default function ClientDetailPage() {
   async function handleMarkAsPaid(feeId: string) {
     const supabase = createClient()
     const paidDate = new Date().toISOString().split("T")[0]
-    const { error } = await supabase.from("fees").update({ status: "paid", paid_date: paidDate }).eq("id", feeId)
+    const targetFee = fees.find((f) => f.id === feeId)
+    const fullAmt = targetFee ? finalAmount(targetFee) : 0
+    const { error } = await supabase
+      .from("fees")
+      .update({ status: "paid", paid_date: paidDate, amount_paid: fullAmt })
+      .eq("id", feeId)
     if (error) { toast.error("Failed to update fee"); return }
-    setFees((prev) => prev.map((f) => (f.id === feeId ? { ...f, status: "paid" as const, paid_date: paidDate } : f)))
+    setFees((prev) =>
+      prev.map((f) => (f.id === feeId ? { ...f, status: "paid" as const, paid_date: paidDate, amount_paid: fullAmt } : f))
+    )
     toast.success("Fee marked as paid")
   }
 
@@ -196,7 +231,7 @@ export default function ClientDetailPage() {
 
   const [editSheetOpen, setEditSheetOpen] = useState(false)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [editingFee, setEditingFee] = useState<Fee | null>(null)
+  const [editingFee, setEditingFee] = useState<MappedBill | null>(null)
 
   const handleRemoveFollowup = async (fId: string) => {
     if (!window.confirm("Are you sure you want to remove this follow-up?")) return
@@ -229,12 +264,17 @@ export default function ClientDetailPage() {
   }
 
   const handleUndoPaid = async (feeId: string) => {
-    if (!window.confirm("Undo paid status for this fee? It will be marked as pending.")) return
+    if (!window.confirm("This will set paid amount back to 0. Continue?")) return
     const supabase = createClient()
-    const { error } = await supabase.from("fees").update({ status: "pending", paid_date: null }).eq("id", feeId)
+    const { error } = await supabase
+      .from("fees")
+      .update({ status: "pending", paid_date: null, amount_paid: 0 })
+      .eq("id", feeId)
     if (error) { toast.error("Could not update fee"); return }
-    setFees((prev) => prev.map((f) => (f.id === feeId ? { ...f, status: "pending" as const, paid_date: null } : f)))
-    toast.success("Marked as pending")
+    setFees((prev) =>
+      prev.map((f) => (f.id === feeId ? { ...f, status: "pending" as const, paid_date: null, amount_paid: 0 } : f))
+    )
+    toast.success("Payment reset to pending")
   }
 
   const handleDeleteFee = async (feeId: string) => {
@@ -253,7 +293,81 @@ export default function ClientDetailPage() {
   const daysActive = client ? differenceInDays(new Date(), new Date(client.start_date)) : 0
   const activeWorkout = workoutPlans.find((p) => p.is_active)
   const activeNutrition = nutritionPlans.find((p) => p.is_active)
-  const totalPaid = fees.filter((f) => f.status === "paid").reduce((s, f) => s + Number(f.amount), 0)
+  const totalPaid = fees.reduce((s, f) => s + paidSoFar(f), 0)
+  const totalPending = fees.reduce((s, f) => s + amountDue(f), 0)
+
+  function resolveFeeMetrics(f: Fee) {
+    const mapped = mapFeeToBill(f, client, client?.profile)
+    return {
+      mapped,
+      amount: mapped.amount,
+      discount: mapped.discount,
+      otherCharges: mapped.otherCharges,
+      rewardPoints: mapped.rewardPointsRedeemed,
+      packageFee: mapped.packageFee,
+      amountPaid: mapped.amountPaid,
+      balanceDue: mapped.balanceDue,
+      invNum: mapped.invoiceNumber,
+      pkgName: mapped.packageName,
+    }
+  }
+
+  function buildClientBillWaText(f: Fee): string {
+    const m = resolveFeeMetrics(f)
+    const first = name.split(" ")[0]
+    const due = format(new Date(f.due_date + "T00:00:00"), "dd MMM yyyy")
+    const upiLink = generateUpiPaymentUrl(m.balanceDue || m.amount, name, m.invNum)
+    const lines = [
+      `Hi ${first}, here is your coaching bill from *Aman Khurana Fitness*:`,
+      ``,
+      `📄 *Invoice #*: ${m.invNum}`,
+      ...(m.pkgName ? [`📦 *Package*: ${m.pkgName}`] : []),
+      `💰 *Package Fee*: ₹${m.packageFee.toLocaleString("en-IN")}`,
+      ...(m.discount > 0 ? [`🏷️ *Discount*: −₹${m.discount.toLocaleString("en-IN")}`] : []),
+      ...(m.otherCharges > 0 ? [`➕ *Other Charges*: ₹${m.otherCharges.toLocaleString("en-IN")}`] : []),
+      `✅ *Final Amount*: ₹${m.amount.toLocaleString("en-IN")}`,
+      ...(m.amountPaid > 0 ? [`💵 *Paid*: ₹${m.amountPaid.toLocaleString("en-IN")}`] : []),
+      `📌 *Amount Due*: ₹${m.balanceDue.toLocaleString("en-IN")}`,
+      `📅 *Due Date*: ${due}`,
+      ``,
+      `📲 *Pay by UPI*: ${COACH_UPI_ID} (Aman Khurana Fitness)`,
+      `🔗 *UPI Link*: ${upiLink}`,
+      ``,
+      `Thank you! — Aman Khurana (#teamAKF)`,
+    ]
+    return lines.join("\n")
+  }
+
+  async function handleDownloadClientReceipt(f: Fee) {
+    const m = resolveFeeMetrics(f)
+    const invObj: Invoice = {
+      id: f.id,
+      clientId: f.client_id,
+      invoiceNumber: m.invNum,
+      packageFee: m.packageFee,
+      amount: m.amount,
+      gstRate: 0,
+      gstAmount: 0,
+      totalAmount: m.amount,
+      upiId: DEFAULT_UPI_ID,
+      status: f.status,
+      dueDate: f.due_date,
+      clientName: name,
+      clientPhone: phone ?? "",
+      createdAt: f.created_at || new Date().toISOString(),
+      memberNumber: client?.member_number ?? undefined,
+      packageName: m.pkgName ?? undefined,
+      startDate: client?.start_date ?? undefined,
+      endDate: client?.end_date ?? undefined,
+      otherCharges: m.otherCharges,
+      discount: m.discount,
+      rewardPointsRedeemed: m.rewardPoints,
+      amountPaid: m.amountPaid,
+    }
+    const doc = await generatePaymentReceiptPdf(invObj)
+    doc.save(`Invoice_${m.invNum}_${name.replace(/\s+/g, "_")}.pdf`)
+    toast.success("Bill / receipt downloaded!")
+  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
@@ -343,39 +457,54 @@ export default function ClientDetailPage() {
               onClick={() => router.push(`/questionnaire?client=${id}`)}
               className="h-12 rounded-xl bg-white/5 border border-border-subtle text-text-primary font-semibold text-base flex items-center justify-center gap-1.5 cursor-pointer text-center px-2"
             >
-              Fill joining form
+              <FileText className="size-4 text-accent-orange" /> Fill questionnaire
             </button>
           </div>
         )}
 
         {/* Next follow-ups */}
         {!isLoading && followups.length > 0 && (
-          <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 space-y-2">
+          <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 space-y-2.5">
             <p className="text-sm text-text-muted">Next follow-ups</p>
-            {followups.slice(0, 3).map((f) => (
-              <div key={f.id} className="flex items-center justify-between text-base py-1">
-                <div className="min-w-0 pr-2">
-                  <span className="font-semibold">{format(new Date(f.due_date + "T00:00:00"), "d MMM")}</span>
-                  <span className="text-text-muted"> · {FOLLOWUP_LABEL[f.type] ?? "Follow-up"}{f.note ? ` · ${f.note}` : ""}</span>
+            {followups.slice(0, 5).map((f) => {
+              const fWa = waLink(phone ?? null, buildFollowupWaText(name, f.type, f.due_date, f.note))
+              return (
+                <div key={f.id} className="flex flex-col gap-1.5 text-base py-1.5 border-b border-border-subtle/50 last:border-none">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold">{format(new Date(f.due_date + "T00:00:00"), "d MMM")}</span>
+                      <span className="text-text-muted"> · {FOLLOWUP_LABEL[f.type] ?? "Follow-up"}{f.note ? ` · ${f.note}` : ""}</span>
+                    </div>
+                    {fWa && (
+                      <a
+                        href={fWa}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded-lg bg-[#25D366] text-black text-xs font-bold flex items-center gap-1 shrink-0"
+                      >
+                        <MessageCircle className="size-3.5" /> Send on WhatsApp
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleChangeFollowupDate(f.id, f.due_date)}
+                      className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
+                    >
+                      Change date
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFollowup(f.id)}
+                      className="text-xs text-red-400 font-semibold hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleChangeFollowupDate(f.id, f.due_date)}
-                    className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
-                  >
-                    Change date
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFollowup(f.id)}
-                    className="text-xs text-red-400 font-semibold hover:underline cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -433,19 +562,55 @@ export default function ClientDetailPage() {
                   )}
                 </div>
 
-                <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 space-y-2">
-                  <h3 className="font-heading font-bold text-xs text-[#181310] uppercase tracking-wider border-b border-[#181310]/[0.08] pb-2 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-accent-orange" />
-                    Joining forms
-                  </h3>
+                <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#181310]/[0.08] pb-2">
+                    <h3 className="font-heading font-bold text-xs text-[#181310] uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-accent-orange" />
+                      Questionnaires / Joining forms
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/questionnaire?client=${id}`)}
+                      className="text-xs font-bold text-accent-orange hover:underline cursor-pointer"
+                    >
+                      + Fill questionnaire
+                    </button>
+                  </div>
                   {joiningForms.length === 0 ? (
-                    <p className="text-[#8A7F70] text-sm">No joining form yet. Use &ldquo;Fill joining form&rdquo; above, or attach one from Forms and enquiries.</p>
+                    <p className="text-[#8A7F70] text-xs">No questionnaire attached yet. Tap &ldquo;Fill questionnaire&rdquo; to fill it yourself, or attach one below.</p>
                   ) : joiningForms.map((f) => (
-                    <button key={f.id} type="button" onClick={() => router.push(`/submissions?open=${f.id}`)} className="w-full flex items-center justify-between py-2 text-left cursor-pointer">
-                      <span className="text-[#181310] text-sm font-semibold">{f.form_type === "antenatal_joining" ? "AN-PN joining form" : "Joining form"}</span>
-                      <span className="text-[#8A7F70] text-xs">{format(new Date(f.submitted_at), "d MMM yyyy")} · View</span>
+                    <button key={f.id} type="button" onClick={() => router.push(`/submissions?open=${f.id}`)} className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-[#181310]/5 text-left cursor-pointer">
+                      <span className="text-[#181310] text-sm font-semibold">{f.form_type === "antenatal_joining" ? "AN-PN Questionnaire" : "Lifestyle & Health Questionnaire"}</span>
+                      <span className="text-accent-orange text-xs font-bold">{format(new Date(f.submitted_at), "d MMM yyyy")} · View →</span>
                     </button>
                   ))}
+                  {unattachedForms.length > 0 && (
+                    <div className="pt-2 border-t border-[#181310]/[0.08] space-y-1.5">
+                      <p className="text-[11px] font-bold text-[#8A7F70] uppercase tracking-wider">Attach a filled questionnaire</p>
+                      <div className="flex gap-2">
+                        <select
+                          value={selectedFormId}
+                          onChange={(e) => setSelectedFormId(e.target.value)}
+                          className="flex-1 min-w-0 h-10 rounded-xl bg-white border border-[#181310]/15 px-2.5 text-xs text-[#181310]"
+                        >
+                          <option value="">Choose filled form…</option>
+                          {unattachedForms.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.senderName} ({format(new Date(u.submitted_at), "d MMM")})
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={!selectedFormId || attachingForm}
+                          onClick={handleAttachQuestionnaire}
+                          className="px-4 h-10 rounded-xl bg-accent-orange text-bg-primary text-xs font-bold disabled:opacity-50 cursor-pointer shrink-0"
+                        >
+                          {attachingForm ? "Attaching…" : "Attach"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Client Badges & Achievements — stays dark, BadgesGrid is built for the dark theme */}
@@ -689,9 +854,15 @@ export default function ClientDetailPage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center gap-2">
                   {fees.length > 0 && (
-                    <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex-1 flex justify-between items-center">
-                      <span className="text-[#8A7F70] text-sm font-semibold">Total Paid</span>
-                      <span className="text-accent-orange font-heading font-bold text-lg">₹{totalPaid.toLocaleString("en-IN")}</span>
+                    <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-3.5 flex-1 grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[#8A7F70] text-xs font-semibold block">Total Paid</span>
+                        <span className="text-accent-orange font-heading font-bold text-lg">₹{totalPaid.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div>
+                        <span className="text-[#8A7F70] text-xs font-semibold block">Balance Due</span>
+                        <span className="text-[#181310] font-heading font-bold text-lg">₹{totalPending.toLocaleString("en-IN")}</span>
+                      </div>
                     </div>
                   )}
                   <button
@@ -708,55 +879,109 @@ export default function ClientDetailPage() {
                     <p className="text-[#8A7F70] text-sm">No fee records yet</p>
                   </div>
                 ) : (
-                  fees.map((f) => (
-                    <div key={f.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-[#181310] font-heading font-bold">₹{Number(f.amount).toLocaleString("en-IN")}</p>
-                          <p className="text-[#8A7F70] text-xs mt-0.5">Due {format(new Date(f.due_date), "d MMM yyyy")}</p>
-                          {f.paid_date && <p className="text-[#181310] text-xs mt-0.5 font-semibold">Paid {format(new Date(f.paid_date), "d MMM yyyy")}</p>}
+                  fees.map((f) => {
+                    const m = resolveFeeMetrics(f)
+                    const waBill = waLink(phone ?? null, buildClientBillWaText(f))
+                    return (
+                      <div key={f.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[#181310] font-heading font-bold text-lg">
+                              {f.status === "paid" ? `₹${m.amount.toLocaleString("en-IN")}` : `Due ₹${m.balanceDue.toLocaleString("en-IN")}`}
+                            </p>
+                            {m.pkgName && (
+                              <p className="text-[#181310] text-xs font-semibold mt-0.5 truncate">{m.pkgName}</p>
+                            )}
+                            <p className="text-[#8A7F70] text-xs mt-0.5">
+                              Invoice #{m.invNum} &middot; Due {format(new Date(f.due_date + "T00:00:00"), "d MMM yyyy")}
+                            </p>
+                            {f.paid_date && <p className="text-[#181310] text-xs mt-0.5 font-semibold">Paid {format(new Date(f.paid_date + "T00:00:00"), "d MMM yyyy")}</p>}
+                          </div>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${feeStatusBadge(f.status)}`}>{f.status}</span>
+                            {(f.status === "pending" || f.status === "overdue") && (
+                              <motion.button
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => handleMarkAsPaid(f.id)}
+                                className="text-[10px] font-bold text-bg-primary bg-accent-orange px-2.5 py-1 rounded-full cursor-pointer"
+                              >
+                                Mark Paid
+                              </motion.button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${feeStatusBadge(f.status)}`}>{f.status}</span>
-                          {(f.status === "pending" || f.status === "overdue") && (
-                            <motion.button
-                              whileTap={{ scale: 0.97 }}
-                              onClick={() => handleMarkAsPaid(f.id)}
-                              className="text-[10px] font-bold text-bg-primary bg-accent-orange px-2.5 py-1 rounded-full cursor-pointer"
+
+                        {/* Itemized Breakdown: Package Fee, Discount, Paid, Balance Due */}
+                        <div className="mt-3 rounded-xl bg-[#181310]/[0.04] border border-[#181310]/[0.08] p-2.5 grid grid-cols-4 gap-2 text-xs">
+                          <div>
+                            <span className="text-[#8A7F70] text-[10px] block">Package Fee</span>
+                            <span className="text-[#181310] font-semibold">₹{m.packageFee.toLocaleString("en-IN")}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#8A7F70] text-[10px] block">Discount</span>
+                            <span className="text-red-700 font-semibold">{m.discount > 0 ? `−₹${m.discount.toLocaleString("en-IN")}` : "₹0"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#8A7F70] text-[10px] block">Paid</span>
+                            <span className="text-emerald-700 font-semibold">₹{m.amountPaid.toLocaleString("en-IN")}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#8A7F70] text-[10px] block">Balance Due</span>
+                            <span className="text-[#181310] font-bold">₹{m.balanceDue.toLocaleString("en-IN")}</span>
+                          </div>
+                        </div>
+
+                        {f.notes && <p className="text-[#8A7F70] text-xs mt-2">{f.notes}</p>}
+
+                        {/* Send bill on WhatsApp + Bill / receipt buttons (matching /fees) */}
+                        <div className="flex items-center gap-2 mt-3">
+                          {waBill && (
+                            <a
+                              href={waBill}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 h-9 px-3 rounded-xl bg-[#181310]/10 hover:bg-[#181310]/15 text-xs font-semibold text-[#181310] flex items-center justify-center gap-1.5"
                             >
-                              Mark Paid
-                            </motion.button>
+                              <Send className="size-3.5 text-[#128C7E]" /> Send bill on WhatsApp
+                            </a>
                           )}
-                        </div>
-                      </div>
-                      {f.notes && <p className="text-[#8A7F70] text-xs mt-2">{f.notes}</p>}
-                      <div className="mt-3 pt-3 border-t border-[#181310]/[0.08] flex items-center justify-end gap-2">
-                        {f.status === "paid" && (
                           <button
                             type="button"
-                            onClick={() => handleUndoPaid(f.id)}
+                            onClick={() => handleDownloadClientReceipt(f)}
+                            className="h-9 px-3 rounded-xl bg-[#181310]/10 hover:bg-[#181310]/15 text-xs font-semibold text-[#181310] flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Download className="size-3.5 text-accent-orange" /> Bill / receipt
+                          </button>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-[#181310]/[0.08] flex items-center justify-end gap-2">
+                          {(f.status === "paid" || m.amountPaid > 0) && (
+                            <button
+                              type="button"
+                              onClick={() => handleUndoPaid(f.id)}
+                              className="px-3 py-1 rounded-lg bg-[#181310]/5 text-[#181310] text-xs font-semibold hover:bg-[#181310]/10 cursor-pointer"
+                            >
+                              Undo payment
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => { setEditingFee(m.mapped); setPaymentModalOpen(true) }}
                             className="px-3 py-1 rounded-lg bg-[#181310]/5 text-[#181310] text-xs font-semibold hover:bg-[#181310]/10 cursor-pointer"
                           >
-                            Undo Paid
+                            Edit bill
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => { setEditingFee(f); setPaymentModalOpen(true) }}
-                          className="px-3 py-1 rounded-lg bg-[#181310]/5 text-[#181310] text-xs font-semibold hover:bg-[#181310]/10 cursor-pointer"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFee(f.id)}
-                          className="px-3 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-semibold hover:bg-red-200 cursor-pointer"
-                        >
-                          Delete
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteFee(f.id)}
+                            className="px-3 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-semibold hover:bg-red-200 cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             )}
@@ -791,6 +1016,7 @@ export default function ClientDetailPage() {
           onClose={() => setFollowupOpen(false)}
           clientId={id}
           clientName={name}
+          clientPhone={phone}
           onSaved={fetchData}
         />
       )}

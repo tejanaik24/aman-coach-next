@@ -19,33 +19,69 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { userId, clientId, formType, formData } = body
 
-    if (!userId || !formType || !formData) {
+    if (!formType || !formData || typeof formData !== "object") {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    if (userId !== user.id) {
-      return NextResponse.json({ error: "Forbidden: User ID mismatch" }, { status: 403 })
-    }
-
-    // 1. Get client or profile info
-    let targetClientId = clientId
+    // 1. Verify ownership of clientId / userId
+    let targetClientId: string | null = null
+    let targetCoachId: string | null = null
+    let targetUserId: string = user.id
     let clientName = "Client"
 
-    if (!targetClientId && userId) {
+    if (clientId !== undefined && clientId !== null && String(clientId).trim() !== "") {
+      const requestedClientId = String(clientId).trim()
+      const { data: clientRow } = await withRetry(() =>
+        supabase
+          .from("clients")
+          .select("id, user_id, coach_id")
+          .eq("id", requestedClientId)
+          .maybeSingle()
+      )
+
+      const isClientOwner = Boolean(clientRow && clientRow.user_id === user.id)
+      const isClientCoach = Boolean(clientRow && clientRow.coach_id === user.id)
+
+      if (!clientRow || (!isClientOwner && !isClientCoach)) {
+        return NextResponse.json(
+          { error: "Forbidden: You may only submit forms for your own profile or your assigned clients." },
+          { status: 403 }
+        )
+      }
+
+      if (userId && userId !== user.id && userId !== clientRow.user_id) {
+        return NextResponse.json(
+          { error: "Forbidden: User ID does not match the authenticated user or target client." },
+          { status: 403 }
+        )
+      }
+
+      targetClientId = clientRow.id
+      targetCoachId = clientRow.coach_id || null
+      targetUserId = clientRow.user_id || user.id
+    } else {
+      if (!userId) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      }
+      if (userId !== user.id) {
+        return NextResponse.json({ error: "Forbidden: User ID mismatch" }, { status: 403 })
+      }
+      targetUserId = user.id
       const { data: client } = await withRetry(() =>
-        supabase.from("clients").select("id").eq("user_id", userId).maybeSingle()
+        supabase.from("clients").select("id, coach_id").eq("user_id", targetUserId).maybeSingle()
       )
       targetClientId = client?.id || null
+      targetCoachId = client?.coach_id || null
     }
 
     const { data: profile } = await withRetry(() =>
-      supabase.from("profiles").select("name, phone").eq("id", userId).maybeSingle()
+      supabase.from("profiles").select("name, phone").eq("id", targetUserId).maybeSingle()
     )
     if (profile?.name) clientName = profile.name
 
     // 2. Save submission to form_submissions table
     const submissionRecord = {
-      user_id: userId,
+      user_id: targetUserId,
       client_id: targetClientId,
       form_type: formType,
       form_data: formData,
@@ -66,7 +102,7 @@ export async function POST(req: Request) {
       try {
         await withRetry(() =>
           supabase.from("onboarding_forms").upsert({
-            user_id: userId,
+            user_id: targetUserId,
             form_type: formType,
             data: formData,
             status: "submitted",
@@ -99,19 +135,28 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. WhatsApp coach alert is now sent directly here via Meta Cloud API
+    // 4. WhatsApp coach alert is now sent directly here via Meta Cloud API (if coach notifications are enabled)
     const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
     if (coachPhoneRaw) {
       try {
-        const coachPhone = coachPhoneRaw.replace(/\D/g, "")
-        const alertRes = await sendCoachFormAlert(coachPhone, formType, clientName)
-        if (alertRes?.success && insertedId) {
-          await withRetry(() =>
-            supabase
-              .from("form_submissions")
-              .update({ coach_alert_sent_at: new Date().toISOString() })
-              .eq("id", insertedId)
-          )
+        const coachTarget = {
+          coachId: targetCoachId,
+          clientId: targetClientId,
+          userId: targetUserId,
+          coachPhone: coachPhoneRaw,
+        }
+        const { isCoachNotificationsEnabled } = await import("@/lib/automation-delivery")
+        if (await isCoachNotificationsEnabled(coachTarget)) {
+          const coachPhone = coachPhoneRaw.replace(/\D/g, "")
+          const alertRes = await sendCoachFormAlert(coachPhone, formType, clientName, coachTarget)
+          if (alertRes?.success && !alertRes?.dryRun && insertedId) {
+            await withRetry(() =>
+              supabase
+                .from("form_submissions")
+                .update({ coach_alert_sent_at: new Date().toISOString() })
+                .eq("id", insertedId)
+            )
+          }
         }
       } catch (alertErr) {
         console.error("Coach form alert error:", alertErr)

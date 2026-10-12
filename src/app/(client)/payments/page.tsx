@@ -1,70 +1,92 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "motion/react"
 import { format } from "date-fns"
-import { IndianRupee, QrCode, Download, CheckCircle2 } from "lucide-react"
+import { QrCode, Download, CheckCircle2, Copy, MessageCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { generateUpiPaymentUrl, generatePaymentReceiptPdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
-import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
+import { generatePaymentReceiptPdf, type Invoice } from "@/lib/payments"
+import { COACH_UPI_ID, generateUpiLink } from "@/lib/upi"
+import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
 import toast from "react-hot-toast"
 import { COACH_WHATSAPP } from "@/lib/coach-contact"
+import type { Fee } from "@/types"
 
 export default function ClientPaymentsPage() {
   const supabase = createClient()
 
-  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [bills, setBills] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
-  // Same source as the Home screen: the coach's fee records (invoices only exist once one is generated).
-  const [dueFee, setDueFee] = useState<{ amount: number; due_date: string } | null>(null)
   const [clientName, setClientName] = useState("")
-  const [clientEmail, setClientEmail] = useState("")
-  const [clientPhone, setClientPhone] = useState("")
 
   const fetchPayments = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    if (user.email) setClientEmail(user.email)
-
-    const { data: profile } = await supabase.from("profiles").select("name, phone").eq("id", user.id).single()
+    const [profileRes, clientRes] = await Promise.all([
+      supabase.from("profiles").select("name, phone").eq("id", user.id).single(),
+      supabase.from("clients").select("id, member_number, package_name, start_date, end_date").eq("user_id", user.id).maybeSingle(),
+    ])
+    const profile = profileRes.data
+    const client = clientRes.data
     if (profile?.name) setClientName(profile.name)
-    if (profile?.phone) setClientPhone(profile.phone)
-
-    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
-    if (!client) { setLoading(false); return }
+    if (!client) {
+      setLoading(false)
+      return
+    }
 
     const { data: feeRows } = await supabase
       .from("fees")
-      .select("amount, due_date")
-      .eq("client_id", client.id)
-      .in("status", ["pending", "overdue"])
-      .order("due_date")
-      .limit(1)
-    setDueFee((feeRows?.[0] as { amount: number; due_date: string } | undefined) ?? null)
-
-    const { data: invRows } = await supabase
-      .from("invoices")
       .select("*")
       .eq("client_id", client.id)
       .order("due_date", { ascending: false })
 
-    if (invRows) {
-      setInvoices(invRows.map((inv: any) => ({
-        id: inv.id,
-        clientId: inv.client_id,
-        invoiceNumber: inv.invoice_number,
-        amount: Number(inv.amount),
-        gstRate: Number(inv.gst_rate || 18),
-        gstAmount: Number(inv.gst_amount || 0),
-        totalAmount: Number(inv.total_amount),
-        upiId: inv.upi_id || DEFAULT_UPI_ID,
-        status: inv.status,
-        dueDate: inv.due_date,
-        paidAt: inv.paid_at,
-        clientName: profile?.name || "Client",
-        createdAt: inv.created_at
-      })))
+    if (feeRows && feeRows.length > 0) {
+      const typedRows = feeRows as Fee[]
+      const mapped: Invoice[] = typedRows.map((f) => {
+        const amount = finalAmount(f)
+        const discount = Number(f.discount || 0)
+        const otherCharges = Number(f.other_charges || 0)
+        const rewardPts = Number(f.reward_points_redeemed || 0)
+        const packageFee =
+          f.package_fee !== null && f.package_fee !== undefined && Number(f.package_fee) > 0
+            ? Number(f.package_fee)
+            : amount + discount - otherCharges + rewardPts
+        const amountPaid = paidSoFar(f)
+        const invNum =
+          f.invoice_number ||
+          (client.member_number ? String(client.member_number).padStart(5, "0") : `INV-${f.id.slice(0, 6).toUpperCase()}`)
+        return {
+          id: f.id,
+          clientId: client.id,
+          feeId: f.id,
+          invoiceNumber: invNum,
+          packageFee,
+          amount,
+          gstRate: 0,
+          gstAmount: 0,
+          totalAmount: amount,
+          upiId: COACH_UPI_ID,
+          status: f.status,
+          dueDate: f.due_date,
+          paidAt: f.paid_date || undefined,
+          notes: f.notes || undefined,
+          clientName: profile?.name || "Client",
+          clientPhone: profile?.phone || "",
+          createdAt: f.created_at || new Date().toISOString(),
+          memberNumber: client.member_number ?? undefined,
+          packageName: f.package_name || client.package_name || "Personalized Fitness & Nutrition Coaching",
+          startDate: client.start_date || undefined,
+          endDate: client.end_date || undefined,
+          otherCharges,
+          discount,
+          rewardPointsRedeemed: rewardPts,
+          amountPaid,
+          currency: f.currency || "INR",
+        }
+      })
+      setBills(mapped)
+    } else {
+      setBills([])
     }
     setLoading(false)
   }
@@ -75,11 +97,20 @@ export default function ClientPaymentsPage() {
 
   async function handleDownloadInvoice(inv: Invoice) {
     const doc = await generatePaymentReceiptPdf(inv)
-    doc.save(`Receipt_${inv.invoiceNumber}.pdf`)
-    toast.success("Payment receipt downloaded!")
+    doc.save(`Invoice_${inv.invoiceNumber}.pdf`)
+    toast.success("Bill / receipt downloaded!")
   }
 
-  const activeInvoice = invoices.find(i => i.status === "pending" || i.status === "overdue")
+  function handleCopyUpi() {
+    navigator.clipboard.writeText(COACH_UPI_ID)
+    toast.success(`UPI ID ${COACH_UPI_ID} copied!`)
+  }
+
+  // All pending/overdue bills sorted by earliest due date so total due matches Home "Fee due"
+  const activeBills = bills
+    .filter((b) => b.status === "pending" || b.status === "overdue")
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+  const activeBill = activeBills[0] ?? null
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary p-4 md:p-6 pb-28 max-w-3xl mx-auto space-y-6">
@@ -89,72 +120,119 @@ export default function ClientPaymentsPage() {
         <span className="text-[10px] font-bold text-accent-orange uppercase tracking-widest">Client Portal</span>
         <h1 className="font-heading text-2xl text-text-primary tracking-wide mt-0.5">PAYMENTS &amp; SUBSCRIPTION</h1>
         <p className="text-xs text-text-muted mt-1">
-          View coaching fees, pay online via Razorpay or UPI, and download payment receipts.
+          View your coaching fee details, pay via UPI, and download your invoice or receipt.
         </p>
       </div>
 
       {/* Active Due Fee Banner */}
-      {activeInvoice ? (
-        <div className={`rounded-2xl border p-6 space-y-4 shadow-xl ${
-          activeInvoice.status === "overdue"
-            ? "border-red-500/50 bg-red-950/20"
-            : "border-accent-orange/50 bg-gradient-to-br from-accent-orange/10 to-bg-card"
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-              activeInvoice.status === "overdue"
-                ? "bg-red-500/20 text-red-400 border border-red-500/40"
-                : "bg-accent-orange/20 text-accent-orange border border-accent-orange/40"
-            }`}>
-              {activeInvoice.status === "overdue" ? "Overdue Fee" : "Payment Due"}
-            </span>
-            <span className="text-xs text-text-muted font-mono">{activeInvoice.invoiceNumber}</span>
-          </div>
+      {activeBill ? (() => {
+        const pkgFee = activeBills.reduce((s, b) => s + Number(b.packageFee ?? b.amount), 0)
+        const disc = activeBills.reduce((s, b) => s + Number(b.discount ?? 0), 0)
+        const paidAmt = activeBills.reduce((s, b) => s + paidSoFar(b), 0)
+        const dueAmt = activeBills.reduce(
+          (s, b) => s + amountDue(b),
+          0
+        )
+        const hasOverdue = activeBills.some((b) => b.status === "overdue")
+        const invLabel =
+          activeBills.length > 1
+            ? `Invoices ${activeBills.map((b) => `#${b.invoiceNumber}`).join(", ")}`
+            : `Invoice #${activeBill.invoiceNumber}`
+        const upiHref = generateUpiLink(dueAmt, `Coaching Fee ${clientName || "Client"}`)
+        return (
+          <div className={`rounded-2xl border p-6 space-y-4 shadow-xl ${
+            hasOverdue
+              ? "border-red-500/50 bg-red-950/20"
+              : "border-accent-orange/50 bg-gradient-to-br from-accent-orange/10 to-bg-card"
+          }`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                hasOverdue
+                  ? "bg-red-500/20 text-red-400 border border-red-500/40"
+                  : "bg-accent-orange/20 text-accent-orange border border-accent-orange/40"
+              }`}>
+                {hasOverdue ? "Overdue Fee" : "Payment Due"}
+                {activeBills.length > 1 ? ` (${activeBills.length} Bills)` : ""}
+              </span>
+              <span className="text-xs text-text-muted font-mono">{invLabel}</span>
+            </div>
 
-          <div>
-            <span className="text-xs text-text-muted font-medium block">Amount Due</span>
-            <span className="font-heading text-3xl text-text-primary font-bold">₹{activeInvoice.totalAmount.toLocaleString("en-IN")}</span>
-            <span className="text-xs text-text-muted block mt-1">Due Date: {format(new Date(activeInvoice.dueDate), "dd MMMM yyyy")}</span>
-          </div>
+            {activeBill.packageName && (
+              <p className="text-sm font-semibold text-text-primary">{activeBill.packageName}</p>
+            )}
 
-          <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            <RazorpayCheckoutButton
-              invoiceId={activeInvoice.id}
-              clientName={clientName}
-              clientEmail={clientEmail}
-              clientPhone={clientPhone}
-              buttonText="Pay Online (Razorpay)"
-              className="flex-1"
-              onSuccess={fetchPayments}
-            />
-            <a
-              href={generateUpiPaymentUrl(activeInvoice.totalAmount, clientName, activeInvoice.invoiceNumber)}
-              className="py-3 px-4 rounded-full bg-bg-elevated border border-border-subtle text-text-primary font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:border-accent-orange transition-all"
-            >
-              <QrCode className="size-4 text-accent-orange" /> Pay via UPI Link
-            </a>
-            <button
-              onClick={() => handleDownloadInvoice(activeInvoice)}
-              className="py-3 px-4 rounded-full bg-bg-elevated border border-border-subtle text-text-muted text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-text-primary transition-colors"
-            >
-              <Download className="size-4 text-accent-orange" /> Receipt
-            </button>
+            {/* Fee Breakdown */}
+            <div className="rounded-xl bg-bg-primary/60 border border-border-subtle p-4 space-y-2 text-sm">
+              <div className="flex items-center justify-between text-text-muted">
+                <span>Coaching Fee</span>
+                <span className="text-text-primary font-semibold">₹{pkgFee.toLocaleString("en-IN")}</span>
+              </div>
+              {disc > 0 && (
+                <div className="flex items-center justify-between text-emerald-400">
+                  <span>Discount</span>
+                  <span className="font-semibold">− ₹{disc.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              {paidAmt > 0 && (
+                <div className="flex items-center justify-between text-text-muted">
+                  <span>Already Paid</span>
+                  <span className="text-text-primary font-semibold">₹{paidAmt.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              <div className="border-t border-border-subtle pt-2 flex items-center justify-between">
+                <span className="font-bold text-text-primary">Amount Due</span>
+                <span className="font-heading text-2xl text-accent-orange font-bold">₹{dueAmt.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-text-muted pt-1">
+                <span>Due Date</span>
+                <span className="text-text-primary font-semibold">
+                  {format(new Date(activeBill.dueDate + "T00:00:00"), "dd MMMM yyyy")}
+                </span>
+              </div>
+            </div>
+
+            {/* UPI ID + Copy */}
+            <div className="rounded-xl bg-bg-elevated border border-border-subtle px-4 py-3 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[11px] text-text-muted block">Pay by UPI to Aman Khurana Fitness</span>
+                <span className="text-sm font-mono font-bold text-text-primary">{COACH_UPI_ID}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyUpi}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-semibold text-text-primary flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Copy className="size-3.5 text-accent-orange" /> Copy UPI ID
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <a
+                href={upiHref}
+                className="flex-1 py-3.5 px-5 rounded-full bg-accent-orange text-black font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+              >
+                <QrCode className="size-4" /> Pay by UPI (₹{dueAmt.toLocaleString("en-IN")})
+              </a>
+              <button
+                type="button"
+                onClick={() => handleDownloadInvoice(activeBill)}
+                className="py-3.5 px-4 rounded-full bg-bg-elevated border border-border-subtle text-text-primary text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:border-accent-orange transition-colors cursor-pointer"
+              >
+                <Download className="size-4 text-accent-orange" /> Bill / Receipt
+              </button>
+              <a
+                href={`https://wa.me/${COACH_WHATSAPP}?text=${encodeURIComponent(`Hi Aman, I have paid my coaching fee of Rs ${dueAmt} via UPI (${COACH_UPI_ID}).`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-3.5 px-4 rounded-full bg-[#25D366] text-black text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="size-4" /> I have paid
+              </a>
+            </div>
           </div>
-        </div>
-      ) : dueFee ? (
-        <div className="rounded-2xl border border-accent-orange/40 bg-accent-orange/10 p-6 space-y-3">
-          <h3 className="font-bold text-base text-text-primary">Fee due: ₹{Number(dueFee.amount).toLocaleString("en-IN")}</h3>
-          <p className="text-xs text-text-muted">Due date: {format(new Date(dueFee.due_date), "dd MMMM yyyy")}</p>
-          <p className="text-xs text-text-muted">Pay by UPI to <span className="text-text-primary font-bold">{DEFAULT_UPI_ID}</span>, then send Aman a message so he can mark it paid.</p>
-          <a
-            href={`https://wa.me/${COACH_WHATSAPP}?text=${encodeURIComponent(`Hi Aman, I have paid my fee of Rs ${dueFee.amount}.`)}`}
-            target="_blank" rel="noopener noreferrer"
-            className="inline-block py-3 px-5 rounded-full bg-accent-orange text-black text-xs font-bold uppercase tracking-wider"
-          >
-            Message Aman I have paid
-          </a>
-        </div>
-      ) : (
+        )
+      })() : (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/10 p-6 flex items-center gap-4 text-emerald-400">
           <CheckCircle2 className="size-8 flex-shrink-0" />
           <div>
@@ -164,45 +242,69 @@ export default function ClientPaymentsPage() {
         </div>
       )}
 
-      {/* Payment History */}
+      {/* Payment & Bill History */}
       <div className="rounded-2xl border border-border-subtle bg-bg-card p-5 space-y-4">
-        <h3 className="font-heading text-sm text-text-primary uppercase tracking-wider">Payment History</h3>
+        <h3 className="font-heading text-sm text-text-primary uppercase tracking-wider">Bills &amp; Payment History</h3>
 
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="size-6 border-2 border-accent-orange border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : invoices.length === 0 ? (
-          <p className="text-xs text-text-muted text-center py-6">No past payment records</p>
+        ) : bills.length === 0 ? (
+          <p className="text-xs text-text-muted text-center py-6">No billing records yet</p>
         ) : (
           <div className="divide-y divide-border-subtle">
-            {invoices.map(inv => (
-              <div key={inv.id} className="py-3.5 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-text-primary">{inv.invoiceNumber}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                      inv.status === "paid"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : "bg-amber-500/15 text-amber-400"
-                    }`}>
-                      {inv.status}
-                    </span>
+            {bills.map((inv) => {
+              const pkgFee = Number(inv.packageFee ?? inv.amount)
+              const disc = Number(inv.discount ?? 0)
+              const paidAmt = paidSoFar(inv)
+              const rowDue = amountDue(inv)
+              return (
+                <div key={inv.id} className="py-3.5 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-text-primary">Invoice #{inv.invoiceNumber}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        inv.status === "paid"
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : inv.status === "overdue"
+                          ? "bg-red-500/15 text-red-400"
+                          : "bg-amber-500/15 text-amber-400"
+                      }`}>
+                        {inv.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      {inv.packageName ? `${inv.packageName} · ` : ""}Due: {format(new Date(inv.dueDate + "T00:00:00"), "d MMM yyyy")}
+                    </p>
+                    {disc > 0 && (
+                      <p className="text-[11px] text-emerald-400 mt-0.5">
+                        Coaching Fee ₹{pkgFee.toLocaleString("en-IN")} − Discount ₹{disc.toLocaleString("en-IN")}
+                      </p>
+                    )}
+                    {paidAmt > 0 && inv.status !== "paid" && (
+                      <p className="text-[11px] text-text-muted mt-0.5">
+                        Paid ₹{paidAmt.toLocaleString("en-IN")} · Balance Due ₹{rowDue.toLocaleString("en-IN")}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-xs text-text-muted mt-0.5">Due: {format(new Date(inv.dueDate), "d MMM yyyy")}</p>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="font-heading font-bold text-sm text-accent-orange">₹{inv.totalAmount.toLocaleString("en-IN")}</span>
-                  <button
-                    onClick={() => handleDownloadInvoice(inv)}
-                    className="p-2 rounded-lg bg-bg-elevated border border-border-subtle text-text-muted hover:text-text-primary transition-colors"
-                  >
-                    <Download className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="font-heading font-bold text-sm text-accent-orange">
+                      ₹{(inv.status === "paid" ? inv.amount : rowDue).toLocaleString("en-IN")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadInvoice(inv)}
+                      className="p-2 rounded-lg bg-bg-elevated border border-border-subtle text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                      title="Download Bill / Receipt PDF"
+                    >
+                      <Download className="size-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

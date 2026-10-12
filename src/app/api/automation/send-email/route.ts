@@ -21,18 +21,30 @@ export async function POST(request: Request) {
   }
 
   try {
+    let res
     switch (body?.type) {
       case "welcome":
-        await sendWelcomeEmail(to, name, typeof body.loginUrl === "string" ? body.loginUrl : `${SITE_URL}/auth/login`)
+        res = await sendWelcomeEmail(to, name, typeof body.loginUrl === "string" ? body.loginUrl : `${SITE_URL}/auth/login`)
         break
       case "payment_reminder":
-        await sendPaymentReminderEmail(to, name, Number(body.amount), String(body.dueDate || ""), Number(body.dayNumber))
+        res = await sendPaymentReminderEmail(to, name, Number(body.amount), String(body.dueDate || ""), Number(body.dayNumber))
         break
       case "plan_expiry":
-        await sendPlanExpiryEmail(to, name, String(body.expiryDate || ""), Number(body.daysLeft))
+        res = await sendPlanExpiryEmail(to, name, String(body.expiryDate || ""), Number(body.daysLeft))
         break
       default:
         return NextResponse.json({ error: "Unsupported email type" }, { status: 400 })
+    }
+    if (!res.success || res.dryRun) {
+      return NextResponse.json(
+        {
+          success: false,
+          dryRun: Boolean(res.dryRun),
+          skipped: Boolean(res.skipped),
+          error: res.error || "Email delivery failed",
+        },
+        { status: res.dryRun || res.skipped ? 200 : 502 }
+      )
     }
   } catch (error) {
     console.error("Automation email failed", error)

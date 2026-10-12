@@ -16,8 +16,13 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single()
   if (me?.role !== "coach") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
-  // RLS: a coach can only read their own clients
-  const { data: client } = await supabase.from("clients").select("user_id").eq("id", id).maybeSingle()
+  // RLS + explicit coach_id check: a coach can only generate login links for their own clients
+  const { data: client } = await supabase
+    .from("clients")
+    .select("user_id")
+    .eq("id", id)
+    .eq("coach_id", user.id)
+    .maybeSingle()
   if (!client?.user_id) return NextResponse.json({ error: "Client not found" }, { status: 404 })
 
   const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {

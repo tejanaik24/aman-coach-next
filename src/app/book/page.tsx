@@ -4,10 +4,11 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
+import { COACH_UPI_ID, generateUpiLink } from "@/lib/upi"
 
-const UPI_ID = "aman.khurana.1460-1@okhdfcbank"
+const UPI_ID = COACH_UPI_ID
 const AMOUNT = 2000
-const UPI_LINK = `upi://pay?pa=${UPI_ID}&pn=Aman%20Khurana%20Fitness&am=${AMOUNT}&cu=INR`
+const UPI_LINK = generateUpiLink(AMOUNT, "Consultation Call")
 
 export default function BookConsultationPage() {
   const [name, setName] = useState("")

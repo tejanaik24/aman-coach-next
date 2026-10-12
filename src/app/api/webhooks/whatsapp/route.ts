@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import { sendWhatsAppText } from "@/lib/whatsapp";
 import { NextResponse } from "next/server";
 
@@ -10,6 +11,33 @@ import { NextResponse } from "next/server";
 
 const VERIFY_TOKEN =
   process.env.META_WA_VERIFY_TOKEN || "akcoach_wa_verify_2026";
+
+function getMetaAppSecret(): string {
+  return (
+    process.env.META_WA_APP_SECRET ||
+    process.env.META_APP_SECRET ||
+    process.env.WHATSAPP_APP_SECRET ||
+    ""
+  ).trim();
+}
+
+function verifyMetaSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+  secret: string,
+): boolean {
+  if (!signatureHeader || !signatureHeader.startsWith("sha256=")) {
+    return false;
+  }
+  const providedHex = signatureHeader.slice("sha256=".length).trim();
+  const expectedHex = createHmac("sha256", secret)
+    .update(rawBody, "utf8")
+    .digest("hex");
+  const a = Buffer.from(providedHex, "utf8");
+  const b = Buffer.from(expectedHex, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 export async function GET(req: Request) {
   try {
@@ -31,7 +59,7 @@ export async function GET(req: Request) {
       { token, expected: VERIFY_TOKEN },
     );
     return new Response("Forbidden", { status: 403 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Meta WhatsApp Webhook] GET error:", error);
     return new Response("Internal server error", { status: 500 });
   }
@@ -39,12 +67,37 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => null);
+    const rawBody = await req.text();
+    const appSecret = getMetaAppSecret();
+
+    if (!appSecret) {
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Webhook signature secret is not configured" },
+          { status: 401 },
+        );
+      }
+    } else {
+      const sigHeader = req.headers.get("x-hub-signature-256");
+      if (!verifyMetaSignature(rawBody, sigHeader, appSecret)) {
+        return NextResponse.json(
+          { error: "Invalid webhook signature" },
+          { status: 401 },
+        );
+      }
+    }
+
+    let body: Record<string, unknown> | null = null;
+    try {
+      body = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : null;
+    } catch {
+      body = null;
+    }
     if (!body || body.object !== "whatsapp_business_account") {
       return NextResponse.json({ status: "ignored" }, { status: 200 });
     }
 
-    const entries = body.entry || [];
+    const entries = Array.isArray(body.entry) ? body.entry : [];
     for (const entry of entries) {
       const changes = entry.changes || [];
       for (const change of changes) {

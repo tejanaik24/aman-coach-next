@@ -7,7 +7,8 @@ export function phoneEmail(digits: string): string {
 }
 
 export function isPlaceholderEmail(email: string): boolean {
-  return email.toLowerCase().endsWith(`@${DOMAIN}`)
+  const lower = email.toLowerCase()
+  return lower.endsWith(`@${DOMAIN}`) || lower.endsWith("@phone.akfitness.in")
 }
 
 /** Login box accepts an email OR a mobile number. */

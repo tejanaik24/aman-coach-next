@@ -6,6 +6,7 @@ export interface Profile {
   phone: string | null
   role: "coach" | "client"
   avatar_url: string | null
+  notifications_enabled?: boolean
   created_at: string
   updated_at: string
 }
@@ -14,6 +15,7 @@ export interface Client {
   id: string
   user_id: string | null
   coach_id: string | null
+  member_number?: number | null
   goal: string | null
   package_name: string | null
   fee_amount: number
@@ -148,7 +150,14 @@ export interface Checkin {
 export interface Fee {
   id: string
   client_id: string
+  package_fee?: number | null
+  package_name?: string | null
   amount: number
+  other_charges?: number | null
+  discount?: number | null
+  reward_points_redeemed?: number | null
+  amount_paid?: number | null
+  invoice_number?: string | null
   currency: string
   due_date: string
   paid_date: string | null
@@ -158,6 +167,13 @@ export interface Fee {
   reminder_sent_at: string | null
   notes: string | null
   created_at: string
+}
+
+export interface PackageFeeRow {
+  package_name: string
+  fee_amount: number
+  currency: string
+  updated_at: string
 }
 
 export interface AutomationLog {
@@ -175,6 +191,9 @@ export interface CoachStats {
   activeClients: number
   pendingCheckins: number
   feesDue: number
+  feesDueAmount?: number
+  overdueFeesCount?: number
+  overdueFeesAmount?: number
   monthlyRevenue: number
 }
 
@@ -225,6 +244,11 @@ export type Database = {
         Row: Fee
         Insert: Omit<Fee, "id" | "created_at">
         Update: Partial<Omit<Fee, "id">>
+      }
+      package_fees: {
+        Row: PackageFeeRow
+        Insert: Partial<PackageFeeRow> & { package_name: string; fee_amount: number }
+        Update: Partial<PackageFeeRow>
       }
       automation_logs: {
         Row: AutomationLog

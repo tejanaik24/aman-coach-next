@@ -27,12 +27,13 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("")
   const [filterTab, setFilterTab] = useState<FilterTab>("active")
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [followupFor, setFollowupFor] = useState<{ id: string; name: string } | null>(null)
+  const [followupFor, setFollowupFor] = useState<{ id: string; name: string; phone: string | null } | null>(null)
 
   const fetchClients = useCallback(async () => {
     setIsLoading(true)
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user ?? (await supabase.auth.getUser()).data.user
     if (!user) { setIsLoading(false); return }
 
     const today = format(new Date(), "yyyy-MM-dd")
@@ -84,12 +85,22 @@ export default function ClientsPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
-      <div className="px-5 pt-8 pb-32 max-w-lg mx-auto flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          <h1 className="font-heading italic text-4xl">Clients</h1>
-          {!isLoading && (
-            <span className="text-sm font-bold text-black bg-accent-orange px-2.5 py-0.5 rounded-full">{clients.length}</span>
-          )}
+      <div className="px-5 pt-8 pb-36 max-w-lg mx-auto flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="font-heading italic text-4xl">Clients</h1>
+            {!isLoading && (
+              <span className="text-sm font-bold text-black bg-accent-orange px-2.5 py-0.5 rounded-full">{clients.length}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            aria-label="Add client"
+            className="h-11 px-4 rounded-full bg-accent-orange text-black font-bold text-sm flex items-center gap-1.5 shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Add client
+          </button>
         </div>
 
         {/* Search */}
@@ -175,7 +186,7 @@ export default function ClientsPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() => setFollowupFor({ id: c.id, name })}
+                      onClick={() => setFollowupFor({ id: c.id, name, phone: c.profile?.phone ?? null })}
                       className="h-12 rounded-xl bg-white/10 text-white font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <CalendarPlus className="w-5 h-5" /> Follow-up
@@ -216,13 +227,6 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          aria-label="Add client"
-          className="fixed right-5 bottom-28 z-40 h-14 px-5 rounded-full bg-accent-orange text-black font-bold text-base flex items-center gap-2 shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer"
-        >
-          <Plus className="w-5 h-5" /> Add client
-        </button>
       </div>
 
       <AddClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={fetchClients} />
@@ -232,6 +236,7 @@ export default function ClientsPage() {
           onClose={() => setFollowupFor(null)}
           clientId={followupFor.id}
           clientName={followupFor.name}
+          clientPhone={followupFor.phone}
         />
       )}
     </div>

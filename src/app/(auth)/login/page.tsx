@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotSent, setForgotSent] = useState<{ message: string; waHelpUrl?: string } | null>(null)
 
   const searchParams = useSearchParams()
   const isLinkExpired = searchParams.get("error") === "link_expired"
@@ -105,6 +107,39 @@ export default function LoginPage() {
     }
   }
 
+  async function handleForgotPassword(e: FormEvent) {
+    e.preventDefault()
+    setError("")
+    setForgotSent(null)
+    if (!email.trim()) {
+      setError("Enter your mobile number or email first.")
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: email.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || "Could not send password reset link.")
+        return
+      }
+      setForgotSent({
+        message:
+          data.message ||
+          "If this account exists, we have sent a reset link. If you do not receive it in a few minutes, message Coach Aman on WhatsApp.",
+        waHelpUrl: data.waHelpUrl,
+      })
+    } catch {
+      setError("Could not send password reset link. Try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="relative flex flex-col h-dvh bg-bg-primary overflow-hidden">
       {/* Full-bleed hero photo */}
@@ -146,11 +181,15 @@ export default function LoginPage() {
       <div className="relative z-10 flex-1 px-4 min-h-0">
         <div
           ref={formCardRef}
-          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255,106,26,0.06)]"
+          className="h-full flex flex-col rounded-t-[28px] border-t border-x border-border-subtle bg-bg-surface/90 backdrop-blur-xl p-6 pt-8 space-y-5 shadow-[0_0_40px_rgba(255,106,26,0.06)] overflow-y-auto"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
         >
           <div className="field-stagger space-y-1">
-            <p className="text-xs text-text-muted">Log in to check progress, diet, and training.</p>
+            <p className="text-xs text-text-muted">
+              {forgotMode
+                ? "Enter your mobile number or email to receive a password reset link."
+                : "Log in to check progress, diet, and training."}
+            </p>
           </div>
 
           {isLinkExpired && (
@@ -159,55 +198,124 @@ export default function LoginPage() {
             </p>
           )}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="field-stagger flex flex-col gap-1.5">
-              <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
-                Mobile number or email
-              </label>
-              <input
-                type="text"
-                inputMode="text"
-                autoComplete="username"
-                placeholder="e.g. 98765 43210"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError("") }}
-                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
-                autoFocus
-                required
-              />
-            </div>
+          {!forgotMode ? (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="field-stagger flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                  Mobile number or email
+                </label>
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="username"
+                  placeholder="e.g. 98765 43210"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError("") }}
+                  className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                  autoFocus
+                  required
+                />
+              </div>
 
-            <div className="field-stagger flex flex-col gap-1.5">
-              <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
-                Password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError("") }}
-                className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
-                required
-              />
-              {error && (
-                <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg mt-1">
-                  {error}
-                </p>
-              )}
-            </div>
+              <div className="field-stagger flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setForgotMode(true); setError(""); setForgotSent(null) }}
+                    className="text-[11px] font-semibold text-accent-orange hover:underline cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError("") }}
+                  className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                  required
+                />
+                {error && (
+                  <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg mt-1">
+                    {error}
+                  </p>
+                )}
+              </div>
 
-            <div className="field-stagger pt-1">
-              <button
-                type="submit"
-                disabled={loading || !email.trim() || !password}
-                className="w-full bg-accent-orange text-bg-primary font-heading font-bold text-sm py-4 rounded-full transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center"
-              >
-                {loading
-                  ? <div className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
-                  : "Sign In"}
-              </button>
-            </div>
-          </form>
+              <div className="field-stagger pt-1">
+                <button
+                  type="submit"
+                  disabled={loading || !email.trim() || !password}
+                  className="w-full bg-accent-orange text-bg-primary font-heading font-bold text-sm py-4 rounded-full transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center cursor-pointer"
+                >
+                  {loading
+                    ? <div className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+                    : "Sign In"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={handleForgotPassword}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                  Mobile number or email
+                </label>
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="username"
+                  placeholder="e.g. 98765 43210 or email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(""); setForgotSent(null) }}
+                  className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted transition-colors outline-none"
+                  autoFocus
+                  required
+                />
+                {error && (
+                  <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg mt-1">
+                    {error}
+                  </p>
+                )}
+                {forgotSent && (
+                  <div className="rounded-xl bg-accent-orange/15 border border-accent-orange/30 p-3.5 space-y-2.5 mt-1">
+                    <p className="text-xs font-semibold text-text-primary">{forgotSent.message}</p>
+                    {forgotSent.waHelpUrl && (
+                      <a
+                        href={forgotSent.waHelpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#25D366] text-black text-xs font-bold flex items-center justify-center gap-1.5"
+                      >
+                        Message Coach Aman on WhatsApp (+91 98156 90656) →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={loading || !email.trim()}
+                  className="w-full bg-accent-orange text-bg-primary font-heading font-bold text-sm py-3.5 rounded-full transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center cursor-pointer"
+                >
+                  {loading
+                    ? <div className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+                    : "Send Password Reset Link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setForgotMode(false); setError(""); setForgotSent(null) }}
+                  className="w-full py-2.5 text-xs font-bold text-text-muted hover:text-text-primary cursor-pointer"
+                >
+                  ← Back to Sign In
+                </button>
+              </div>
+            </form>
+          )}
 
           <p className="field-stagger text-center text-[10px] text-text-muted">
             Premium Fitness Coaching. Designed for results.

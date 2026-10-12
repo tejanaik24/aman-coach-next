@@ -17,8 +17,9 @@ const CATEGORIES = [
 
 interface PackageItem {
   name: string;
+  image?: string;
+  shortLabel?: string;
   category: string;
-  image: string;
   tag?: string;
   popular?: boolean;
   cta?: string;
@@ -28,93 +29,93 @@ interface PackageItem {
 const PACKAGES: PackageItem[] = [
   {
     name: "On Call Consultation — One time on call consult",
+    image: "/images/aman-on-call-consultation.webp",
     category: "Online Coaching",
     cta: "Book Now",
     href: "/book",
-    image: "/images/aman-on-call-consultation.webp",
   },
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (1 Year)",
+    shortLabel: "1 YEAR",
     category: "Online Coaching",
-    image: "/images/aman-online-coaching-24wk.webp",
     popular: true,
     tag: "Best Value",
   },
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (24 Weeks)",
+    shortLabel: "24 WEEKS",
     category: "Online Coaching",
-    image: "/images/aman-online-coaching-24wk.webp",
     popular: true,
     tag: "Most Popular",
   },
   {
     name: "Complete Online Coaching — Any Lifestyle Goals (12 Weeks)",
+    shortLabel: "12 WEEKS",
     category: "Online Coaching",
-    image: "/images/aman-online-coaching-24wk.webp",
   },
   {
     name: "Bodybuilding Contest Prep (24 Weeks)",
-    category: "Contest Prep",
     image: "/images/aman-contest-prep-2.webp",
+    category: "Contest Prep",
     tag: "Championship Tier",
   },
   {
     name: "Bodybuilding Contest Prep (12 Weeks)",
-    category: "Contest Prep",
     image: "/images/aman-contest-prep-2.webp",
+    category: "Contest Prep",
   },
   {
     name: "Only Nutrition / Diet Consultancy (24 Weeks)",
-    category: "Nutrition Only",
     image: "/images/aman-nutrition-coaching.webp",
+    category: "Nutrition Only",
     tag: "Full Lifestyle Shift",
   },
   {
     name: "Only Nutrition / Diet Consultancy (12 Weeks)",
-    category: "Nutrition Only",
     image: "/images/aman-nutrition-coaching.webp",
+    category: "Nutrition Only",
   },
   {
     name: "Child Nutrition (1 Month Consult)",
-    category: "Nutrition Only",
     image: "/images/aman-child-nutrition.webp",
+    category: "Nutrition Only",
   },
   {
     name: "Child Nutrition (One Time Consult)",
-    category: "Nutrition Only",
     image: "/images/aman-child-nutrition.webp",
+    category: "Nutrition Only",
   },
   {
     name: "POSTPARTUM Care — Training & Nutrition (24 Weeks)",
-    category: "Postpartum & Antenatal",
     image: "/images/aman-postpartum-24wk.webp",
+    category: "Postpartum & Antenatal",
     tag: "Full Recovery",
   },
   {
     name: "POSTPARTUM Care — Training & Nutrition (12 Weeks)",
-    category: "Postpartum & Antenatal",
     image: "/images/aman-postpartum-24wk.webp",
+    category: "Postpartum & Antenatal",
   },
   {
     name: "Online Antenatal — Postnatal Complete Care (2nd - 4th Trimester)",
-    category: "Postpartum & Antenatal",
     image: "/images/aman-antenatal-detail.webp",
+    category: "Postpartum & Antenatal",
   },
   {
     name: "Bodybuilding Posing Coaching (8 Virtual Sessions)",
+    shortLabel: "POSING 8X",
     category: "Posing & Camp",
-    image: "/images/aman-posing-coaching.webp",
     tag: "Stage Ready",
   },
   {
     name: "Bodybuilding Posing Coaching (4 Virtual Sessions)",
+    shortLabel: "POSING 4X",
     category: "Posing & Camp",
-    image: "/images/aman-posing-coaching.webp",
   },
   {
     name: 'Offline "Exercise Training Execution Camp" (3-5 Days)',
+    shortLabel: "CAMP 3-5D",
     category: "Posing & Camp",
-    image: "/images/aman-training-camp-v2.webp",
     tag: "Hands-on Intense",
   },
 ];
@@ -180,11 +181,23 @@ export default function PackagesPage() {
                 )}
 
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <img
-                    src={pkg.image}
-                    alt={pkg.name}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white/10 shadow-md"
-                  />
+                  {pkg.image ? (
+                    <img
+                      src={pkg.image}
+                      alt={pkg.name}
+                      className="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0 shadow-md"
+                    />
+                  ) : (
+                    /* TODO real photo from Aman */
+                    <div className="w-16 h-16 rounded-xl bg-[#0a0a0a] border border-[#FFB800]/30 shrink-0 shadow-md flex flex-col items-center justify-center px-1.5 text-center">
+                      <span className="text-[8px] font-heading font-bold tracking-[0.18em] text-[#FFB800]/60 uppercase leading-none">
+                        AKF
+                      </span>
+                      <span className="text-[10px] font-heading font-black tracking-wider text-[#FFB800] uppercase leading-tight mt-1">
+                        {pkg.shortLabel}
+                      </span>
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-white text-sm font-bold font-heading leading-tight truncate sm:whitespace-normal">
                       {pkg.name}

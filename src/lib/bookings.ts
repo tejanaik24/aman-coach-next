@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
-import { sendWhatsAppText } from "./whatsapp"
+import { buildWhatsAppUrl } from "./whatsapp-url"
 import { SITE_URL } from "@/lib/site"
 
 // Logged-in session client (an anon client has no session, so RLS silently blocks writes).
@@ -139,28 +139,19 @@ export async function createBooking(data: {
 
     if (error) return { success: false, error: error.message }
 
-    // WhatsApp Confirmation to Coach & Client
-    const coachPhone = process.env.AMAN_WHATSAPP || "919815690656"
-    const bookingMsg = `📅 *NEW CALL BOOKED*\n\n` +
+    const coachPhone = "919815690656"
+    const bookingMsg =
+      `📅 *NEW CALL BOOKED*\n\n` +
       `👤 Client: *${data.clientName || "Client"}*\n` +
       `📆 Date: *${data.bookingDate}*\n` +
       `⏰ Time: *${data.startTime} - ${data.endTime}*\n` +
       `📝 Note: ${data.notes || "None"}\n\n` +
       `View in Coach Schedule: ${SITE_URL}/coach/schedule`
-
-    sendWhatsAppText(coachPhone, bookingMsg).catch(e => console.error("Booking WA alert note:", e))
-
-    if (data.clientPhone) {
-      const clientMsg = `✅ *CALL CONFIRMED WITH COACH AMAN*\n\n` +
-        `Hi ${data.clientName || "there"},\n` +
-        `Your 1-on-1 coaching call is booked for *${data.bookingDate}* at *${data.startTime}*.\n\n` +
-        `Please be ready 5 mins before the call!`
-      sendWhatsAppText(data.clientPhone, clientMsg).catch(e => console.error("Client WA booking note:", e))
-    }
+    void buildWhatsAppUrl(coachPhone, bookingMsg)
 
     return { success: true, bookingId: inserted.id }
-  } catch (err: any) {
-    return { success: false, error: err.message || String(err) }
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) }
   }
 }
 

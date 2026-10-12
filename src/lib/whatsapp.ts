@@ -6,32 +6,75 @@
 
 import { SITE_URL } from "@/lib/site";
 
-const META_WA_TOKEN =
-  process.env.META_WA_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
-const META_WA_PHONE_NUMBER_ID =
-  process.env.META_WA_PHONE_NUMBER_ID ||
-  process.env.WHATSAPP_PHONE_NUMBER_ID ||
-  "";
-const META_WA_API_VERSION = process.env.META_WA_API_VERSION || "v21.0";
-
 interface MetaConfig {
   token: string;
   phoneNumberId: string;
   apiVersion: string;
 }
 
-function getMetaConfig(): MetaConfig | null {
-  const token =
-    process.env.META_WA_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
-  const phoneNumberId =
+export function isWhatsAppDryRunKey(rawKey?: string | null): boolean {
+  const k = (rawKey ?? "").trim().toLowerCase();
+  if (!k) return false;
+  return k.startsWith("dummy") || k.startsWith("re_dummy") || k === "test";
+}
+
+export function getWhatsAppConfigStatus(): {
+  configured: boolean;
+  dryRun: boolean;
+  error?: string;
+} {
+  const token = (
+    process.env.META_WA_TOKEN ||
+    process.env.WHATSAPP_ACCESS_TOKEN ||
+    ""
+  ).trim();
+  const phoneNumberId = (
     process.env.META_WA_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
-    "";
+    ""
+  ).trim();
+
+  if (!token) {
+    return { configured: false, dryRun: false, error: "whatsapp_not_configured" };
+  }
+  if (isWhatsAppDryRunKey(token) || isWhatsAppDryRunKey(phoneNumberId)) {
+    return { configured: false, dryRun: true, error: "dry_run" };
+  }
+  if (!phoneNumberId) {
+    return { configured: false, dryRun: false, error: "whatsapp_not_configured" };
+  }
+  return { configured: true, dryRun: false };
+}
+
+function getMetaConfig(): MetaConfig | null {
+  const token = (
+    process.env.META_WA_TOKEN ||
+    process.env.WHATSAPP_ACCESS_TOKEN ||
+    ""
+  ).trim();
+  const phoneNumberId = (
+    process.env.META_WA_PHONE_NUMBER_ID ||
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    ""
+  ).trim();
   const apiVersion = process.env.META_WA_API_VERSION || "v21.0";
 
-  if (!token || !phoneNumberId) {
+  if (!token) {
     console.error(
-      "[Meta WhatsApp] META_WA_TOKEN and META_WA_PHONE_NUMBER_ID must be configured in environment",
+      "[Meta WhatsApp] META_WA_TOKEN must be configured in environment",
+    );
+    return null;
+  }
+  if (isWhatsAppDryRunKey(token)) {
+    return {
+      token,
+      phoneNumberId: phoneNumberId || "dummy_phone_id",
+      apiVersion,
+    };
+  }
+  if (!phoneNumberId) {
+    console.error(
+      "[Meta WhatsApp] META_WA_PHONE_NUMBER_ID must be configured in environment",
     );
     return null;
   }
@@ -57,9 +100,18 @@ export function formatMetaPhone(phone: string): string {
 
 export interface WhatsAppSendResult {
   success: boolean;
+  skipped?: boolean;
+  dryRun?: boolean;
   messageId?: string;
-  data?: any;
+  data?: unknown;
   error?: string;
+}
+
+function isDryRunConfig(config: MetaConfig): boolean {
+  return (
+    isWhatsAppDryRunKey(config.token) ||
+    isWhatsAppDryRunKey(config.phoneNumberId)
+  );
 }
 
 /**
@@ -74,12 +126,24 @@ export async function sendWhatsAppText(
     if (!config) {
       return {
         success: false,
-        error:
-          "Meta WhatsApp API is not configured (missing token or phone number ID)",
+        error: "whatsapp_not_configured",
       };
     }
 
     const recipientPhone = formatMetaPhone(phone);
+    if (isDryRunConfig(config)) {
+      return {
+        success: false,
+        dryRun: true,
+        messageId: "dry_run_text",
+        error:
+          config.token === "dummy_wa_fail" || config.token === "dummy_text_fail"
+            ? "Meta 24h window closed for free-text message (dryRun)"
+            : "dry_run",
+        data: { dryRun: true, to: recipientPhone, type: "text" },
+      };
+    }
+
     const endpoint = `https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`;
 
     const payload = {
@@ -122,12 +186,10 @@ export async function sendWhatsAppText(
 
     const messageId = data?.messages?.[0]?.id;
     return { success: true, messageId, data };
-  } catch (error: any) {
-    console.error(
-      "[Meta WhatsApp] Exception in sendWhatsAppText:",
-      error.message || error,
-    );
-    return { success: false, error: error.message || String(error) };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Meta WhatsApp] Exception in sendWhatsAppText:", msg);
+    return { success: false, error: msg };
   }
 }
 
@@ -143,10 +205,20 @@ export async function sendWhatsAppFile(
   try {
     const config = getMetaConfig();
     if (!config) {
-      return { success: false, error: "Meta WhatsApp API is not configured" };
+      return { success: false, error: "whatsapp_not_configured" };
     }
 
     const recipientPhone = formatMetaPhone(phone);
+    if (isDryRunConfig(config)) {
+      return {
+        success: false,
+        dryRun: true,
+        messageId: "dry_run_file",
+        error: "dry_run",
+        data: { dryRun: true, to: recipientPhone, type: "document", filename },
+      };
+    }
+
     const endpoint = `https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`;
 
     const payload = {
@@ -180,12 +252,10 @@ export async function sendWhatsAppFile(
 
     const messageId = data?.messages?.[0]?.id;
     return { success: true, messageId, data };
-  } catch (error: any) {
-    console.error(
-      "[Meta WhatsApp] Exception in sendWhatsAppFile:",
-      error.message || error,
-    );
-    return { success: false, error: error.message || String(error) };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Meta WhatsApp] Exception in sendWhatsAppFile:", msg);
+    return { success: false, error: msg };
   }
 }
 
@@ -197,15 +267,28 @@ export async function sendWhatsAppTemplate(
   phone: string,
   templateName: string,
   languageCode: string = "en_US",
-  components: any[] = [],
+  components: unknown[] = [],
 ): Promise<WhatsAppSendResult> {
   try {
     const config = getMetaConfig();
     if (!config) {
-      return { success: false, error: "Meta WhatsApp API is not configured" };
+      return { success: false, error: "whatsapp_not_configured" };
     }
 
     const recipientPhone = formatMetaPhone(phone);
+    if (isDryRunConfig(config)) {
+      return {
+        success: false,
+        dryRun: true,
+        messageId: "dry_run_template",
+        error:
+          config.token === "dummy_wa_fail"
+            ? "Simulated template failure (dryRun)"
+            : "dry_run",
+        data: { dryRun: true, to: recipientPhone, type: "template", templateName },
+      };
+    }
+
     const endpoint = `https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`;
 
     const payload = {
@@ -242,12 +325,10 @@ export async function sendWhatsAppTemplate(
 
     const messageId = data?.messages?.[0]?.id;
     return { success: true, messageId, data };
-  } catch (error: any) {
-    console.error(
-      "[Meta WhatsApp] Exception in sendWhatsAppTemplate:",
-      error.message || error,
-    );
-    return { success: false, error: error.message || String(error) };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Meta WhatsApp] Exception in sendWhatsAppTemplate:", msg);
+    return { success: false, error: msg };
   }
 }
 
@@ -305,10 +386,10 @@ export async function sendCheckinReminder(
       "[Meta WhatsApp] Template checkin_reminder failed to send. Error:",
       templateResult.error || templateResult.data || "Unknown template error",
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(
       "[Meta WhatsApp] Exception sending template checkin_reminder:",
-      err?.message || err,
+      err instanceof Error ? err.message : err,
     );
   }
 
@@ -326,6 +407,26 @@ export async function sendCheckinReminder(
   return sendWhatsAppText(phone, text);
 }
 
+export interface CoachAlertTarget {
+  coachId?: string | null;
+  clientId?: string | null;
+  userId?: string | null;
+  coachPhone?: string | null;
+}
+
+async function checkCoachNotifications(
+  coachPhone: string,
+  target?: string | CoachAlertTarget | null,
+): Promise<boolean> {
+  const { isCoachNotificationsEnabled } = await import(
+    "@/lib/automation-delivery"
+  );
+  if (typeof target === "string") {
+    return isCoachNotificationsEnabled({ coachId: target, coachPhone });
+  }
+  return isCoachNotificationsEnabled({ coachPhone, ...(target ?? {}) });
+}
+
 /**
  * Template Helper: Form Submission Alert for Coach
  */
@@ -333,7 +434,12 @@ export async function sendCoachSubmissionAlert(
   coachPhone: string,
   clientName: string,
   formType: string,
-) {
+  target?: string | CoachAlertTarget | null,
+): Promise<WhatsAppSendResult> {
+  if (!(await checkCoachNotifications(coachPhone, target))) {
+    return { success: false, skipped: true, error: "coach_notifications_off" };
+  }
+
   const formLabels: Record<string, string> = {
     standard_joining: "Standard Joining Questionnaire",
     antenatal_joining: "AN-PN Pregnancy Questionnaire",
@@ -351,13 +457,18 @@ export async function sendCoachSubmissionAlert(
 }
 
 /**
- * Template Helper: Alert Aman when a client sends a form
+ * Template Helper: Alert Coach when a client sends a form
  */
 export async function sendCoachFormAlert(
   coachPhone: string,
   formLabel: string,
   clientName: string,
-) {
+  target?: string | CoachAlertTarget | null,
+): Promise<WhatsAppSendResult> {
+  if (!(await checkCoachNotifications(coachPhone, target))) {
+    return { success: false, skipped: true, error: "coach_notifications_off" };
+  }
+
   const formLabels: Record<string, string> = {
     standard_joining: "Standard Joining Questionnaire",
     antenatal_joining: "AN-PN Pregnancy Questionnaire",
@@ -397,10 +508,10 @@ export async function sendCoachFormAlert(
       "[Meta WhatsApp] Template client_form_received failed to send. Error:",
       templateResult.error || templateResult.data || "Unknown template error",
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(
       "[Meta WhatsApp] Exception sending template client_form_received:",
-      err?.message || err,
+      err instanceof Error ? err.message : err,
     );
   }
 
@@ -419,6 +530,11 @@ export async function sendCoachFormAlert(
 }
 
 /**
+ * Alias helper: sendCoachAlert (checks specific coach notification setting)
+ */
+export const sendCoachAlert = sendCoachFormAlert;
+
+/**
  * Template Helper: New Consultation Call Booking Alert for Coach
  */
 export async function sendConsultationBookingAlert(
@@ -426,7 +542,12 @@ export async function sendConsultationBookingAlert(
   name: string,
   phone: string,
   email: string,
-) {
+  target?: string | CoachAlertTarget | null,
+): Promise<WhatsAppSendResult> {
+  if (!(await checkCoachNotifications(coachPhone, target))) {
+    return { success: false, skipped: true, error: "coach_notifications_off" };
+  }
+
   const text =
     `📞 *NEW CONSULTATION CALL BOOKED*\n\n` +
     `👤 Name: *${name}*\n` +
@@ -445,7 +566,12 @@ export async function sendEnquiryAlert(
   name: string,
   phone: string,
   interest: string,
-) {
+  target?: string | CoachAlertTarget | null,
+): Promise<WhatsAppSendResult> {
+  if (!(await checkCoachNotifications(coachPhone, target))) {
+    return { success: false, skipped: true, error: "coach_notifications_off" };
+  }
+
   const var1 = (name || "").trim() || "Not given";
   const var2 = (phone || "").trim() || "Not given";
   const var3 = (interest || "").trim() || "Not given";
@@ -477,10 +603,10 @@ export async function sendEnquiryAlert(
       "[Meta WhatsApp] Template new_enquiry_alert failed to send. Error:",
       templateResult.error || templateResult.data || "Unknown template error",
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(
       "[Meta WhatsApp] Exception sending template new_enquiry_alert:",
-      err?.message || err,
+      err instanceof Error ? err.message : err,
     );
   }
 
@@ -537,10 +663,10 @@ export async function sendWelcomeSetupTemplate(
       "[Meta WhatsApp] Template client_welcome_v2 failed to send. Error:",
       templateResult.error || templateResult.data || "Unknown template error",
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(
       "[Meta WhatsApp] Exception sending template client_welcome_v2:",
-      err?.message || err,
+      err instanceof Error ? err.message : err,
     );
   }
 
@@ -593,10 +719,10 @@ export async function sendCheckinReviewedTemplate(
       "[Meta WhatsApp] Template checkin_reviewed failed to send. Error:",
       templateResult.error || templateResult.data || "Unknown template error",
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(
       "[Meta WhatsApp] Exception sending template checkin_reviewed:",
-      err?.message || err,
+      err instanceof Error ? err.message : err,
     );
   }
 

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const [{ data: deliveries, error: deliveriesError }, { data: profiles, error: profilesError }] = await Promise.all([
     automationSupabase.from("automation_deliveries").select("entity_id, event_type").eq("entity_type", "plan").in("entity_id", clients.map((client) => client.id)),
-    automationSupabase.from("profiles").select("id, name, phone").in("id", clients.map((client) => client.user_id).filter(Boolean)),
+    automationSupabase.from("profiles").select("id, name, phone, notifications_enabled").in("id", clients.map((client) => client.user_id).filter(Boolean)),
   ])
   if (deliveriesError || profilesError) return NextResponse.json({ error: deliveriesError?.message ?? profilesError?.message }, { status: 500 })
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       const reminderDay = reminderForDaysLeft(daysLeft)
       const profile = profileById.get(client.user_id ?? "")
       const email = emailByUserId.get(client.user_id ?? "")
-      if (reminderDay === null || sent.has(`${client.id}:plan_expiry_${reminderDay}`) || !profile?.phone || !email) return []
+      if (reminderDay === null || sent.has(`${client.id}:plan_expiry_${reminderDay}`) || !profile?.phone || !email || profile.notifications_enabled === false) return []
       return [{
         id: client.id,
         client_id: client.id,

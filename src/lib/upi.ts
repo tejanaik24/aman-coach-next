@@ -1,15 +1,12 @@
-const UPI_ID = "aman.khurana.1460-1@okhdfcbank"
-const PAYEE_NAME = "Aman Khurana Fitness"
+export const COACH_UPI_ID = "9815690656@upi"
+export const COACH_UPI_NAME = "Aman Khurana Fitness"
 
 export function generateUpiLink(amount: number, note?: string): string {
-  const params = new URLSearchParams({
-    pa: UPI_ID,
-    pn: PAYEE_NAME,
-    am: amount.toString(),
-    tn: note || "Payment for coaching services",
-    cu: "INR",
-  })
-  return `upi://pay?${params.toString()}`
+  const safeAmount = Math.max(0, Number(amount) || 0).toFixed(2)
+  const cleanNote = (note || "Coaching Fee").trim().slice(0, 40) || "Coaching Fee"
+  const encodedPayee = encodeURIComponent(COACH_UPI_NAME)
+  const encodedNote = encodeURIComponent(cleanNote)
+  return `upi://pay?pa=${COACH_UPI_ID}&pn=${encodedPayee}&am=${safeAmount}&cu=INR&tn=${encodedNote}`
 }
 
 export function getUpiQrData(amount: number, note?: string): string {
@@ -17,6 +14,6 @@ export function getUpiQrData(amount: number, note?: string): string {
 }
 
 export function getUpiDeepLink(amount: number, note?: string): string {
-  const base = generateUpiLink(amount, note)
-  return `upi://pay?${base.split("?")[1]}`
+  return generateUpiLink(amount, note)
 }
+

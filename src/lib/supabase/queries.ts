@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { amountDue, paidSoFar } from "@/lib/fee-math"
 import type {
   Client,
   ClientWithProfile,
@@ -26,7 +27,16 @@ export async function getCoachStats(coachId: string): Promise<CoachStats> {
   const totalClients = clientData.length
 
   if (clientIds.length === 0) {
-    return { totalClients: 0, activeClients: 0, pendingCheckins: 0, feesDue: 0, monthlyRevenue: 0 }
+    return {
+      totalClients: 0,
+      activeClients: 0,
+      pendingCheckins: 0,
+      feesDue: 0,
+      feesDueAmount: 0,
+      overdueFeesCount: 0,
+      overdueFeesAmount: 0,
+      monthlyRevenue: 0,
+    }
   }
 
   const weekAgo = new Date()
@@ -35,6 +45,7 @@ export async function getCoachStats(coachId: string): Promise<CoachStats> {
   const firstOfMonth = new Date()
   firstOfMonth.setDate(1)
   firstOfMonth.setHours(0, 0, 0, 0)
+  const todayStr = new Date().toISOString().split("T")[0]
 
   const [r1, r2, r3] = await Promise.allSettled([
     supabase
@@ -45,23 +56,45 @@ export async function getCoachStats(coachId: string): Promise<CoachStats> {
       .gte("submitted_at", weekAgo.toISOString()),
     supabase
       .from("fees")
-      .select("*", { count: "exact", head: true })
+      .select("amount, amount_paid, status, due_date")
       .in("client_id", clientIds)
-      .in("status", ["pending", "overdue"]),
+      .neq("status", "paid"),
     supabase
       .from("fees")
-      .select("amount")
+      .select("amount, amount_paid, status")
       .in("client_id", clientIds)
       .eq("status", "paid")
       .gte("paid_date", firstOfMonth.toISOString().split("T")[0]),
   ])
 
   const pendingCheckins = r1.status === "fulfilled" ? (r1.value.count ?? 0) : 0
-  const feesDue = r2.status === "fulfilled" ? (r2.value.count ?? 0) : 0
-  const paidFees = (r3.status === "fulfilled" ? (r3.value.data ?? []) : []) as { amount: number }[]
-  const monthlyRevenue = paidFees.reduce((s, f) => s + Number(f.amount), 0)
+  const rawDueFees = (r2.status === "fulfilled" ? (r2.value.data ?? []) : []) as Pick<
+    Fee,
+    "amount" | "amount_paid" | "status" | "due_date"
+  >[]
+  const unpaidFees = rawDueFees.filter((f) => amountDue(f) > 0)
+  const feesDue = unpaidFees.length
+  const feesDueAmount = unpaidFees.reduce((s, f) => s + amountDue(f), 0)
+  const overdueFees = unpaidFees.filter((f) => f.due_date < todayStr)
+  const overdueFeesCount = overdueFees.length
+  const overdueFeesAmount = overdueFees.reduce((s, f) => s + amountDue(f), 0)
 
-  return { totalClients, activeClients, pendingCheckins, feesDue, monthlyRevenue }
+  const paidFees = (r3.status === "fulfilled" ? (r3.value.data ?? []) : []) as Pick<
+    Fee,
+    "amount" | "amount_paid" | "status"
+  >[]
+  const monthlyRevenue = paidFees.reduce((s, f) => s + paidSoFar(f), 0)
+
+  return {
+    totalClients,
+    activeClients,
+    pendingCheckins,
+    feesDue,
+    feesDueAmount,
+    overdueFeesCount,
+    overdueFeesAmount,
+    monthlyRevenue,
+  }
 }
 
 export async function getAllClients(coachId: string): Promise<ClientWithProfile[]> {
@@ -152,10 +185,14 @@ export async function getClientFees(clientId: string): Promise<Fee[]> {
 
 export async function markFeeAsPaid(feeId: string): Promise<void> {
   const supabase = await createClient()
-  await supabase
-    .from("fees")
-    .update({ status: "paid", paid_date: new Date().toISOString().split("T")[0] })
-    .eq("id", feeId)
+  const { data: existing } = await supabase.from("fees").select("amount").eq("id", feeId).maybeSingle()
+  const fullAmt = existing && typeof existing.amount === "number" ? Number(existing.amount) : undefined
+  const payload: Record<string, unknown> = {
+    status: "paid",
+    paid_date: new Date().toISOString().split("T")[0],
+  }
+  if (fullAmt !== undefined) payload.amount_paid = fullAmt
+  await supabase.from("fees").update(payload).eq("id", feeId)
 }
 
 export async function addCoachFeedback(checkinId: string, feedback: string): Promise<void> {

@@ -6,17 +6,13 @@ import { randomBytes } from "crypto"
 import { queueWebhook } from "@/lib/webhook-queue"
 import { phoneEmail } from "@/lib/phone-login"
 import { SITE_URL } from "@/lib/site"
+import { validateBillInput } from "@/lib/bill-validation"
 
-function calculateFirstDueDate(feeDueDay: number, startDate: string): string {
-  const d = new Date(startDate)
-  const year = d.getFullYear()
-  const month = d.getMonth()
-  const day = d.getDate()
-
-  if (day <= feeDueDay) {
-    return new Date(year, month, feeDueDay).toISOString().split("T")[0]
+function calculateFirstDueDate(startDate: string, explicitDueDate?: string): string {
+  if (explicitDueDate && /^\d{4}-\d{2}-\d{2}$/.test(explicitDueDate)) {
+    return explicitDueDate
   }
-  return new Date(year, month + 1, feeDueDay).toISOString().split("T")[0]
+  return startDate
 }
 
 export async function POST(request: Request) {
@@ -39,14 +35,51 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, phone, goal, packageName, endDate, clientType, feeAmount, feeCurrency, feeDueDay, startDate, notes } = body
+    const {
+      name,
+      phone,
+      goal,
+      packageName,
+      endDate,
+      clientType,
+      feeAmount,
+      packageFee,
+      discount,
+      discountValue,
+      discountMode,
+      otherCharges,
+      amountPaid,
+      feeCurrency,
+      feeDueDay,
+      startDate,
+      dueDate: rawDueDate,
+      notes,
+    } = body
 
     // Email is optional: clients sign in with their mobile number, which maps to a placeholder email.
     const phoneDigits = typeof phone === "string" ? phone.replace(/\D/g, "") : ""
     const rawEmail = typeof body.email === "string" ? body.email.trim() : ""
     const email = rawEmail || (phoneDigits.length >= 10 ? phoneEmail(phoneDigits) : "")
 
-    if (!name || !email || !phone || !goal || !packageName || !feeAmount || !feeDueDay || !startDate) {
+    const rawPkg = packageFee !== undefined && packageFee !== null ? packageFee : feeAmount
+    const rawDisc = discountValue !== undefined && discountValue !== null ? discountValue : discount
+    const rawDiscMode = discountMode === "PCT" ? "PCT" : "INR"
+
+    const billValidation = validateBillInput({
+      packageFee: rawPkg,
+      discountValue: rawDisc,
+      discountMode: rawDiscMode,
+      otherCharges,
+      amountPaid,
+    })
+    if (!billValidation.valid) {
+      return NextResponse.json(
+        { error: billValidation.firstError || "Please enter valid whole rupee amounts." },
+        { status: 400 }
+      )
+    }
+
+    if (!name || !email || !phone || !goal || !packageName || !feeDueDay || !startDate) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -58,11 +91,13 @@ export async function POST(request: Request) {
       ? feeCurrency.toUpperCase()
       : "INR"
 
-    const parsedFeeAmount = Number(feeAmount)
+    const parsedPackageFee = billValidation.values.packageFee
+    const parsedDiscount = billValidation.values.discountRupees
+    const parsedOtherCharges = billValidation.values.otherCharges
+    const parsedFeeAmount = billValidation.values.finalAmount
+    const parsedAmountPaid = billValidation.values.amountPaid
+
     const parsedFeeDueDay = Number(feeDueDay)
-    if (isNaN(parsedFeeAmount) || parsedFeeAmount <= 0) {
-      return NextResponse.json({ error: "Fee amount must be a positive number" }, { status: 400 })
-    }
     if (!Number.isInteger(parsedFeeDueDay) || parsedFeeDueDay < 1 || parsedFeeDueDay > 28) {
       return NextResponse.json({ error: "Fee due day must be between 1 and 28" }, { status: 400 })
     }
@@ -124,9 +159,9 @@ export async function POST(request: Request) {
           package_name: packageName,
           end_date: endDate ?? null,
           client_type: clientType,
-          fee_amount: feeAmount,
+          fee_amount: parsedFeeAmount,
           fee_currency: selectedCurrency,
-          fee_due_day: feeDueDay,
+          fee_due_day: parsedFeeDueDay,
           start_date: startDate,
           status: "active",
           notes: notes ?? null,
@@ -140,14 +175,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: clientError.message }, { status: 500 })
     }
 
-    const dueDate = calculateFirstDueDate(parsedFeeDueDay, startDate)
+    const dueDate = calculateFirstDueDate(startDate, rawDueDate)
+    const feeStatus: "paid" | "pending" =
+      parsedFeeAmount > 0 && parsedAmountPaid >= parsedFeeAmount ? "paid" : "pending"
+    const paidDate = feeStatus === "paid" ? dueDate : null
+
     const { error: feeError } = await withRetry(() =>
       supabase.from("fees").insert({
         client_id: clientData.id,
+        package_fee: parsedPackageFee,
+        discount: parsedDiscount,
+        other_charges: parsedOtherCharges,
         amount: parsedFeeAmount,
+        amount_paid: parsedAmountPaid,
         currency: selectedCurrency,
         due_date: dueDate,
-        status: "pending",
+        paid_date: paidDate,
+        status: feeStatus,
       })
     )
 

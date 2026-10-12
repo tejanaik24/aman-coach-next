@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   const { data: profiles, error: profilesError } = await automationSupabase
     .from("profiles")
-    .select("id, name, phone")
+    .select("id, name, phone, notifications_enabled")
     .in("id", userIds)
 
   if (profilesError) return NextResponse.json({ error: profilesError.message }, { status: 500 })
@@ -30,7 +30,11 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     (clients ?? [])
-      .filter((client) => !recentlyReminded.has(client.id))
+      .filter((client) => {
+        if (recentlyReminded.has(client.id)) return false
+        const prof = profileById.get(client.user_id!)
+        return prof?.notifications_enabled !== false
+      })
       .map((client) => ({
         id: client.id,
         display_name: profileById.get(client.user_id!)?.name ?? "Client",

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { format, differenceInCalendarDays } from "date-fns"
+import { amountDue } from "@/lib/fee-math"
 
 // Aman's own words (from his old app's "Quick Manage" panel).
 export type TileKey = "followups" | "payments" | "renewals" | "enquiries" | "checkins" | "silent" | "calls" | "birthdays"
@@ -19,7 +20,7 @@ export const TILE_ORDER: TileKey[] = ["followups", "payments", "renewals", "enqu
 
 export type RowAction =
   | { kind: "followup"; followupId: string; clientId: string }
-  | { kind: "paid"; feeId: string; amount: number }
+  | { kind: "paid"; feeId: string; amount: number; dueDate?: string; isOverdue?: boolean }
   | { kind: "enquiry"; submissionId: string }
   | { kind: "none" }
 
@@ -36,7 +37,6 @@ export interface QMRow {
 
 const SILENT_DAYS = 10
 const RENEWAL_WINDOW_DAYS = 14
-const PAYMENT_WINDOW_DAYS = 7
 
 export function waLink(phone: string | null, text: string): string | null {
   if (!phone) return null
@@ -50,6 +50,30 @@ function firstName(name: string) {
   return name.trim().split(/\s+/)[0] || "there"
 }
 
+export function buildFollowupWaText(name: string, type: string, dueDate?: string, note?: string | null): string {
+  const first = firstName(name)
+  const cleanNote = note?.trim() ? `\n\nNote: ${note.trim()}` : ""
+  const dueFormatted = dueDate && /^\d{4}-\d{2}-\d{2}$/.test(dueDate)
+    ? ` (due ${format(new Date(dueDate + "T00:00:00"), "d MMM")})`
+    : ""
+  if (type === "checkin") {
+    return `Hi ${first}, this is Aman. Your check-in is due${dueFormatted}. Please fill in your check-in form here: https://www.amankhuranafitness.com/checkin${cleanNote}\n\n— Coach Aman`
+  }
+  if (type === "payment") {
+    return `Hi ${first}, this is Aman. A gentle reminder regarding your coaching fee${dueFormatted}.${cleanNote}\n\n— Coach Aman`
+  }
+  if (type === "renewal") {
+    return `Hi ${first}, this is Aman. Checking in about your coaching plan renewal${dueFormatted}. Shall we continue your journey?${cleanNote}\n\n— Coach Aman`
+  }
+  if (type === "feedback") {
+    return `Hi ${first}, this is Aman. Following up on your progress and feedback${dueFormatted}. How are you feeling on the plan?${cleanNote}\n\n— Coach Aman`
+  }
+  if (note?.trim()) {
+    return `Hi ${first}, this is Aman. ${note.trim()}\n\n— Coach Aman`
+  }
+  return `Hi ${first}, this is Aman. Just checking in with you 🙂\n\n— Coach Aman`
+}
+
 function relDay(d: Date, today: Date) {
   const n = differenceInCalendarDays(d, today)
   if (n === 0) return "today"
@@ -60,6 +84,7 @@ function relDay(d: Date, today: Date) {
 
 interface ClientRow {
   id: string
+  status?: string | null
   end_date: string | null
   start_date: string | null
   profile: { name: string | null; phone: string | null } | { name: string | null; phone: string | null }[] | null
@@ -80,14 +105,13 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
   const [clientsRes, feesRes, unreviewedRes, recentRes, enquiriesRes, callsRes, followupsRes, dobRes] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, end_date, start_date, profile:profiles!user_id(name, phone)")
-      .eq("coach_id", coachId)
-      .eq("status", "active"),
+      .select("id, status, end_date, start_date, profile:profiles!user_id(name, phone)")
+      .eq("coach_id", coachId),
     supabase
       .from("fees")
-      .select("id, client_id, amount, due_date")
-      .in("status", ["pending", "overdue"])
-      .lte("due_date", plus(PAYMENT_WINDOW_DAYS)),
+      .select("id, client_id, amount, amount_paid, status, due_date")
+      .neq("status", "paid")
+      .order("due_date", { ascending: true }),
     supabase.from("checkins").select("id, client_id, submitted_at").is("reviewed_at", null),
     supabase.from("checkins").select("client_id").gte("submitted_at", silentCutoff),
     supabase
@@ -102,13 +126,13 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
       .select("id, client_id, start_time")
       .eq("booking_date", todayStr)
       .eq("status", "confirmed"),
-    // The followups table is new; if it isn't created yet this just returns an error and we show none.
+    // Include follow-ups due today or within the next 2 days so Coach Aman can act on them immediately.
     supabase
       .from("followups")
       .select("id, client_id, type, due_date, note")
       .eq("coach_id", coachId)
       .is("done_at", null)
-      .lte("due_date", todayStr)
+      .lte("due_date", plus(2))
       .order("due_date"),
     // date of birth comes from the joining questionnaire (form_data.q6_dob)
     supabase
@@ -118,10 +142,15 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
       .not("client_id", "is", null),
   ])
 
+  const allClients = new Map<string, { name: string; phone: string | null; end: string | null; start: string | null }>()
   const clients = new Map<string, { name: string; phone: string | null; end: string | null; start: string | null }>()
   for (const c of (clientsRes.data ?? []) as unknown as ClientRow[]) {
     const p = one(c.profile)
-    clients.set(c.id, { name: p?.name ?? "Client", phone: p?.phone ?? null, end: c.end_date, start: c.start_date })
+    const entry = { name: p?.name ?? "Client", phone: p?.phone ?? null, end: c.end_date, start: c.start_date }
+    allClients.set(c.id, entry)
+    if (c.status === "active") {
+      clients.set(c.id, entry)
+    }
   }
 
   const rows: QMRow[] = []
@@ -133,20 +162,24 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
     rows.push({
       id: `fu-${f.id}`, tile: "followups", name: c.name, phone: c.phone, clientId: f.client_id,
       reason: `${label}${f.note ? ` · ${f.note}` : ""} · due ${relDay(new Date(f.due_date + "T00:00:00"), today)}`,
-      waText: `Hi ${firstName(c.name)}, this is Aman. Just checking in with you 🙂`,
+      waText: buildFollowupWaText(c.name, f.type, f.due_date, f.note),
       action: { kind: "followup", followupId: f.id, clientId: f.client_id },
     })
   }
 
-  for (const f of (feesRes.data ?? []) as { id: string; client_id: string; amount: number; due_date: string }[]) {
-    const c = clients.get(f.client_id)
+  for (const f of (feesRes.data ?? []) as { id: string; client_id: string; amount: number; amount_paid?: number | null; status: string; due_date: string }[]) {
+    const c = allClients.get(f.client_id)
     if (!c) continue
-    const amt = `₹${Number(f.amount).toLocaleString("en-IN")}`
+    const due = amountDue(f)
+    if (due <= 0) continue
+    const dueDateObj = new Date(f.due_date + "T00:00:00")
+    const isOverdue = differenceInCalendarDays(dueDateObj, today) < 0
+    const amt = `₹${due.toLocaleString("en-IN")}`
     rows.push({
       id: `fee-${f.id}`, tile: "payments", name: c.name, phone: c.phone, clientId: f.client_id,
-      reason: `${amt} · due ${relDay(new Date(f.due_date + "T00:00:00"), today)}`,
+      reason: `${amt} · ${isOverdue ? `overdue (${relDay(dueDateObj, today)})` : `due ${relDay(dueDateObj, today)}`}`,
       waText: `Hi ${firstName(c.name)}, a gentle reminder: your coaching fee of ${amt} is due. Kindly pay when convenient. Thank you! — Aman`,
-      action: { kind: "paid", feeId: f.id, amount: Number(f.amount) },
+      action: { kind: "paid", feeId: f.id, amount: due, dueDate: f.due_date, isOverdue },
     })
   }
 

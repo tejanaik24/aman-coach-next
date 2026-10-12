@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "motion/react"
 import { LayoutDashboard, Users, ClipboardList, Wallet } from "lucide-react"
@@ -15,14 +17,20 @@ export default function CoachBottomNav() {
   const pathname = usePathname()
   const router = useRouter()
 
+  useEffect(() => {
+    tabs.forEach((t) => router.prefetch(t.href))
+    router.prefetch("/submissions")
+  }, [router])
+
   return (
     <nav className="fixed bottom-4 left-4 right-4 max-w-[398px] mx-auto bg-bg-surface/90 backdrop-blur-xl border border-border-subtle rounded-full p-2 flex justify-between items-center shadow-[0_0_30px_rgba(255,106,26,0.08)] z-50 select-none">
       {tabs.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href || pathname.startsWith(href + "/")
         return (
-          <button
+          <Link
             key={href}
-            onClick={() => router.push(href)}
+            href={href}
+            prefetch={true}
             className="flex-1 relative flex flex-col items-center justify-center py-2 text-xs font-semibold focus:outline-none cursor-pointer"
           >
             {isActive && (
@@ -40,9 +48,10 @@ export default function CoachBottomNav() {
               <Icon className="w-5 h-5" />
               <span className="text-xs tracking-tight">{label}</span>
             </span>
-          </button>
+          </Link>
         )
       })}
     </nav>
   )
 }
+

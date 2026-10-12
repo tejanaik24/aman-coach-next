@@ -2,18 +2,31 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Dumbbell, Utensils, ClipboardCheck, MessageCircle, ChevronRight, IndianRupee } from "lucide-react"
+import { Dumbbell, Utensils, ClipboardCheck, MessageCircle, ChevronRight, IndianRupee, Bell } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import { COACH_WHATSAPP } from "@/lib/coach-contact"
 import { useLang, type TKey } from "@/lib/i18n"
+import ProfileMenu from "@/components/shared/ProfileMenu"
+import { amountDue } from "@/lib/fee-math"
 
 // The whole client app in three buttons. Everything extra lives behind "More".
+interface PendingFeeSummary {
+  amount: number
+  amount_paid?: number
+  status?: string
+  package_fee?: number
+  discount?: number
+  due_date: string
+}
+
 interface HomeData {
   name: string
+  email: string | null
+  avatarUrl: string | null
   workoutTitle: string | null
   dietTitle: string | null
-  fee: { amount: number; due_date: string } | null
+  pendingFees: PendingFeeSummary[]
   feedback: string | null
 }
 
@@ -28,6 +41,7 @@ export default function ClientHomePage() {
   const router = useRouter()
   const { t, toggle } = useLang()
   const [data, setData] = useState<HomeData | null>(null)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   // Set after mount: the page is pre-built, so a build-time greeting would be wrong.
   const [greeting, setGreeting] = useState<TKey | null>(null)
   useEffect(() => setGreeting(greetingKey()), [])
@@ -40,14 +54,14 @@ export default function ClientHomePage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
         const [profileRes, clientRes] = await Promise.all([
-          supabase.from("profiles").select("name").eq("id", user.id).single(),
+          supabase.from("profiles").select("name, avatar_url").eq("id", user.id).single(),
           supabase.from("clients").select("id").eq("user_id", user.id).maybeSingle(),
         ])
         const clientId = clientRes.data?.id as string | undefined
         const [docsRes, feeRes, checkinRes] = clientId
           ? await Promise.all([
               supabase.from("client_documents").select("kind, title").eq("client_id", clientId).order("created_at", { ascending: false }).limit(10),
-              supabase.from("fees").select("amount, due_date").eq("client_id", clientId).in("status", ["pending", "overdue"]).order("due_date").limit(1),
+              supabase.from("fees").select("amount, amount_paid, status, package_fee, discount, due_date").eq("client_id", clientId).in("status", ["pending", "overdue"]).order("due_date", { ascending: true }),
               supabase.from("checkins").select("coach_feedback, reviewed_at").eq("client_id", clientId).not("coach_feedback", "is", null).order("reviewed_at", { ascending: false }).limit(1),
             ])
           : [null, null, null]
@@ -57,9 +71,11 @@ export default function ClientHomePage() {
         if (!cancelled) {
           setData({
             name: (profileRes.data?.name as string | undefined) ?? "",
+            email: user.email ?? null,
+            avatarUrl: (profileRes.data?.avatar_url as string | null | undefined) ?? null,
             workoutTitle: docs.find((d) => d.kind === "workout")?.title ?? null,
             dietTitle: docs.find((d) => d.kind === "diet")?.title ?? null,
-            fee: (feeRes?.data?.[0] as HomeData["fee"]) ?? null,
+            pendingFees: (feeRes?.data ?? []) as PendingFeeSummary[],
             feedback: recentFeedback,
           })
         }
@@ -82,9 +98,29 @@ export default function ClientHomePage() {
               <p className="text-text-muted text-base">{greeting ? t(greeting) : "\u00a0"}</p>
               <h1 className="font-heading italic text-4xl mt-1">{first || t("welcome")}</h1>
             </div>
-            <button type="button" onClick={toggle} className="h-10 px-4 rounded-full bg-white/10 text-white text-base font-semibold cursor-pointer">{t("langButton")}</button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={toggle} className="h-10 px-4 rounded-full bg-white/10 text-white text-base font-semibold cursor-pointer">{t("langButton")}</button>
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(true)}
+                aria-label="Settings & Notifications"
+                className="h-10 w-10 rounded-full bg-white/10 border border-accent-orange/40 flex items-center justify-center text-accent-orange cursor-pointer"
+              >
+                <Bell className="size-4" />
+              </button>
+            </div>
           </div>
         </div>
+
+        <ProfileMenu
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          name={data?.name || "Client"}
+          email={data?.email ?? null}
+          avatarUrl={data?.avatarUrl ?? null}
+          role="client"
+          onNameUpdated={(newName) => setData((prev) => (prev ? { ...prev, name: newName } : prev))}
+        />
 
         <button type="button" onClick={() => router.push("/workout")} className={`${big} bg-[#F3EDE2] text-[#181310]`}>
           <Dumbbell className="size-10 shrink-0 text-accent-orange" />
@@ -117,16 +153,34 @@ export default function ClientHomePage() {
           </div>
         )}
 
-        {data?.fee && (
-          <button type="button" onClick={() => router.push("/payments")} className="w-full rounded-2xl bg-bg-card border border-border-subtle p-4 flex items-center gap-3 text-left cursor-pointer">
-            <IndianRupee className="size-6 text-accent-orange shrink-0" />
-            <span className="flex-1 min-w-0">
-              <span className="block text-lg font-semibold">{t("feeDue")} ₹{Number(data.fee.amount).toLocaleString("en-IN")}</span>
-              <span className="block text-base text-text-muted">{t("by")} {format(new Date(data.fee.due_date + "T00:00:00"), "d MMM")}</span>
-            </span>
-            <ChevronRight className="size-5 text-text-muted" />
-          </button>
-        )}
+        {data?.pendingFees && data.pendingFees.length > 0 && (() => {
+          const dueAmt = data.pendingFees.reduce(
+            (sum, f) => sum + amountDue(f),
+            0
+          )
+          const disc = data.pendingFees.reduce((sum, f) => sum + Number(f.discount || 0), 0)
+          const pkgFee = data.pendingFees.reduce(
+            (sum, f) => sum + Number(f.package_fee || (Number(f.amount) + Number(f.discount || 0))),
+            0
+          )
+          const firstDue = data.pendingFees[0].due_date
+          return (
+            <button type="button" onClick={() => router.push("/payments")} className="w-full rounded-2xl bg-bg-card border border-border-subtle p-4 flex items-center gap-3 text-left cursor-pointer">
+              <IndianRupee className="size-6 text-accent-orange shrink-0" />
+              <span className="flex-1 min-w-0">
+                <span className="block text-lg font-semibold">
+                  {t("feeDue")} ₹{dueAmt.toLocaleString("en-IN")}
+                  {data.pendingFees.length > 1 ? ` (${data.pendingFees.length} bills)` : ""}
+                </span>
+                <span className="block text-base text-text-muted">
+                  {disc > 0 ? `Coaching Fee ₹${pkgFee.toLocaleString("en-IN")} (−₹${disc.toLocaleString("en-IN")}) · ` : ""}
+                  {t("by")} {format(new Date(firstDue + "T00:00:00"), "d MMM")}
+                </span>
+              </span>
+              <ChevronRight className="size-5 text-text-muted" />
+            </button>
+          )
+        })()}
 
         <a
           href={`https://wa.me/${COACH_WHATSAPP}?text=${encodeURIComponent("Hi Aman, ")}`}

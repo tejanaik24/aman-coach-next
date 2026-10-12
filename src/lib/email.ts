@@ -1,18 +1,52 @@
 import { Resend } from "resend"
 import { isPlaceholderEmail } from "@/lib/phone-login"
 import { SITE_URL } from "@/lib/site"
+import { COACH_UPI_ID } from "@/lib/upi"
 
 const FROM = "Aman Khurana Fitness <noreply@amankhuranafitness.com>"
 
+export interface EmailSendResult {
+  success: boolean
+  skipped?: boolean
+  dryRun?: boolean
+  error?: string
+  data?: unknown
+}
+
+export function isEmailDryRunKey(rawKey?: string | null): boolean {
+  const k = (rawKey ?? process.env.RESEND_API_KEY ?? "").trim().toLowerCase()
+  if (!k) return false
+  return k.startsWith("dummy") || k.startsWith("re_dummy") || k === "test"
+}
+
 function getResend() {
-  if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured")
-  return new Resend(process.env.RESEND_API_KEY)
+  const key = (process.env.RESEND_API_KEY || "").trim()
+  if (!key) throw new Error("email_not_configured")
+  return new Resend(key)
 }
 
 // Clients added with only a mobile number have a placeholder email; never send mail to it.
-async function sendMail(msg: { from: string; to: string; subject: string; html: string }) {
-  if (isPlaceholderEmail(msg.to)) return { skipped: true }
-  return getResend().emails.send(msg)
+async function sendMail(msg: { from: string; to: string; subject: string; html: string }): Promise<EmailSendResult> {
+  if (isPlaceholderEmail(msg.to)) return { success: false, skipped: true, error: "placeholder_email" }
+  const key = (process.env.RESEND_API_KEY || "").trim()
+  if (!key) {
+    return { success: false, error: "email_not_configured" }
+  }
+  if (isEmailDryRunKey(key)) {
+    return { success: false, skipped: true, dryRun: true, error: "dry_run" }
+  }
+  try {
+    const res = await getResend().emails.send(msg)
+    if (res.error) {
+      return { success: false, error: res.error.message || "Email send failed" }
+    }
+    return { success: true, data: res.data }
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Email send failed",
+    }
+  }
 }
 
 function layout(body: string) {
@@ -58,6 +92,17 @@ export async function sendWelcomeEmail(to: string, name: string, loginUrl: strin
   return sendMail({ from: FROM, to, subject: "Welcome to Aman Khurana Fitness 💪", html })
 }
 
+export async function sendPasswordResetEmail(to: string, name: string, resetUrl: string) {
+  const html = layout(`
+    <h2 style="color:#fff;font-size:20px;margin:0 0 12px">Reset Your Password</h2>
+    <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 16px">
+      Hi ${name || "there"}, tap the button below to set a new password for your Aman Khurana Fitness account.
+    </p>
+    ${ctaButton(resetUrl, "Set New Password")}
+  `)
+  return sendMail({ from: FROM, to, subject: "Reset Password — Aman Khurana Fitness", html })
+}
+
 export async function sendInvoiceEmail(to: string, name: string, invoiceUrl: string, amount: number, month: string) {
   const html = layout(`
     <h2 style="color:#fff;font-size:20px;margin:0 0 12px">Invoice — ${month}</h2>
@@ -89,17 +134,25 @@ export async function sendPaymentReminderEmail(to: string, name: string, amount:
     </p>
     <p style="color:#52525b;font-size:12px;margin:0 0 8px">Payment methods:</p>
     <ul style="color:#a1a1aa;font-size:12px;line-height:1.8;margin:0 0 16px;padding-left:20px">
-      <li>UPI: <strong style="color:#fff">aman@akfitness</strong></li>
+      <li>UPI: <strong style="color:#fff">${COACH_UPI_ID}</strong></li>
       <li>Bank transfer — ask your coach for details</li>
     </ul>
-    ${ctaButton(`${SITE_URL}/client/payments`, "Make Payment")}
+    ${ctaButton(`${SITE_URL}/payments`, "Make Payment")}
   `)
   return sendMail({ from: FROM, to, subject: "Payment Reminder — Aman Khurana Fitness", html })
 }
 
-export async function sendEnquiryAlertEmail(name: string, phone: string, email: string, interest: string) {
-  const to = process.env.SETUP_COACH_EMAIL || process.env.COACH_EMAIL
-  if (!to) throw new Error("SETUP_COACH_EMAIL/COACH_EMAIL not configured")
+export async function sendEnquiryAlertEmail(
+  name: string,
+  phone: string,
+  email: string,
+  interest: string,
+  coachTarget?: string | { coachId?: string | null; clientId?: string | null; userId?: string | null; coachPhone?: string | null } | null
+): Promise<EmailSendResult> {
+  const { isCoachNotificationsEnabled } = await import("@/lib/automation-delivery")
+  if (!(await isCoachNotificationsEnabled(coachTarget))) return { success: false, skipped: true, error: "coach_notifications_off" }
+  const to = (process.env.SETUP_COACH_EMAIL || process.env.COACH_EMAIL || "").trim()
+  if (!to) return { success: false, error: "email_not_configured" }
   const html = layout(`
     <h2 style="color:#fff;font-size:20px;margin:0 0 12px">New Enquiry 📝</h2>
     <table cellpadding="0" cellspacing="0" style="margin:0 0 16px">
@@ -111,6 +164,97 @@ export async function sendEnquiryAlertEmail(name: string, phone: string, email: 
     ${ctaButton(`${SITE_URL}/submissions`, "Review in Coach Portal")}
   `)
   return sendMail({ from: FROM, to, subject: `New Enquiry — ${name}`, html })
+}
+
+export async function sendFollowupReminderEmail(
+  to: string,
+  name: string,
+  type: string,
+  dueDate: string,
+  note?: string | null
+): Promise<{ success: boolean; skipped?: boolean; dryRun?: boolean; error?: string }> {
+  const cleanTo = (to || "").trim()
+  if (!cleanTo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanTo) || isPlaceholderEmail(cleanTo)) {
+    return { success: false, skipped: true, error: "no_real_email" }
+  }
+
+  const key = (process.env.RESEND_API_KEY || "").trim()
+  if (!key) {
+    return { success: false, error: "email_not_configured" }
+  }
+  if (isEmailDryRunKey(key)) {
+    return {
+      success: false,
+      dryRun: true,
+      error: key === "re_dummy_fail" || key === "dummy_fail" ? "Simulated email failure (dryRun)" : "dry_run",
+    }
+  }
+
+  const labels: Record<string, { title: string; ctaUrl: string; ctaLabel: string }> = {
+    payment: {
+      title: "Coaching Fee Reminder",
+      ctaUrl: `${SITE_URL}/payments`,
+      ctaLabel: "View & Pay Fee",
+    },
+    renewal: {
+      title: "Coaching Plan Renewal Reminder",
+      ctaUrl: `${SITE_URL}/payments`,
+      ctaLabel: "Renew Your Plan",
+    },
+    feedback: {
+      title: "Progress & Feedback Follow-up",
+      ctaUrl: `${SITE_URL}/home`,
+      ctaLabel: "Open Dashboard",
+    },
+    checkin: {
+      title: "Check-in Reminder",
+      ctaUrl: `${SITE_URL}/checkin`,
+      ctaLabel: "Complete Check-in",
+    },
+  }
+  const meta = labels[type] ?? {
+    title: "Follow-up from Coach Aman",
+    ctaUrl: `${SITE_URL}/home`,
+    ctaLabel: "Open Portal",
+  }
+
+  const noteBlock = note?.trim()
+    ? `<p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0 0 16px"><strong>Note:</strong> ${note.trim()}</p>`
+    : ""
+
+  const html = layout(`
+    <h2 style="color:#fff;font-size:20px;margin:0 0 12px">${meta.title}</h2>
+    <p style="color:#a1a1aa;font-size:14px;margin:0 0 8px">Hi ${name || "there"},</p>
+    <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 16px">
+      This is a reminder from Coach Aman regarding your <strong style="color:#fff">${meta.title.toLowerCase()}</strong> (scheduled for <strong style="color:#fff">${dueDate}</strong>).
+    </p>
+    ${noteBlock}
+    ${ctaButton(meta.ctaUrl, meta.ctaLabel)}
+  `)
+
+  try {
+    const res = await sendMail({
+      from: FROM,
+      to: cleanTo,
+      subject: `${meta.title} — Aman Khurana Fitness`,
+      html,
+    })
+    if (res.dryRun) {
+      return { success: false, dryRun: true, error: res.error || "dry_run" }
+    }
+    if (res.skipped) {
+      return { success: false, skipped: true, error: res.error || "skipped_placeholder" }
+    }
+    if (!res.success) {
+      return { success: false, error: res.error || "Email send failed" }
+    }
+    return { success: true }
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Email send failed",
+    }
+  }
 }
 
 export async function sendPlanExpiryEmail(to: string, name: string, expiryDate: string, daysLeft: number) {
@@ -129,7 +273,30 @@ export async function sendPlanExpiryEmail(to: string, name: string, expiryDate: 
     <p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0 0 16px">
       Contact your coach to renew and keep your personalized plans active.
     </p>
-    ${ctaButton(`${SITE_URL}/client/payments`, "Renew Now")}
+    ${ctaButton(`${SITE_URL}/payments`, "Renew Now")}
   `)
   return sendMail({ from: FROM, to, subject: `Your plan ${label} — Aman Khurana Fitness`, html })
 }
+
+export function maskEmailForNotice(email: string): string {
+  const [local = "", domain = ""] = email.trim().split("@")
+  if (!local || !domain) return "***"
+  return `${local[0]}***@${domain}`
+}
+
+export async function sendAdminEmailChangedNotice(oldEmail: string, newEmail: string) {
+  const masked = maskEmailForNotice(newEmail)
+  const noticeLine = `Your admin login email was changed to ${masked}`
+  const html = layout(`
+    <h2 style="color:#fff;font-size:20px;margin:0 0 12px">Admin Login Email Changed</h2>
+    <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 16px">
+      ${noticeLine}.
+    </p>
+    <p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0">
+      If you did not make this change, please contact support immediately to recover your account.
+    </p>
+  `)
+  console.info(`[AdminEmailNotice] Attempting notice to old address (${oldEmail}): "${noticeLine}"`)
+  return sendMail({ from: FROM, to: oldEmail, subject: "Security Notice: Admin login email changed", html })
+}
+

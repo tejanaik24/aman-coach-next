@@ -7,6 +7,7 @@ import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
+import BroadcastModal from "@/components/coach/BroadcastModal"
 import ProfileMenu from "@/components/shared/ProfileMenu"
 import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import { markInvoicePaid } from "@/lib/payments"
@@ -41,6 +42,7 @@ export default function QuickManagePage() {
   const [coachEmail, setCoachEmail] = useState<string | null>(null)
   const [coachAvatar, setCoachAvatar] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [todayStr, setTodayStr] = useState("")
   const [sheetRow, setSheetRow] = useState<QMRow | null>(null)
@@ -56,7 +58,8 @@ export default function QuickManagePage() {
   const load = useCallback(async () => {
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user ?? (await supabase.auth.getUser()).data.user
       if (!user) { setRows([]); return }
       setCoachId(user.id)
       setCoachEmail(user.email ?? null)
@@ -83,6 +86,22 @@ export default function QuickManagePage() {
     for (const k of TILE_ORDER) c[k] = 0
     for (const r of rows ?? []) c[r.tile]++
     return c
+  }, [rows])
+
+  const paymentSummary = useMemo(() => {
+    let totalAmount = 0
+    let overdueCount = 0
+    let overdueAmount = 0
+    for (const r of rows ?? []) {
+      if (r.tile === "payments" && r.action.kind === "paid") {
+        totalAmount += r.action.amount
+        if (r.action.isOverdue) {
+          overdueCount++
+          overdueAmount += r.action.amount
+        }
+      }
+    }
+    return { totalAmount, overdueCount, overdueAmount }
   }, [rows])
 
   // the opened tile defaults to the first one that has something in it
@@ -156,25 +175,35 @@ export default function QuickManagePage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
-      <div className="px-5 pt-8 pb-32 max-w-lg mx-auto space-y-6">
+      <div className="px-5 pt-8 pb-36 max-w-lg mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-text-muted text-sm font-medium">{todayStr}</p>
             <h1 className="font-heading italic text-4xl mt-1">Quick Manage</h1>
             <p className="text-text-muted text-base mt-1">
               {loadError ? "Could not load. Check internet and reopen." : rows === null ? "Loading…" : totalTodo === 0 ? "Nothing waiting. All done ✅" : `${totalTodo} thing${totalTodo === 1 ? "" : "s"} need you today`}
             </p>
           </div>
-          <button type="button" onClick={() => setIsProfileOpen(true)} aria-label="Profile" className="shrink-0 cursor-pointer">
-            {coachAvatar ? (
-              <img src={coachAvatar} alt={coachName} className="w-12 h-12 rounded-full object-cover border border-accent-orange/60" />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-bg-elevated flex items-center justify-center border border-accent-orange/60">
-                <span className="text-accent-orange text-sm font-heading font-bold">{coachName.slice(0, 2).toUpperCase()}</span>
-              </div>
-            )}
-          </button>
+          <div className="flex flex-col items-end gap-2.5 shrink-0">
+            <button type="button" onClick={() => setIsProfileOpen(true)} aria-label="Profile" className="shrink-0 cursor-pointer">
+              {coachAvatar ? (
+                <img src={coachAvatar} alt={coachName} className="w-11 h-11 rounded-full object-cover border border-accent-orange/60" />
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-bg-elevated flex items-center justify-center border border-accent-orange/60">
+                  <span className="text-accent-orange text-sm font-heading font-bold">{coachName.slice(0, 2).toUpperCase()}</span>
+                </div>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              aria-label="Add client"
+              className="h-10 px-3.5 rounded-full bg-accent-orange text-black font-bold text-sm flex items-center gap-1.5 shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" /> Add client
+            </button>
+          </div>
         </div>
 
         <ProfileMenu
@@ -206,8 +235,20 @@ export default function QuickManagePage() {
                     active ? "ring-2 ring-accent-orange" : ""
                   } ${n > 0 ? "bg-[#F3EDE2] text-[#181310]" : "bg-white/5 text-text-muted"}`}
                 >
-                  <p className="font-heading text-4xl leading-none tabular-nums">{n}</p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-heading text-4xl leading-none tabular-nums">{n}</p>
+                    {k === "payments" && (
+                      <p className="font-heading text-base font-bold text-accent-orange tabular-nums">
+                        ₹{paymentSummary.totalAmount.toLocaleString("en-IN")}
+                      </p>
+                    )}
+                  </div>
                   <p className="text-sm font-semibold mt-2 leading-tight">{TILE_LABELS[k]}</p>
+                  {k === "payments" && paymentSummary.overdueCount > 0 && (
+                    <p className="text-[11px] font-semibold text-red-600 mt-0.5 tabular-nums">
+                      Overdue ({paymentSummary.overdueCount}): ₹{paymentSummary.overdueAmount.toLocaleString("en-IN")}
+                    </p>
+                  )}
                 </button>
               )
             })}
@@ -217,7 +258,12 @@ export default function QuickManagePage() {
         {/* List for the opened tile */}
         {rows !== null && openTile && (
           <section aria-label={TILE_LABELS[openTile]} className="space-y-3">
-            <h2 className="text-lg font-semibold">{TILE_LABELS[openTile]}</h2>
+            <h2 className="text-lg font-semibold">
+              {TILE_LABELS[openTile]}
+              {openTile === "payments"
+                ? ` (${counts.payments} · ₹${paymentSummary.totalAmount.toLocaleString("en-IN")})`
+                : ""}
+            </h2>
             {visible.length === 0 ? (
               <p className="text-text-muted text-base py-6">Nothing here. All done ✅</p>
             ) : (
@@ -292,9 +338,17 @@ export default function QuickManagePage() {
         {/* Everything else, in plain words */}
         {rows !== null && (
           <div className="grid grid-cols-1 gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsBroadcastOpen(true)}
+              className="h-12 rounded-xl bg-[#25D366]/15 border border-[#25D366]/40 text-[#25D366] font-bold text-base cursor-pointer text-left px-4 flex items-center justify-between"
+            >
+              <span>Broadcast message on WhatsApp</span>
+              <MessageCircle className="w-5 h-5" />
+            </button>
             {[
               { href: "/checkins", label: "All check-ins" },
-              { href: "/submissions", label: "Forms and enquiries" },
+              { href: "/submissions", label: "Questionnaires, forms & enquiries" },
               { href: "/coach/schedule", label: "Call bookings" },
             ].map((l) => (
               <button key={l.href} type="button" onClick={() => router.push(l.href)} className="h-12 rounded-xl bg-white/5 text-white font-semibold text-base cursor-pointer text-left px-4">
@@ -304,18 +358,10 @@ export default function QuickManagePage() {
           </div>
         )}
 
-        {/* Add client */}
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          aria-label="Add client"
-          className="fixed right-5 bottom-28 z-40 h-14 px-5 rounded-full bg-accent-orange text-black font-bold text-base flex items-center gap-2 shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer"
-        >
-          <Plus className="w-5 h-5" /> Add client
-        </button>
       </div>
 
       <AddClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={load} />
+      <BroadcastModal isOpen={isBroadcastOpen} onClose={() => setIsBroadcastOpen(false)} />
 
       {/* Follow-up result sheet: one tap logs the outcome */}
       {dateRow && (

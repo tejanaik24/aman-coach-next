@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X, Trash2, PauseCircle, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
-import { PACKAGES, calculateEndDate } from "./AddClientModal"
+import { PACKAGES, calculateEndDate } from "@/lib/package-goal"
 import type { ClientWithProfile } from "@/types"
 
 interface Props {
@@ -242,6 +242,9 @@ export default function EditClientSheet({ isOpen, onClose, client, onSuccess, on
                   className={`${inputClass} bg-[#1A1A1A]`}
                 >
                   <option value="">Select package…</option>
+                  {packageName && !PACKAGES.some((p) => p.name === packageName) && (
+                    <option value={packageName}>{packageName}</option>
+                  )}
                   {PACKAGES.map((p) => (
                     <option key={p.name} value={p.name}>
                       {p.name}

@@ -2,14 +2,18 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
+import { MessageCircle } from "lucide-react"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
+import { waLink, buildFollowupWaText } from "@/lib/quick-manage"
+import { openUrl } from "@/lib/utils"
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   clientId: string
   clientName: string
+  clientPhone?: string | null
   onSaved?: () => void
 }
 
@@ -22,6 +26,7 @@ const TYPES = [
 ] as const
 
 const WHEN = [
+  { label: "Today", days: 0 },
   { label: "Tomorrow", days: 1 },
   { label: "In 3 days", days: 3 },
   { label: "In 1 week", days: 7 },
@@ -30,7 +35,7 @@ const WHEN = [
 
 const dayStr = (n: number) => format(new Date(Date.now() + n * 86400000), "yyyy-MM-dd")
 
-export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName, onSaved }: Props) {
+export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName, clientPhone, onSaved }: Props) {
   const [type, setType] = useState<(typeof TYPES)[number]["key"]>("checkin")
   const [date, setDate] = useState(dayStr(7))
   const [note, setNote] = useState("")
@@ -38,21 +43,26 @@ export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName
 
   if (!isOpen) return null
 
-  async function save() {
+  async function save(sendOnWhatsApp = false) {
     setSaving(true)
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not signed in")
+      const cleanNote = note.trim() || null
       const { error } = await supabase.from("followups").insert({
         client_id: clientId,
         coach_id: user.id,
         type,
         due_date: date,
-        note: note.trim() || null,
+        note: cleanNote,
       })
       if (error) throw error
       toast.success(`Follow-up set for ${format(new Date(date + "T00:00:00"), "d MMM")}`)
+      if (sendOnWhatsApp && clientPhone) {
+        const wa = waLink(clientPhone, buildFollowupWaText(clientName, type, date, cleanNote))
+        if (wa) openUrl(wa)
+      }
       setNote("")
       onSaved?.()
       onClose()
@@ -62,6 +72,8 @@ export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName
       setSaving(false)
     }
   }
+
+  const canWhatsApp = Boolean(waLink(clientPhone ?? null, "hi"))
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-black/70" onClick={onClose}>
@@ -119,17 +131,30 @@ export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName
           className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] placeholder:text-[#555555] mb-5"
         />
 
-        <button
-          type="button"
-          disabled={saving || !date}
-          onClick={save}
-          className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-lg disabled:opacity-60 cursor-pointer"
-        >
-          {saving ? "Saving…" : "Save follow-up"}
-        </button>
-        {type === "checkin" && (
-          <p className="text-text-muted text-sm mt-3 text-center">The client gets the check-in link on WhatsApp 2 days before.</p>
-        )}
+        <div className="space-y-2.5">
+          <button
+            type="button"
+            disabled={saving || !date}
+            onClick={() => save(false)}
+            className="w-full h-14 rounded-2xl bg-[#C9A84C] text-black font-bold text-lg disabled:opacity-60 cursor-pointer"
+          >
+            {saving ? "Saving…" : "Save follow-up"}
+          </button>
+          {canWhatsApp && (
+            <button
+              type="button"
+              disabled={saving || !date}
+              onClick={() => save(true)}
+              className="w-full h-14 rounded-2xl bg-[#25D366] text-black font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+            >
+              <MessageCircle className="size-5" />
+              Save &amp; Send on WhatsApp now
+            </button>
+          )}
+        </div>
+        <p className="text-text-muted text-xs mt-3 text-center">
+          Follow-ups show in Quick Manage and you can send the WhatsApp message anytime with one tap.
+        </p>
       </div>
     </div>
   )

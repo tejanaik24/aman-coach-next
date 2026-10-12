@@ -2,47 +2,55 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { IndianRupee, Download, QrCode, X, Receipt, MessageCircle, Check, ChevronDown, Edit, Trash2, Plus } from "lucide-react"
+import { IndianRupee, Download, QrCode, X, MessageCircle, Check, ChevronDown, Edit, Trash2, Plus, Settings2, Send } from "lucide-react"
 import { format, differenceInCalendarDays } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { generatePaymentReceiptPdf, generateUpiPaymentUrl, markInvoicePaid, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
+import { COACH_UPI_ID } from "@/lib/upi"
+import { paidSoFar, amountDue } from "@/lib/fee-math"
+import { mapFeeToBill, type MappedBill } from "@/lib/bill-validation"
 import { waLink } from "@/lib/quick-manage"
-import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 import PaymentModal from "@/components/coach/PaymentModal"
+import { PACKAGES } from "@/lib/package-goal"
+import type { Fee } from "@/types"
 
-interface FeeWithClient {
+interface ClientSummaryRow {
   id: string
-  clientId: string
-  amount: number
-  dueDate: string
-  status: "pending" | "paid" | "overdue"
-  clientName: string
-  clientPhone: string
-  clientAvatar: string | null
-  invoiceNumber: string
-  memberNumber: number | null
-  packageName: string | null
-  startDate: string | null
-  endDate: string | null
-  otherCharges: number
-  discount: number
-  rewardPointsRedeemed: number
-  amountPaid: number
+  user_id: string | null
+  member_number: number | null
+  package_name: string | null
+  start_date: string | null
+  end_date: string | null
+  fee_amount: number | null
 }
 
-type FilterKey = "late" | "soon" | "paid" | "all"
-
-function isLate(f: { status: string; dueDate: string }): boolean {
-  return f.status !== "paid" && differenceInCalendarDays(new Date(f.dueDate + "T00:00:00"), new Date()) < 0
+interface ProfileSummaryRow {
+  id: string
+  name: string | null
+  phone: string | null
+  avatar_url: string | null
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone: "danger" | "gold" | "muted" }) {
+type FeeWithClient = MappedBill
+
+type FilterKey = "pending" | "late" | "soon" | "paid" | "all"
+
+function isLate(f: FeeWithClient): boolean {
+  return amountDue(f) > 0 && differenceInCalendarDays(new Date(f.dueDate + "T00:00:00"), new Date()) < 0
+}
+
+function Stat({ label, value, count, tone }: { label: string; value: number; count?: number; tone: "danger" | "gold" | "muted" }) {
   const toneClass = tone === "danger" ? "text-red-600" : tone === "gold" ? "text-accent-orange" : "text-[#181310]"
   return (
     <div className="p-4 rounded-2xl bg-[#F3EDE2] min-h-[92px] flex flex-col justify-between">
-      <span className="text-sm font-semibold text-[#8A7F70]">{label}</span>
-      <span className={`font-heading font-bold text-xl ${toneClass}`}>₹{value.toLocaleString("en-IN")}</span>
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-sm font-semibold text-[#8A7F70]">{label}</span>
+        {count !== undefined && (
+          <span className="text-xs font-bold text-[#181310] tabular-nums">{count}</span>
+        )}
+      </div>
+      <span className={`font-heading font-bold text-xl tabular-nums ${toneClass}`}>₹{value.toLocaleString("en-IN")}</span>
     </div>
   )
 }
@@ -53,77 +61,86 @@ export default function FeesPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const [upiModalFee, setUpiModalFee] = useState<FeeWithClient | null>(null)
-  const [filter, setFilter] = useState<FilterKey>("late")
+  const [filter, setFilter] = useState<FilterKey>("pending")
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [billingModalFee, setBillingModalFee] = useState<FeeWithClient | null>(null)
-  const [billingForm, setBillingForm] = useState({ otherCharges: "0", discount: "0", rewardPointsRedeemed: "0", amountPaid: "0" })
-  const [isSavingBilling, setIsSavingBilling] = useState(false)
-  const [clientOptions, setClientOptions] = useState<{ id: string; name: string }[]>([])
+  const [clientOptions, setClientOptions] = useState<{ id: string; name: string; packageName?: string | null; startDate?: string | null; endDate?: string | null; feeAmount?: number | null }[]>([])
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<FeeWithClient | null>(null)
+
+  // Package fixed fees modal state (#3)
+  const [packageFeesModalOpen, setPackageFeesModalOpen] = useState(false)
+  const [packageFeesDraft, setPackageFeesDraft] = useState<Record<string, string>>({})
+  const [isSavingPackageFees, setIsSavingPackageFees] = useState(false)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
-      const coachId = userData.user.id
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user ?? (await supabase.auth.getUser()).data.user
+      if (!user) return
+      const coachId = user.id
 
-      const { data: clientRows } = await supabase
-        .from("clients")
-        .select("id, user_id, member_number, package_name, start_date, end_date")
-        .eq("coach_id", coachId)
-      const clients = clientRows || []
-      if (clients.length === 0) { setFees([]); return }
+      const [clientRes, pkgFeesRes] = await Promise.all([
+        supabase
+          .from("clients")
+          .select("id, user_id, member_number, package_name, start_date, end_date, fee_amount")
+          .eq("coach_id", coachId),
+        supabase
+          .from("package_fees")
+          .select("package_name, fee_amount"),
+      ])
 
-      const clientIds = clients.map((c: any) => c.id)
-      const userIds = clients.map((c: any) => c.user_id).filter((uid: any): uid is string => uid !== null)
-
-      const clientById = new Map(clients.map((c: any) => [c.id, c]))
-      const userIdByClientId = new Map<string, string>()
-      for (const c of clients) if ((c as any).user_id) userIdByClientId.set((c as any).id, (c as any).user_id)
-
-      const { data: profileRows } = await supabase.from("profiles").select("id, name, phone, avatar_url").in("id", userIds)
-      const profiles = profileRows || []
-      const profileByUserId = new Map(profiles.map((p: any) => [p.id, p]))
-
-      function resolveClient(clientId: string): { name: string; phone: string; avatar: string | null } {
-        const uid = userIdByClientId.get(clientId)
-        const p: any = uid ? profileByUserId.get(uid) : undefined
-        return { name: p?.name ?? "Unknown", phone: p?.phone ?? "", avatar: p?.avatar_url ?? null }
+      if (pkgFeesRes.data) {
+        const draft: Record<string, string> = {}
+        for (const row of pkgFeesRes.data as { package_name: string; fee_amount: number }[]) {
+          draft[row.package_name] = String(row.fee_amount ?? "")
+        }
+        setPackageFeesDraft(draft)
       }
 
-      const { data: feeRows } = await supabase
-        .from("fees")
-        .select("*")
-        .in("client_id", clientIds)
-        .order("due_date", { ascending: true })
+      const clients = (clientRes.data || []) as ClientSummaryRow[]
+      if (clients.length === 0) {
+        setFees([])
+        return
+      }
 
-      const mapped: FeeWithClient[] = (feeRows || []).map((f: any) => {
-        const c = resolveClient(f.client_id)
-        const client: any = clientById.get(f.client_id)
-        return {
-          id: f.id,
-          clientId: f.client_id,
-          amount: Number(f.amount),
-          dueDate: f.due_date,
-          status: f.status,
-          clientName: c.name,
-          clientPhone: c.phone,
-          clientAvatar: c.avatar,
-          invoiceNumber: f.invoice_number || `INV-${f.id.slice(0, 6).toUpperCase()}`,
-          memberNumber: client?.member_number ?? null,
-          packageName: client?.package_name ?? null,
-          startDate: client?.start_date ?? null,
-          endDate: client?.end_date ?? null,
-          otherCharges: Number(f.other_charges ?? 0),
-          discount: Number(f.discount ?? 0),
-          rewardPointsRedeemed: Number(f.reward_points_redeemed ?? 0),
-          amountPaid: Number(f.amount_paid ?? 0),
-        }
+      const clientIds = clients.map((c) => c.id)
+      const userIds = clients.map((c) => c.user_id).filter((uid): uid is string => uid !== null)
+
+      const clientById = new Map<string, ClientSummaryRow>(clients.map((c) => [c.id, c]))
+      const userIdByClientId = new Map<string, string>()
+      for (const c of clients) if (c.user_id) userIdByClientId.set(c.id, c.user_id)
+
+      const [profileRes, feeRes] = await Promise.all([
+        supabase.from("profiles").select("id, name, phone, avatar_url").in("id", userIds),
+        supabase.from("fees").select("*").in("client_id", clientIds).order("due_date", { ascending: true }),
+      ])
+
+      const profiles = (profileRes.data || []) as ProfileSummaryRow[]
+      const profileByUserId = new Map<string, ProfileSummaryRow>(profiles.map((p) => [p.id, p]))
+
+      function resolveClient(clientId: string): ProfileSummaryRow | undefined {
+        const uid = userIdByClientId.get(clientId)
+        return uid ? profileByUserId.get(uid) : undefined
+      }
+
+      const feeRows = (feeRes.data || []) as Fee[]
+      const mapped: FeeWithClient[] = feeRows.map((f) => {
+        const client = clientById.get(f.client_id)
+        const profile = resolveClient(f.client_id)
+        return mapFeeToBill(f, client, profile)
       })
       setFees(mapped)
-      setClientOptions(clients.map((c: any) => ({ id: c.id, name: resolveClient(c.id).name })))
+      setClientOptions(
+        clients.map((c) => ({
+          id: c.id,
+          name: resolveClient(c.id)?.name ?? "Unknown",
+          packageName: c.package_name,
+          startDate: c.start_date,
+          endDate: c.end_date,
+          feeAmount: c.fee_amount,
+        }))
+      )
     } catch {
       toast.error("Failed to load fees")
     } finally {
@@ -135,12 +152,39 @@ export default function FeesPage() {
     fetchData()
   }, [fetchData])
 
+  async function handleSavePackageFees() {
+    setIsSavingPackageFees(true)
+    try {
+      const rowsToUpsert = PACKAGES.map((p) => ({
+        package_name: p.name,
+        fee_amount: Math.max(Number(packageFeesDraft[p.name] || 0), 0),
+        currency: "INR",
+        updated_at: new Date().toISOString(),
+      })).filter((r) => r.fee_amount > 0)
+
+      if (rowsToUpsert.length > 0) {
+        const { error } = await supabase.from("package_fees").upsert(rowsToUpsert, { onConflict: "package_name" })
+        if (error) throw error
+      }
+      toast.success("Package fees saved!")
+      setPackageFeesModalOpen(false)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error"
+      toast.error("Could not save package fees: " + msg)
+    } finally {
+      setIsSavingPackageFees(false)
+    }
+  }
+
   async function handleUndoPaid(f: FeeWithClient) {
-    if (!window.confirm(`Undo paid status for ${f.clientName}? It will be marked as pending.`)) return
-    const { error } = await supabase.from("fees").update({ status: "pending", paid_date: null }).eq("id", f.id)
+    if (!window.confirm("This will set paid amount back to 0. Continue?")) return
+    const { error } = await supabase
+      .from("fees")
+      .update({ status: "pending", paid_date: null, amount_paid: 0 })
+      .eq("id", f.id)
     if (error) { toast.error("Could not update fee: " + error.message); return }
-    setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "pending" } : item)))
-    toast.success("Marked as pending")
+    setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "pending", paidDate: null, amountPaid: 0 } : item)))
+    toast.success("Payment reset to pending")
   }
 
   async function handleDeleteFee(f: FeeWithClient) {
@@ -151,45 +195,12 @@ export default function FeesPage() {
     toast.success("Payment deleted")
   }
 
-  function openBillingModal(f: FeeWithClient) {
-    setBillingForm({
-      otherCharges: String(f.otherCharges),
-      discount: String(f.discount),
-      rewardPointsRedeemed: String(f.rewardPointsRedeemed),
-      amountPaid: String(f.amountPaid),
-    })
-    setBillingModalFee(f)
-  }
-
-  async function handleSaveBilling() {
-    if (!billingModalFee) return
-    const otherCharges = Number(billingForm.otherCharges) || 0
-    const discount = Number(billingForm.discount) || 0
-    const rewardPointsRedeemed = Number(billingForm.rewardPointsRedeemed) || 0
-    const amountPaid = Number(billingForm.amountPaid) || 0
-
-    setIsSavingBilling(true)
-    try {
-      const { error } = await supabase
-        .from("fees")
-        .update({ other_charges: otherCharges, discount, reward_points_redeemed: rewardPointsRedeemed, amount_paid: amountPaid })
-        .eq("id", billingModalFee.id)
-      if (error) throw error
-      setFees((prev) => prev.map((item) => (item.id === billingModalFee.id ? { ...item, otherCharges, discount, rewardPointsRedeemed, amountPaid } : item)))
-      toast.success("Billing details saved")
-      setBillingModalFee(null)
-    } catch {
-      toast.error("Failed to save billing details")
-    } finally {
-      setIsSavingBilling(false)
-    }
-  }
-
   async function handleMarkPaid(f: FeeWithClient) {
-    const success = await markInvoicePaid(f.id, f.clientName, f.clientPhone)
+    const today = new Date().toISOString().split("T")[0]
+    const success = await markInvoicePaid(f.id, f.clientName, f.clientPhone, f.amount)
     if (success) {
       toast.success(`Fee for ${f.clientName} marked as paid`)
-      setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "paid" } : item)))
+      setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "paid", paidDate: today, amountPaid: item.amount } : item)))
     } else {
       toast.error("Failed to mark fee as paid")
     }
@@ -200,6 +211,7 @@ export default function FeesPage() {
       id: f.id,
       clientId: f.clientId,
       invoiceNumber: f.invoiceNumber,
+      packageFee: f.packageFee,
       amount: f.amount,
       gstRate: 0,
       gstAmount: 0,
@@ -209,7 +221,7 @@ export default function FeesPage() {
       dueDate: f.dueDate,
       clientName: f.clientName,
       clientPhone: f.clientPhone,
-      createdAt: new Date().toISOString(),
+      createdAt: f.createdAt,
       memberNumber: f.memberNumber ?? undefined,
       packageName: f.packageName ?? undefined,
       startDate: f.startDate ?? undefined,
@@ -217,61 +229,117 @@ export default function FeesPage() {
       otherCharges: f.otherCharges,
       discount: f.discount,
       rewardPointsRedeemed: f.rewardPointsRedeemed,
-      amountPaid: f.amountPaid,
+      amountPaid: paidSoFar(f),
     }
 
     const doc = await generatePaymentReceiptPdf(invObj)
-    doc.save(`Receipt_${f.invoiceNumber}_${f.clientName.replace(/\s+/g, "_")}.pdf`)
-    toast.success("Payment receipt downloaded!")
+    doc.save(`Invoice_${f.invoiceNumber}_${f.clientName.replace(/\s+/g, "_")}.pdf`)
+    toast.success("Bill / receipt downloaded!")
   }
 
-  const collected = fees.filter((f) => f.status === "paid").reduce((t, f) => t + f.amount, 0)
-  const lateTotal = fees.filter(isLate).reduce((t, f) => t + f.amount, 0)
-  const soonTotal = fees.filter((f) => f.status !== "paid" && !isLate(f)).reduce((t, f) => t + f.amount, 0)
+  const collected = fees.reduce((t, f) => t + paidSoFar(f), 0)
+  const unpaidFees = fees.filter((f) => amountDue(f) > 0)
+  const pendingCount = unpaidFees.length
+  const pendingTotal = unpaidFees.reduce((t, f) => t + amountDue(f), 0)
+  const overdueFees = unpaidFees.filter(isLate)
+  const lateCount = overdueFees.length
+  const lateTotal = overdueFees.reduce((t, f) => t + amountDue(f), 0)
+  const soonFees = unpaidFees.filter((f) => !isLate(f))
+  const soonCount = soonFees.length
+  const soonTotal = soonFees.reduce((t, f) => t + amountDue(f), 0)
+  const paidCount = fees.filter((f) => amountDue(f) <= 0).length
 
   const shown = fees
-    .filter((f) => (filter === "all" ? true : filter === "paid" ? f.status === "paid" : filter === "late" ? isLate(f) : f.status !== "paid" && !isLate(f)))
+    .filter((f) =>
+      filter === "all"
+        ? true
+        : filter === "paid"
+          ? amountDue(f) <= 0
+          : filter === "pending"
+            ? amountDue(f) > 0
+            : filter === "late"
+              ? isLate(f)
+              : amountDue(f) > 0 && !isLate(f)
+    )
     .sort((x, y) => (filter === "paid" ? y.dueDate.localeCompare(x.dueDate) : x.dueDate.localeCompare(y.dueDate)))
 
-  const lateCount = fees.filter(isLate).length
   const filters: { key: FilterKey; label: string }[] = [
-    { key: "late", label: `Late${lateCount ? ` (${lateCount})` : ""}` },
-    { key: "soon", label: "Coming up" },
-    { key: "paid", label: "Paid" },
-    { key: "all", label: "All" },
+    { key: "pending", label: `Pending (${pendingCount} · ₹${pendingTotal.toLocaleString("en-IN")})` },
+    { key: "late", label: `Overdue (${lateCount} · ₹${lateTotal.toLocaleString("en-IN")})` },
+    { key: "soon", label: `Coming up (${soonCount} · ₹${soonTotal.toLocaleString("en-IN")})` },
+    { key: "paid", label: `Paid (${paidCount})` },
+    { key: "all", label: `All (${fees.length})` },
   ]
 
   function reminderText(f: FeeWithClient): string {
     const first = f.clientName.split(" ")[0]
-    const amt = `₹${f.amount.toLocaleString("en-IN")}`
+    const dueAmt = amountDue(f)
+    const amt = `₹${dueAmt.toLocaleString("en-IN")}`
     const due = format(new Date(f.dueDate + "T00:00:00"), "d MMM")
     return isLate(f)
-      ? `Hi ${first}, a gentle reminder: your coaching fee of ${amt} was due on ${due}. Kindly pay when you can. Thank you! — Aman`
-      : `Hi ${first}, a reminder: your coaching fee of ${amt} is due on ${due}. Thank you! — Aman`
+      ? `Hi ${first}, a gentle reminder: your coaching fee of ${amt} was due on ${due}. Kindly pay via UPI (${COACH_UPI_ID}) when you can. Thank you! — Aman`
+      : `Hi ${first}, a reminder: your coaching fee of ${amt} is due on ${due}. You can pay via UPI (${COACH_UPI_ID}). Thank you! — Aman`
+  }
+
+  function billWhatsAppText(f: FeeWithClient): string {
+    const first = f.clientName.split(" ")[0]
+    const due = format(new Date(f.dueDate + "T00:00:00"), "dd MMM yyyy")
+    const paidAmt = paidSoFar(f)
+    const balanceDue = amountDue(f)
+    const upiLink = generateUpiPaymentUrl(balanceDue || f.amount, f.clientName, f.invoiceNumber)
+    const lines = [
+      `Hi ${first}, here is your coaching bill from *Aman Khurana Fitness*:`,
+      ``,
+      `📄 *Invoice #*: ${f.invoiceNumber}`,
+      ...(f.packageName ? [`📦 *Package*: ${f.packageName}`] : []),
+      `💰 *Package Fee*: ₹${f.packageFee.toLocaleString("en-IN")}`,
+      ...(f.discount > 0 ? [`🏷️ *Discount*: −₹${f.discount.toLocaleString("en-IN")}`] : []),
+      ...(f.otherCharges > 0 ? [`➕ *Other Charges*: ₹${f.otherCharges.toLocaleString("en-IN")}`] : []),
+      `✅ *Final Amount*: ₹${f.amount.toLocaleString("en-IN")}`,
+      ...(paidAmt > 0 ? [`💵 *Paid*: ₹${paidAmt.toLocaleString("en-IN")}`] : []),
+      `📌 *Amount Due*: ₹${balanceDue.toLocaleString("en-IN")}`,
+      `📅 *Due Date*: ${due}`,
+      ``,
+      `📲 *Pay by UPI*: ${COACH_UPI_ID} (Aman Khurana Fitness)`,
+      `🔗 *UPI Link*: ${upiLink}`,
+      ``,
+      `Thank you! — Aman Khurana (#teamAKF)`,
+    ]
+    return lines.join("\n")
   }
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       <div className="px-5 pt-8 pb-32 max-w-lg mx-auto space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h1 className="font-heading italic text-4xl">Money</h1>
-          <button
-            type="button"
-            onClick={() => { setEditingFee(null); setPaymentModalOpen(true) }}
-            className="h-11 px-4 rounded-full bg-accent-orange text-black font-bold text-sm flex items-center gap-1.5 cursor-pointer shadow-sm"
-          >
-            <Plus className="size-4" /> Add payment
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPackageFeesModalOpen(true)}
+              className="h-11 px-3.5 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Settings2 className="size-4 text-accent-orange" /> Package fees
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEditingFee(null); setPaymentModalOpen(true) }}
+              className="h-11 px-4 rounded-full bg-accent-orange text-black font-bold text-sm flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <Plus className="size-4" /> Add payment
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-3 gap-3">
-            {Array.from({ length: 3 }).map((_, i) => <div key={i} className="rounded-2xl h-24 animate-pulse bg-white/10" />)}
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="rounded-2xl h-24 animate-pulse bg-white/10" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Late" value={lateTotal} tone="danger" />
-            <Stat label="Coming up" value={soonTotal} tone="muted" />
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Pending payments" value={pendingTotal} count={pendingCount} tone="gold" />
+            <Stat label="Overdue" value={lateTotal} count={lateCount} tone="danger" />
+            <Stat label="Coming up" value={soonTotal} count={soonCount} tone="muted" />
             <Stat label="Collected" value={collected} tone="gold" />
           </div>
         )}
@@ -281,7 +349,7 @@ export default function FeesPage() {
             <button
               key={t.key}
               onClick={() => setFilter(t.key)}
-              className={`h-11 px-4 rounded-full text-base font-semibold whitespace-nowrap cursor-pointer ${
+              className={`h-11 px-4 rounded-full text-sm font-semibold whitespace-nowrap cursor-pointer ${
                 filter === t.key ? "bg-accent-orange text-black" : "bg-white/10 text-white"
               }`}
             >
@@ -297,7 +365,7 @@ export default function FeesPage() {
         ) : shown.length === 0 ? (
           <div className="rounded-2xl bg-white/5 py-14 flex flex-col items-center gap-3 text-center px-4">
             <IndianRupee className="size-12 text-white/25" />
-            <p className="text-lg font-semibold">{filter === "late" ? "No late payments 🎉" : "Nothing here"}</p>
+            <p className="text-lg font-semibold">{filter === "late" ? "No overdue payments 🎉" : "Nothing here"}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -305,75 +373,105 @@ export default function FeesPage() {
               const late = isLate(f)
               const open = expanded === f.id
               const wa = waLink(f.clientPhone || null, reminderText(f))
+              const waBill = waLink(f.clientPhone || null, billWhatsAppText(f))
               const days = differenceInCalendarDays(new Date(f.dueDate + "T00:00:00"), new Date())
+              const dueAmt = f.status === "paid" ? f.amount : amountDue(f)
+              const paidAmt = paidSoFar(f)
               return (
                 <div key={f.id} className={`rounded-2xl bg-bg-card border p-4 ${late ? "border-red-500/60" : "border-border-subtle"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-lg font-semibold leading-tight">{f.clientName}</p>
-                      <p className={`text-base mt-1 ${late ? "text-red-400 font-semibold" : "text-text-muted"}`}>
+                      {f.packageName && (
+                        <p className="text-xs text-text-muted mt-0.5 truncate">{f.packageName}</p>
+                      )}
+                      <p className={`text-sm mt-1 ${late ? "text-red-400 font-semibold" : "text-text-muted"}`}>
                         {f.status === "paid"
                           ? "Paid"
                           : late
                             ? `Late by ${-days} day${-days === 1 ? "" : "s"} · was due ${format(new Date(f.dueDate + "T00:00:00"), "d MMM")}`
                             : `Due ${format(new Date(f.dueDate + "T00:00:00"), "d MMM")}`}
                       </p>
+                      {(f.discount > 0 || f.packageFee !== f.amount) && (
+                        <p className="text-xs text-emerald-400 mt-1">
+                          Package ₹{f.packageFee.toLocaleString("en-IN")} − Discount ₹{f.discount.toLocaleString("en-IN")} = Final ₹{f.amount.toLocaleString("en-IN")}
+                        </p>
+                      )}
                     </div>
-                    <p className="font-heading text-2xl text-accent-orange shrink-0">₹{f.amount.toLocaleString("en-IN")}</p>
+                    <div className="text-right shrink-0">
+                      <p className="font-heading text-2xl text-accent-orange">₹{dueAmt.toLocaleString("en-IN")}</p>
+                      {paidAmt > 0 && f.status !== "paid" && (
+                        <p className="text-[11px] text-text-muted">Paid ₹{paidAmt.toLocaleString("en-IN")}</p>
+                      )}
+                    </div>
                   </div>
 
                   {f.status !== "paid" && (
                     <div className="grid grid-cols-2 gap-2 mt-3">
                       {wa ? (
-                        <a href={wa} target="_blank" rel="noopener noreferrer" className="h-12 rounded-xl bg-[#25D366] text-black font-bold text-base flex items-center justify-center gap-2">
-                          <MessageCircle className="size-5" /> Remind
+                        <a href={wa} target="_blank" rel="noopener noreferrer" className="h-11 rounded-xl bg-[#25D366] text-black font-bold text-sm flex items-center justify-center gap-1.5">
+                          <MessageCircle className="size-4" /> Remind
                         </a>
                       ) : (
-                        <span className="h-12 rounded-xl bg-white/5 text-text-muted text-sm flex items-center justify-center">No number</span>
+                        <span className="h-11 rounded-xl bg-white/5 text-text-muted text-xs flex items-center justify-center">No number</span>
                       )}
-                      <button onClick={() => handleMarkPaid(f)} className="h-12 rounded-xl bg-accent-orange text-black font-bold text-base flex items-center justify-center gap-2 cursor-pointer">
-                        <Check className="size-5" /> Paid
+                      <button onClick={() => handleMarkPaid(f)} className="h-11 rounded-xl bg-accent-orange text-black font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                        <Check className="size-4" /> Paid
                       </button>
                     </div>
                   )}
 
-                  <button onClick={() => setExpanded(open ? null : f.id)} className="mt-3 text-text-muted text-base flex items-center gap-1 cursor-pointer">
+                  {/* Send bill on WhatsApp button right on the bill card (#7) */}
+                  <div className="flex items-center gap-2 mt-2">
+                    {waBill ? (
+                      <a
+                        href={waBill}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 h-10 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white flex items-center justify-center gap-1.5"
+                      >
+                        <Send className="size-3.5 text-[#25D366]" /> Send bill on WhatsApp
+                      </a>
+                    ) : null}
+                    <button
+                      onClick={() => handleDownloadReceipt(f)}
+                      className="h-10 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="size-3.5 text-accent-orange" /> Bill / receipt
+                    </button>
+                  </div>
+
+                  <button onClick={() => setExpanded(open ? null : f.id)} className="mt-3 text-text-muted text-sm flex items-center gap-1 cursor-pointer">
                     More <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
                   </button>
 
                   {open && (
                     <div className="mt-3 pt-3 border-t border-border-subtle flex flex-wrap gap-2">
-                      {f.status !== "paid" && (
-                        <RazorpayCheckoutButton
-                          amount={f.amount}
-                          feeId={f.id}
-                          clientName={f.clientName}
-                          clientPhone={f.clientPhone}
-                          buttonText="Pay online"
-                          className="py-2.5 px-4 text-base font-bold rounded-xl"
-                          onSuccess={() => {
-                            setFees((prev) => prev.map((item) => (item.id === f.id ? { ...item, status: "paid" } : item)))
-                          }}
-                        />
-                      )}
-                      <button onClick={() => setUpiModalFee(f)} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
+                      <button onClick={() => setUpiModalFee(f)} className="h-11 px-4 rounded-xl bg-white/10 text-sm font-semibold flex items-center gap-2 cursor-pointer">
                         <QrCode className="size-4 text-accent-orange" /> UPI link
                       </button>
-                      <button onClick={() => handleDownloadReceipt(f)} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
+                      <button onClick={() => handleDownloadReceipt(f)} className="h-11 px-4 rounded-xl bg-white/10 text-sm font-semibold flex items-center gap-2 cursor-pointer">
                         <Download className="size-4 text-accent-orange" /> Bill / receipt
                       </button>
-                      <button onClick={() => openBillingModal(f)} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
-                        <Receipt className="size-4 text-accent-orange" /> Edit bill
+                      {waBill && (
+                        <a
+                          href={waBill}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-11 px-4 rounded-xl bg-white/10 text-sm font-semibold flex items-center gap-2"
+                        >
+                          <Send className="size-4 text-[#25D366]" /> Send bill on WhatsApp
+                        </a>
+                      )}
+                      <button onClick={() => { setEditingFee(f); setPaymentModalOpen(true) }} className="h-11 px-4 rounded-xl bg-white/10 text-sm font-semibold flex items-center gap-2 cursor-pointer">
+                        <Edit className="size-4 text-accent-orange" /> Edit bill
                       </button>
-                      <button onClick={() => { setEditingFee(f); setPaymentModalOpen(true) }} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
-                        <Edit className="size-4 text-accent-orange" /> Edit payment
-                      </button>
-                      {f.status === "paid" && (
-                        <button onClick={() => handleUndoPaid(f)} className="h-11 px-4 rounded-xl bg-white/10 text-base font-semibold flex items-center gap-2 cursor-pointer">
-                          Undo Paid
+                      {(f.status === "paid" || paidAmt > 0) && (
+                        <button onClick={() => handleUndoPaid(f)} className="h-11 px-4 rounded-xl bg-white/10 text-sm font-semibold flex items-center gap-2 cursor-pointer">
+                          Undo payment
                         </button>
                       )}
-                      <button onClick={() => handleDeleteFee(f)} className="h-11 px-4 rounded-xl bg-red-500/20 text-red-400 text-base font-semibold flex items-center gap-2 cursor-pointer">
+                      <button onClick={() => handleDeleteFee(f)} className="h-11 px-4 rounded-xl bg-red-500/20 text-red-400 text-sm font-semibold flex items-center gap-2 cursor-pointer">
                         <Trash2 className="size-4 text-red-400" /> Delete
                       </button>
                     </div>
@@ -384,6 +482,63 @@ export default function FeesPage() {
           </div>
         )}
       </div>
+
+      {/* Package Fixed Fees Modal (#3) */}
+      <AnimatePresence>
+        {packageFeesModalOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              className="w-full max-w-md bg-[#111111] border border-[#222222] rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col overflow-hidden text-white"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-[#222222] shrink-0">
+                <div>
+                  <h2 className="text-lg font-bold font-heading">Fixed Fee per Package</h2>
+                  <p className="text-xs text-text-muted mt-0.5">Auto-fills when you add a client or payment (you can still override it).</p>
+                </div>
+                <button onClick={() => setPackageFeesModalOpen(false)} className="p-2 text-text-muted hover:text-white rounded-xl cursor-pointer">
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-3 overflow-y-auto flex-1">
+                {PACKAGES.map((pkg) => (
+                  <div key={pkg.name} className="flex items-center justify-between gap-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl px-3.5 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">{pkg.name}</p>
+                      <p className="text-[11px] text-text-muted">{pkg.days} day{pkg.days === 1 ? "" : "s"}</p>
+                    </div>
+                    <div className="flex items-center bg-[#111111] border border-[#333333] rounded-lg px-2.5 h-10 w-32 focus-within:border-accent-orange">
+                      <span className="text-accent-orange text-xs font-bold mr-1">₹</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="Not set"
+                        value={packageFeesDraft[pkg.name] ?? ""}
+                        onChange={(e) => setPackageFeesDraft((prev) => ({ ...prev, [pkg.name]: e.target.value }))}
+                        className="w-full bg-transparent text-sm text-white outline-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 border-t border-[#222222] shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSavePackageFees}
+                  disabled={isSavingPackageFees}
+                  className="w-full h-12 rounded-2xl bg-accent-orange text-black font-bold text-sm cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingPackageFees ? "Saving…" : "Save Package Fees"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* UPI Link Modal */}
       <AnimatePresence>
@@ -405,91 +560,24 @@ export default function FeesPage() {
 
               <div>
                 <h3 className="font-heading text-xl text-[#181310]">UPI Payment Link</h3>
-                <p className="text-xs text-[#8A7F70] mt-1">Client: {upiModalFee.clientName} | Amount: ₹{upiModalFee.amount.toLocaleString("en-IN")}</p>
+                <p className="text-xs text-[#8A7F70] mt-1">
+                  Client: {upiModalFee.clientName} | Due: ₹{amountDue(upiModalFee).toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs text-[#181310] font-mono font-bold mt-1">UPI ID: {COACH_UPI_ID}</p>
               </div>
 
               <div className="p-3 bg-[#181310]/5 rounded-xl border border-[#181310]/10 text-xs font-mono text-accent-orange break-all select-all">
-                {generateUpiPaymentUrl(upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber)}
+                {generateUpiPaymentUrl(amountDue(upiModalFee) || upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber)}
               </div>
 
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(generateUpiPaymentUrl(upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber))
+                  navigator.clipboard.writeText(generateUpiPaymentUrl(amountDue(upiModalFee) || upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber))
                   toast.success("UPI payment link copied!")
                 }}
-                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider"
+                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider cursor-pointer"
               >
                 Copy UPI Link
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Billing Details Modal */}
-      <AnimatePresence>
-        {billingModalFee && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-sm rounded-2xl p-6 space-y-4 relative"
-              style={{ background: "#F3EDE2", boxShadow: "0 24px 50px -20px rgba(0,0,0,0.5)" }}
-            >
-              <button onClick={() => setBillingModalFee(null)} className="absolute top-4 right-4 size-8 rounded-full bg-[#181310]/5 flex items-center justify-center text-[#8A7F70] hover:text-[#181310]">
-                <X className="size-4" />
-              </button>
-
-              <div>
-                <h3 className="font-heading text-xl text-[#181310]">Billing Details</h3>
-                <p className="text-xs text-[#8A7F70] mt-1">{billingModalFee.clientName} &middot; Package fees ₹{billingModalFee.amount.toLocaleString("en-IN")}</p>
-              </div>
-
-              <div className="space-y-3 text-left">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">Other Charges (₹)</label>
-                  <input
-                    type="number"
-                    value={billingForm.otherCharges}
-                    onChange={(e) => setBillingForm((p) => ({ ...p, otherCharges: e.target.value }))}
-                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">Discount (₹)</label>
-                  <input
-                    type="number"
-                    value={billingForm.discount}
-                    onChange={(e) => setBillingForm((p) => ({ ...p, discount: e.target.value }))}
-                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">Reward Points Redeemed (₹)</label>
-                  <input
-                    type="number"
-                    value={billingForm.rewardPointsRedeemed}
-                    onChange={(e) => setBillingForm((p) => ({ ...p, rewardPointsRedeemed: e.target.value }))}
-                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wide text-[#8A7F70]">First Amount Paid (₹)</label>
-                  <input
-                    type="number"
-                    value={billingForm.amountPaid}
-                    onChange={(e) => setBillingForm((p) => ({ ...p, amountPaid: e.target.value }))}
-                    className="w-full bg-white border border-[#181310]/10 rounded-lg py-2.5 px-3 text-sm text-[#181310] outline-none focus:border-accent-orange"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleSaveBilling}
-                disabled={isSavingBilling}
-                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider disabled:opacity-60"
-              >
-                {isSavingBilling ? "Saving…" : "Save Billing Details"}
               </button>
             </motion.div>
           </motion.div>
@@ -500,6 +588,7 @@ export default function FeesPage() {
         isOpen={paymentModalOpen}
         onClose={() => { setPaymentModalOpen(false); setEditingFee(null) }}
         mode={editingFee ? "edit" : "add"}
+        clientId={editingFee?.clientId}
         clientOptions={clientOptions}
         initialFee={editingFee}
         onSuccess={fetchData}

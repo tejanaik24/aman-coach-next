@@ -2,8 +2,9 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { sendCheckinReminder } from "@/lib/whatsapp"
 import { withRetry } from "@/lib/db-retry"
+import { isAuthorizedAutomationRequest } from "@/lib/automation"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -17,23 +18,15 @@ export async function POST(req: Request) {
 
 async function handleReminderTrigger(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization")
-    const secretParam = new URL(req.url).searchParams.get("secret")
-    const expectedSecret = process.env.AUTOMATION_SECRET
-
-    if (!expectedSecret) {
-      throw new Error("AUTOMATION_SECRET environment variable is missing")
-    }
-
-    if (secretParam !== expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+    if (!isAuthorizedAutomationRequest(req)) {
       return NextResponse.json({ error: "Unauthorized automation request" }, { status: 401 })
     }
 
-    // 1. Fetch active clients with profile phone numbers
+    // 1. Fetch active clients with profile phone numbers and notification setting
     const { data: clients, error: clientErr } = await withRetry(() =>
       supabase
         .from("clients")
-        .select("id, user_id, profiles!user_id(name, phone)")
+        .select("id, user_id, profiles!user_id(name, phone, notifications_enabled)")
         .eq("status", "active")
     )
 
@@ -50,9 +43,22 @@ async function handleReminderTrigger(req: Request) {
     const results = []
 
     for (const client of clients) {
-      const profile = client.profiles as any
+      const rawProfile = client.profiles
+      const profile = (Array.isArray(rawProfile) ? rawProfile[0] : rawProfile) as
+        | { name?: string | null; phone?: string | null; notifications_enabled?: boolean | null }
+        | null
+        | undefined
       const clientName = profile?.name || "Client"
       const phone = profile?.phone
+
+      if (profile?.notifications_enabled === false) {
+        results.push({
+          clientId: client.id,
+          clientName,
+          status: "notifications_off"
+        })
+        continue
+      }
 
       if (!phone) continue
 
@@ -90,8 +96,9 @@ async function handleReminderTrigger(req: Request) {
 
         // Send WhatsApp check-in reminder
         const res = await sendCheckinReminder(phone, clientName)
+        const reallySent = Boolean(res.success && !res.dryRun)
 
-        if (res.success) {
+        if (reallySent) {
           const { error: logError } = await withRetry(() =>
             supabase
               .from("reminder_log")
@@ -106,7 +113,8 @@ async function handleReminderTrigger(req: Request) {
           clientId: client.id,
           clientName,
           phone,
-          status: res.success ? "reminder_sent" : "failed",
+          status: reallySent ? "reminder_sent" : "failed",
+          dryRun: Boolean(res.dryRun),
           error: res.error
         })
       } else {
@@ -127,8 +135,11 @@ async function handleReminderTrigger(req: Request) {
       },
       details: results
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Check-in reminder handler error:", err)
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Internal server error" },
+      { status: 500 }
+    )
   }
 }

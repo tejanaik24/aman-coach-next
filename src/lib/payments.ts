@@ -1,8 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { jsPDF } from "jspdf"
-import { sendWhatsAppText, sendWhatsAppFile } from "./whatsapp"
 import { createClient as createSessionClient } from "@/lib/supabase/client"
-import { SITE_URL } from "@/lib/site"
+import { COACH_UPI_ID, generateUpiLink } from "@/lib/upi"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -13,6 +12,7 @@ export type Invoice = {
   clientId: string
   feeId?: string
   invoiceNumber: string
+  packageFee?: number
   amount: number
   gstRate: number
   gstAmount: number
@@ -37,16 +37,13 @@ export type Invoice = {
   currency?: string
 }
 
-export const DEFAULT_UPI_ID = "aman.khurana.1460-1@okhdfcbank" // same VPA shown to customers on /book
+export const DEFAULT_UPI_ID = COACH_UPI_ID
 
 /**
  * Generate a standard UPI payment URL link
  */
 export function generateUpiPaymentUrl(amount: number, clientName: string, refId: string): string {
-  const upiId = process.env.AMAN_UPI_ID || DEFAULT_UPI_ID
-  const name = encodeURIComponent("Aman Khurana Fitness")
-  const note = encodeURIComponent(`Coaching Fee - ${clientName} (${refId})`)
-  return `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}`
+  return generateUpiLink(amount, `Coaching Fee ${clientName} ${refId}`)
 }
 
 /**
@@ -61,26 +58,27 @@ export async function getAllInvoices(): Promise<Invoice[]> {
     if (error) console.error("getAllInvoices failed:", error.message)
 
     if (data && data.length > 0) {
-      return data.map((inv: any) => {
-        const clientProfile = inv.clients?.profiles as any
+      return (data as Record<string, unknown>[]).map((inv) => {
+        const clientsRel = inv.clients as { profiles?: { name?: string; phone?: string } } | null | undefined
+        const clientProfile = clientsRel?.profiles
         return {
-          id: inv.id,
-          clientId: inv.client_id,
-          feeId: inv.fee_id,
-          invoiceNumber: inv.invoice_number,
+          id: String(inv.id),
+          clientId: String(inv.client_id),
+          feeId: inv.fee_id ? String(inv.fee_id) : undefined,
+          invoiceNumber: String(inv.invoice_number),
           amount: Number(inv.amount),
           gstRate: Number(inv.gst_rate || 18),
           gstAmount: Number(inv.gst_amount || 0),
           totalAmount: Number(inv.total_amount),
-          upiId: inv.upi_id || DEFAULT_UPI_ID,
-          paymentLink: inv.payment_link || generateUpiPaymentUrl(Number(inv.total_amount), clientProfile?.name || "Client", inv.invoice_number),
-          status: inv.status,
-          dueDate: inv.due_date,
-          paidAt: inv.paid_at,
-          notes: inv.notes,
+          upiId: COACH_UPI_ID,
+          paymentLink: generateUpiPaymentUrl(Number(inv.total_amount), clientProfile?.name || "Client", String(inv.invoice_number)),
+          status: (inv.status as "pending" | "paid" | "overdue") || "pending",
+          dueDate: String(inv.due_date),
+          paidAt: inv.paid_at ? String(inv.paid_at) : undefined,
+          notes: inv.notes ? String(inv.notes) : undefined,
           clientName: clientProfile?.name || "Client",
           clientPhone: clientProfile?.phone || "",
-          createdAt: inv.created_at
+          createdAt: String(inv.created_at),
         }
       })
     }
@@ -90,22 +88,41 @@ export async function getAllInvoices(): Promise<Invoice[]> {
   return []
 }
 
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf)
+  let binary = ""
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return typeof btoa === "function" ? btoa(binary) : Buffer.from(bytes).toString("base64")
+}
+
 let cachedReceiptLogo: string | null = null
 async function getReceiptLogoBase64(): Promise<string | null> {
   if (cachedReceiptLogo !== null) return cachedReceiptLogo
   try {
     const res = await fetch("/images/aman/logo.jpg")
-    const blob = await res.blob()
-    cachedReceiptLogo = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve((reader.result as string).split(",")[1])
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
+    if (!res.ok) throw new Error("Failed to fetch logo")
+    const buf = await res.arrayBuffer()
+    cachedReceiptLogo = arrayBufferToBase64(buf)
   } catch {
     cachedReceiptLogo = ""
   }
   return cachedReceiptLogo || null
+}
+
+let cachedSignatureImg: string | null = null
+async function getSignatureBase64(): Promise<string | null> {
+  if (cachedSignatureImg !== null) return cachedSignatureImg
+  try {
+    const res = await fetch("/images/aman/signature.png")
+    if (!res.ok) throw new Error("Failed to fetch signature")
+    const buf = await res.arrayBuffer()
+    cachedSignatureImg = arrayBufferToBase64(buf)
+  } catch {
+    cachedSignatureImg = ""
+  }
+  return cachedSignatureImg || null
 }
 
 const TERMS_AND_CONDITIONS = [
@@ -121,6 +138,17 @@ function fmtDate(d?: string): string {
   const parsed = new Date(d)
   if (isNaN(parsed.getTime())) return "-"
   return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+}
+
+function sanitizePdfText(s?: string | null): string {
+  return (s || "")
+    .replace(/\u20B9/g, "INR ")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\u2022\u00B7]/g, "-")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, "...")
+    .replace(/\u00A0/g, " ")
+    .replace(/[^\x20-\x7E]/g, "-")
 }
 
 /**
@@ -139,14 +167,26 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   const gray: [number, number, number] = [95, 95, 95]
   const lightGray: [number, number, number] = [248, 248, 248]
 
-  const otherCharges = inv.otherCharges ?? 0
-  const discount = inv.discount ?? 0
-  const rewardPointsRedeemed = inv.rewardPointsRedeemed ?? 0
-  const amountPaid = inv.amountPaid ?? 0
-  const subtotal = inv.amount + otherCharges
-  const netPayable = subtotal - discount - rewardPointsRedeemed
-  const pendingAmount = Math.max(netPayable - amountPaid, 0)
-  const isPaid = pendingAmount <= 0
+  const otherCharges = Number(inv.otherCharges ?? 0)
+  const discount = Number(inv.discount ?? 0)
+  const rewardPointsRedeemed = Number(inv.rewardPointsRedeemed ?? 0)
+  const rawPaid = Number(inv.amountPaid ?? 0)
+  // inv.amount is the final payable amount (packageFee - discount + otherCharges - rewardPointsRedeemed).
+  // If packageFee is explicitly provided, use it; otherwise derive packageFee from amount + discount - otherCharges + rewardPointsRedeemed.
+  const basePackageFee =
+    inv.packageFee !== undefined && Number(inv.packageFee) > 0
+      ? Number(inv.packageFee)
+      : Number(inv.amount) + discount - otherCharges + rewardPointsRedeemed
+  const finalAmount = Math.max(basePackageFee + otherCharges - discount - rewardPointsRedeemed, 0)
+  const effectivePaid = inv.status === "paid" ? Math.max(rawPaid, finalAmount) : rawPaid
+  const pendingAmount = inv.status === "paid" ? 0 : Math.max(finalAmount - effectivePaid, 0)
+  const isPaid = inv.status === "paid" || pendingAmount <= 0
+
+  const resolvedInvoiceNumber =
+    (inv.invoiceNumber && inv.invoiceNumber.trim()) ||
+    (inv.memberNumber !== undefined && inv.memberNumber !== null
+      ? String(inv.memberNumber).padStart(5, "0")
+      : "00001")
 
   // Currency resolution (Task B5)
   const curr = (inv.currency || "INR").toUpperCase()
@@ -160,7 +200,7 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   }
   const currSym = CURRENCY_SYMBOLS[curr] || curr
   const fmtCurr = (val: number) => {
-    const sign = val < 0 ? "-" : ""
+    const sign = val < 0 ? "- " : ""
     return `${sign}${currSym} ${Math.abs(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
@@ -171,7 +211,7 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   // Logo + brand (top left)
   const logoBase64 = await getReceiptLogoBase64()
   if (logoBase64) {
-    doc.addImage(`data:image/jpeg;base64,${logoBase64}`, "JPEG", left, 16, 18, 18)
+    doc.addImage(`data:image/jpeg;base64,${logoBase64}`, "JPEG", left, 16, 18, 18, undefined, "FAST")
   }
   const brandX = logoBase64 ? left + 22 : left
   doc.setTextColor(...black)
@@ -208,50 +248,69 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   doc.text("INVOICE DETAILS:", 128, y)
 
   y += 5
+  const detailsStartY = y
+
   doc.setTextColor(...black)
   doc.setFontSize(12)
   doc.setFont("helvetica", "bold")
-  doc.text(inv.clientName || "Valued Athlete", left, y)
+  const clientNameLines: string[] = doc.splitTextToSize(
+    sanitizePdfText(inv.clientName) || "Valued Athlete",
+    108
+  )
+  doc.text(clientNameLines, left, detailsStartY)
+  let leftY = detailsStartY + (clientNameLines.length - 1) * 5
 
-  doc.setFontSize(9)
-  doc.setFont("helvetica", "normal")
-  doc.setTextColor(...gray)
-  doc.text("Invoice #:", 128, y)
-  doc.setFont("helvetica", "bold")
-  doc.setTextColor(...black)
-  doc.text(inv.invoiceNumber, 155, y)
-
-  y += 5
+  leftY += 5
   doc.setFontSize(9)
   doc.setFont("helvetica", "normal")
   doc.setTextColor(...gray)
   if (inv.clientPhone) {
-    doc.text(`Phone: ${inv.clientPhone}`, left, y)
+    doc.text(`Phone: ${sanitizePdfText(inv.clientPhone)}`, left, leftY)
   }
-  doc.text("Issue Date:", 128, y)
-  doc.setFont("helvetica", "bold")
-  doc.setTextColor(...black)
-  doc.text(fmtDate(inv.createdAt), 155, y)
 
-  y += 5
+  leftY += 5
   doc.setFont("helvetica", "normal")
   doc.setTextColor(...gray)
-  doc.text(`Member ID: ${inv.memberNumber ?? "—"}`, left, y)
-  doc.text("Due Date:", 128, y)
-  doc.setFont("helvetica", "bold")
-  doc.setTextColor(...black)
-  doc.text(fmtDate(inv.dueDate), 155, y)
+  doc.text(`Member ID: ${inv.memberNumber ?? "-"}`, left, leftY)
 
   // Show package start & end date clearly (Task B5)
   if (inv.startDate || inv.endDate) {
-    y += 5
+    leftY += 5
     doc.setFont("helvetica", "bold")
     doc.setTextColor(...gold)
-    doc.text(`Package Duration: ${fmtDate(inv.startDate)} — ${fmtDate(inv.endDate)}`, left, y)
+    doc.text(`Package Duration: ${fmtDate(inv.startDate)} - ${fmtDate(inv.endDate)}`, left, leftY)
   }
-  y += 10
 
-  // Item table header
+  // Right side: Invoice #, Issue Date, Due Date
+  let rightY = detailsStartY
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  doc.text("Invoice #:", 128, rightY)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...black)
+  doc.text(sanitizePdfText(resolvedInvoiceNumber), 155, rightY)
+
+  rightY += 5
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  doc.text("Issue Date:", 128, rightY)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...black)
+  doc.text(fmtDate(inv.createdAt), 155, rightY)
+
+  rightY += 5
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(...gray)
+  doc.text("Due Date:", 128, rightY)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...black)
+  doc.text(fmtDate(inv.dueDate), 155, rightY)
+
+  y = Math.max(leftY, rightY) + 10
+
+  // Item table header (4 columns: SL. | PACKAGE & DESCRIPTION | PACKAGE DURATION | AMOUNT)
   const col = { sl: left, item: left + 12, dates: 110, total: right }
   doc.setFillColor(...black)
   doc.rect(left, y, width, 9, "F")
@@ -268,14 +327,16 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
 
   type LineItem = { label: string; amount: number; isMainPackage?: boolean }
   const items: LineItem[] = [
-    { label: inv.packageName || "Personalized Fitness & Nutrition Coaching", amount: inv.amount, isMainPackage: true },
+    { label: sanitizePdfText(inv.packageName) || "Personalized Fitness & Nutrition Coaching", amount: basePackageFee, isMainPackage: true },
   ]
-  if (otherCharges) items.push({ label: "Add-on / Other Charges", amount: otherCharges })
-  if (discount) items.push({ label: "Special Privilege Discount", amount: -discount })
-  if (rewardPointsRedeemed) items.push({ label: "Reward Points Redeemed", amount: -rewardPointsRedeemed })
+  if (otherCharges > 0) items.push({ label: "Add-on / Other Charges", amount: otherCharges })
 
+  const maxItemLabelWidth = col.dates - col.item - 12 // 72mm safe width before PACKAGE DURATION column
   items.forEach((item, i) => {
-    const rowH = 11
+    doc.setFontSize(9.5)
+    doc.setFont("helvetica", "normal")
+    const wrappedLabel: string[] = doc.splitTextToSize(sanitizePdfText(item.label), maxItemLabelWidth)
+    const rowH = Math.max(11, wrappedLabel.length * 4.5 + 5.5)
     if (i % 2 === 1) {
       doc.setFillColor(...lightGray)
       doc.rect(left, y, width, rowH, "F")
@@ -284,12 +345,16 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
     doc.setFontSize(9.5)
     doc.setFont("helvetica", "normal")
     doc.text(String(i + 1), col.sl + 3, y + 7)
-    doc.text(item.label, col.item, y + 7)
+    doc.text(wrappedLabel, col.item, y + 7)
 
     if (item.isMainPackage) {
       doc.setFontSize(8.5)
       doc.setTextColor(...gray)
-      doc.text(`${fmtDate(inv.startDate)} to ${fmtDate(inv.endDate)}`, col.dates, y + 7)
+      const durationText =
+        inv.startDate || inv.endDate
+          ? `${fmtDate(inv.startDate)} to ${fmtDate(inv.endDate)}`
+          : "As per enrollment"
+      doc.text(durationText, col.dates, y + 7)
       doc.setFontSize(9.5)
     }
 
@@ -316,10 +381,12 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   }
 
   const totalsStartY = y
-  totalRow("Sub Total:", fmtCurr(subtotal))
-  if (discount) totalRow("Discount:", `- ${fmtCurr(discount)}`, false, [200, 40, 40])
-  if (rewardPointsRedeemed) totalRow("Reward Points:", `- ${fmtCurr(rewardPointsRedeemed)}`)
-  totalRow("Amount Paid:", fmtCurr(amountPaid), true)
+  totalRow("Package Fee:", fmtCurr(basePackageFee))
+  if (otherCharges > 0) totalRow("Other Charges:", fmtCurr(otherCharges))
+  if (discount > 0) totalRow("Discount:", `- ${fmtCurr(discount)}`, false, [200, 40, 40])
+  if (rewardPointsRedeemed > 0) totalRow("Reward Points:", `- ${fmtCurr(rewardPointsRedeemed)}`)
+  totalRow("Sub Total:", fmtCurr(finalAmount), true)
+  totalRow("Amount Paid:", fmtCurr(effectivePaid), true)
   y += 1
 
   // Prominent Payment Status Pill
@@ -372,6 +439,11 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
 
   // Authorised Signature Block
   const signX = right - 48
+  const sigBase64 = await getSignatureBase64()
+  if (sigBase64) {
+    // 600x328 aspect ratio (~1.83:1); render 38mm wide x 20.8mm tall directly above the signatory line
+    doc.addImage(`data:image/png;base64,${sigBase64}`, "PNG", signX + 5, y - 12, 38, 20.8, undefined, "FAST")
+  }
   doc.setDrawColor(...gray)
   doc.setLineWidth(0.4)
   doc.line(signX, y + 10, right, y + 10)
@@ -399,15 +471,29 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
 /**
  * Mark Invoice / Fee as Paid & Send WhatsApp Receipt
  */
-export async function markInvoicePaid(invId: string, _clientName?: string, _clientPhone?: string): Promise<boolean> {
+export async function markInvoicePaid(invId: string, _clientName?: string, _clientPhone?: string, fullAmount?: number): Promise<boolean> {
   // Must use the logged-in coach session: the module-level anon client has no session, so RLS
   // silently blocks the write (0 rows, no error). Check the row count instead of trusting "no error".
   const paidAt = new Date().toISOString()
   try {
     const session = createSessionClient()
+    let resolvedAmount = fullAmount
+    if (resolvedAmount === undefined) {
+      const { data: existing } = await session.from("fees").select("amount").eq("id", invId).maybeSingle()
+      if (existing && typeof existing.amount === "number") {
+        resolvedAmount = Number(existing.amount)
+      }
+    }
+    const updatePayload: Record<string, unknown> = {
+      status: "paid",
+      paid_date: paidAt.split("T")[0],
+    }
+    if (resolvedAmount !== undefined) {
+      updatePayload.amount_paid = resolvedAmount
+    }
     const { data, error } = await session
       .from("fees")
-      .update({ status: "paid", paid_date: paidAt.split("T")[0] })
+      .update(updatePayload)
       .eq("id", invId)
       .select("id")
     if (error || !data || data.length === 0) {
@@ -423,26 +509,3 @@ export async function markInvoicePaid(invId: string, _clientName?: string, _clie
   }
 }
 
-/**
- * Send WhatsApp Payment Reminders (1 week before, 1 day before, 1 week overdue)
- */
-export async function sendPaymentReminderWhatsApp(phone: string, clientName: string, amount: number, dueDateStr: string, reminderType: "1week_before" | "1day_before" | "1week_overdue") {
-  let title = "⏰ PAYMENT REMINDER"
-  let body = ""
-
-  if (reminderType === "1week_before") {
-    title = "⏰ *UPCOMING FEE REMINDER (1 Week Out)*"
-    body = `Hi ${clientName}, your coaching fee of ₹${amount.toLocaleString("en-IN")} is due on *${dueDateStr}*.`
-  } else if (reminderType === "1day_before") {
-    title = "🚨 *PAYMENT DUE TOMORROW*"
-    body = `Hi ${clientName}, your coaching fee of ₹${amount.toLocaleString("en-IN")} is due tomorrow (*${dueDateStr}*).`
-  } else {
-    title = "⚠️ *FEE OVERDUE REMINDER*"
-    body = `Hi ${clientName}, your coaching fee payment of ₹${amount.toLocaleString("en-IN")} is past due date (*${dueDateStr}*). Please complete your payment.`
-  }
-
-  const upiLink = generateUpiPaymentUrl(amount, clientName, "REMINDER")
-  const fullMsg = `${title}\n\n${body}\n\n📲 *Pay via UPI Link*:\n${upiLink}\n\nOr view details in portal:\n${SITE_URL}/payments`
-
-  return sendWhatsAppText(phone, fullMsg)
-}

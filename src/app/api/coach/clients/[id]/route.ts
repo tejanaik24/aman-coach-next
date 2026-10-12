@@ -3,6 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { isPlaceholderEmail, phoneEmail } from "@/lib/phone-login"
 import { goalForPackage } from "@/lib/package-goal"
+import { validateBillInput } from "@/lib/bill-validation"
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -29,6 +30,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: "Please enter a 10-digit phone number." }, { status: 400 })
   }
 
+  let validatedFeeAmount: number | undefined
+  if (fee_amount !== undefined) {
+    const feeCheck = validateBillInput({ packageFee: fee_amount })
+    if (!feeCheck.valid) {
+      return NextResponse.json({ error: feeCheck.firstError || "Please enter the package fee." }, { status: 400 })
+    }
+    validatedFeeAmount = feeCheck.values.packageFee
+  }
+
   const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
@@ -39,7 +49,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     clientUpdates.package_name = package_name
     clientUpdates.goal = goalForPackage(package_name)
   }
-  if (fee_amount !== undefined) clientUpdates.fee_amount = Number(fee_amount) || 0
+  if (validatedFeeAmount !== undefined) clientUpdates.fee_amount = validatedFeeAmount
   if (fee_due_day !== undefined) clientUpdates.fee_due_day = Number(fee_due_day) || 1
   if (start_date !== undefined) clientUpdates.start_date = start_date
   if (end_date !== undefined) clientUpdates.end_date = end_date

@@ -29,9 +29,12 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Push subscribe error:", err)
-    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 })
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Internal error" },
+      { status: 500 }
+    )
   }
 }
 
@@ -44,12 +47,16 @@ export async function DELETE(req: Request) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader)
     if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
+    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+
     const { endpoint } = await req.json()
     if (!endpoint) return NextResponse.json({ error: "Missing endpoint" }, { status: 400 })
 
     const { error: delErr } = await supabase
       .from("push_subscriptions")
       .delete()
+      .eq("client_id", client.id)
       .eq("subscription->>endpoint", endpoint)
     if (delErr) {
       console.error("Push unsubscribe delete error:", delErr)
@@ -57,8 +64,11 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Push unsubscribe error:", err)
-    return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 })
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Internal error" },
+      { status: 500 }
+    )
   }
 }

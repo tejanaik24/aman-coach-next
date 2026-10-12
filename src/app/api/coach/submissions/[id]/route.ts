@@ -33,12 +33,53 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  // 1. Fetch submission to check for referenced files
-  const { data: sub } = await admin.from("form_submissions").select("id, form_data").eq("id", id).maybeSingle()
+  // 1. Fetch submission to check ownership and referenced files
+  const { data: sub } = await admin
+    .from("form_submissions")
+    .select("id, client_id, user_id, form_data")
+    .eq("id", id)
+    .maybeSingle()
   if (!sub) return NextResponse.json({ error: "Submission not found" }, { status: 404 })
 
-  // 2. Remove referenced files from storage
-  const filePaths = extractFilePaths(sub.form_data)
+  let ownerUserId: string | null = sub.user_id ? String(sub.user_id) : null
+
+  if (sub.client_id) {
+    const { data: clientRow } = await admin
+      .from("clients")
+      .select("id, user_id, coach_id")
+      .eq("id", String(sub.client_id))
+      .maybeSingle()
+    if (!clientRow || clientRow.coach_id !== user.id) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to delete this submission." },
+        { status: 403 }
+      )
+    }
+    if (!ownerUserId && clientRow.user_id) {
+      ownerUserId = String(clientRow.user_id)
+    }
+  } else if (sub.user_id) {
+    const { data: clientByUser } = await admin
+      .from("clients")
+      .select("id, user_id, coach_id")
+      .eq("user_id", String(sub.user_id))
+      .maybeSingle()
+    if (clientByUser && clientByUser.coach_id !== user.id) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to delete this submission." },
+        { status: 403 }
+      )
+    }
+  }
+
+  // 2. Remove referenced files from storage (strictly scoped to this submission's own prefix)
+  const rawPaths = extractFilePaths(sub.form_data)
+  const allowedPrefixes = ownerUserId
+    ? [`${ownerUserId}/`]
+    : ["public-questionnaire/"]
+  const filePaths = rawPaths.filter(
+    (p) => !p.includes("..") && allowedPrefixes.some((prefix) => p.startsWith(prefix))
+  )
   if (filePaths.length > 0) {
     await admin.storage.from("checkin-photos").remove(filePaths).catch(() => {})
     await admin.storage.from("public-questionnaire").remove(filePaths).catch(() => {})

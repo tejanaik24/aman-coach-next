@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client"
-import { sendCoachSubmissionAlert } from "./whatsapp"
 
 // Logged-in session client (an anon client has no session, so RLS silently blocks writes).
 const supabase = createClient()
@@ -112,14 +111,7 @@ export async function checkAndUnlockBadges(clientId: string, clientName: string,
       }
 
       newUnlockedBadges.push(badgeObj)
-
-      // The unlock itself is durable; the notification is best-effort and must
-      // never undo a successfully earned badge.
-      const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
-      if (coachPhone) {
-        sendCoachSubmissionAlert(coachPhone, clientName, `Badge Unlocked: 🏆 ${badgeObj.title}`)
-          .catch((err) => console.error("Badge WhatsApp alert failed:", err))
-      }
+      void clientName
     }
   }
 

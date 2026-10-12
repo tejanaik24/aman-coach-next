@@ -15,6 +15,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
     }
     const body = await request.json()
+    if (body.clientId || body.client_id || body.userId || body.user_id) {
+      return NextResponse.json(
+        { error: "Public form submissions cannot specify a clientId or userId" },
+        { status: 403 }
+      )
+    }
     const name = String(body.name || "").trim()
     const tel = String(body.tel || "").trim()
 
@@ -43,15 +49,19 @@ export async function POST(request: Request) {
     const coachPhoneRaw = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
     if (coachPhoneRaw) {
       try {
-        const coachPhone = coachPhoneRaw.replace(/\D/g, "")
-        const alertRes = await sendCoachFormAlert(coachPhone, "standard_joining", name)
-        if (alertRes?.success && insertedQuestId) {
-          await withRetry(() =>
-            supabase
-              .from("form_submissions")
-              .update({ coach_alert_sent_at: new Date().toISOString() })
-              .eq("id", insertedQuestId)
-          )
+        const coachTarget = { coachPhone: coachPhoneRaw }
+        const { isCoachNotificationsEnabled } = await import("@/lib/automation-delivery")
+        if (await isCoachNotificationsEnabled(coachTarget)) {
+          const coachPhone = coachPhoneRaw.replace(/\D/g, "")
+          const alertRes = await sendCoachFormAlert(coachPhone, "standard_joining", name, coachTarget)
+          if (alertRes?.success && !alertRes?.dryRun && insertedQuestId) {
+            await withRetry(() =>
+              supabase
+                .from("form_submissions")
+                .update({ coach_alert_sent_at: new Date().toISOString() })
+                .eq("id", insertedQuestId)
+            )
+          }
         }
       } catch (alertErr) {
         console.error("Coach questionnaire alert error:", alertErr)

@@ -40,6 +40,7 @@ export default function CoachSubmissionsPage() {
   const [clientOptions, setClientOptions] = useState<{ id: string; user_id: string; name: string }[]>([])
   const [attachTo, setAttachTo] = useState("")
   const [attaching, setAttaching] = useState(false)
+  const [fillForClient, setFillForClient] = useState("")
 
   useEffect(() => {
     if (!user?.id) return
@@ -68,17 +69,17 @@ export default function CoachSubmissionsPage() {
   useEffect(() => { setAttachTo("") }, [activeSubmission?.id])
 
   useEffect(() => {
-    if (!activeSubmission || clientOptions.length) return
-    if (!isJoining(activeSubmission.formType) || activeSubmission.clientId) return
+    if (clientOptions.length) return
     const supabase = createClient()
     ;(async () => {
       const { data: cs } = await supabase.from("clients").select("id, user_id").order("created_at", { ascending: false })
       const rows = (cs ?? []) as { id: string; user_id: string }[]
+      if (!rows.length) return
       const { data: ps } = await supabase.from("profiles").select("id, name").in("id", rows.map((c) => c.user_id))
       const names = new Map(((ps ?? []) as { id: string; name: string }[]).map((p) => [p.id, p.name]))
       setClientOptions(rows.map((c) => ({ id: c.id, user_id: c.user_id, name: names.get(c.user_id) || "Client" })))
     })()
-  }, [activeSubmission, clientOptions.length])
+  }, [clientOptions.length])
 
   async function handleAttach(sub: Submission) {
     const c = clientOptions.find((x) => x.id === attachTo)
@@ -163,15 +164,42 @@ export default function CoachSubmissionsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-subtle pb-5">
           <div>
             <p className="text-accent-orange text-xs font-bold uppercase tracking-widest">Coach Dashboard</p>
-            <h1 className="font-heading text-3xl text-text-primary tracking-wide">CLIENT SUBMISSIONS</h1>
+            <h1 className="font-heading text-3xl text-text-primary tracking-wide">QUESTIONNAIRES &amp; SUBMISSIONS</h1>
             <p className="text-xs text-text-muted mt-1">
-              View and review new leads, onboarding questionnaires, and check-in forms.
+              View filled questionnaires, attach a questionnaire to a client, or fill one yourself for a client.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <span className="px-3 py-1.5 rounded-full bg-bg-elevated border border-border-subtle text-xs text-text-muted font-medium">
               Total: <strong className="text-accent-orange">{submissions.length}</strong>
             </span>
+          </div>
+        </div>
+
+        {/* Fill questionnaire for a client bar */}
+        <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-text-primary">Fill questionnaire for a client</p>
+            <p className="text-xs text-text-muted">Pick a client to open the Lifestyle &amp; Health Questionnaire on their behalf.</p>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={fillForClient}
+              onChange={(e) => setFillForClient(e.target.value)}
+              className="flex-1 sm:w-56 h-10 rounded-xl bg-bg-elevated border border-border-subtle px-3 text-xs text-text-primary outline-none focus:border-accent-orange"
+            >
+              <option value="">Choose client…</option>
+              {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <Link
+              href={fillForClient ? `/questionnaire?client=${fillForClient}` : "#"}
+              onClick={(e) => { if (!fillForClient) { e.preventDefault(); toast.error("Choose a client first") } }}
+              className={`px-4 h-10 rounded-xl text-xs font-bold flex items-center justify-center whitespace-nowrap ${
+                fillForClient ? "bg-accent-orange text-bg-primary" : "bg-white/10 text-text-muted"
+              }`}
+            >
+              Fill questionnaire →
+            </Link>
           </div>
         </div>
 
@@ -251,10 +279,17 @@ export default function CoachSubmissionsPage() {
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-[#181310]/[0.08]">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${getFormBadge(sub.formType)}`}>
                       {getFormLabel(sub.formType)}
                     </span>
+                    {isJoining(sub.formType) && (
+                      sub.clientId ? (
+                        <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5"><CheckCircle2 className="size-3" /> Attached</span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-amber-600">Tap to attach to client</span>
+                      )
+                    )}
                     {sub.formType === "enquiry" && (
                       sub.status === "contacted" ? (
                         <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-0.5"><CheckCircle2 className="size-3" /> Contacted</span>

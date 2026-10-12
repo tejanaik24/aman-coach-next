@@ -199,11 +199,9 @@ export default function PublicQuestionnairePage() {
         </div>
       )}
       <div className="ledger p-5">
-        {!forClient && (
         <p className="text-text-primary text-sm leading-relaxed mb-3">
           Hi, I warmly welcome you to #teamAKF. Pleased to have you in the team 😊 Please fill out the details below. After getting all the details, I shall take roughly 7 – 15 days to get back to you with your customised plans.
         </p>
-        )}
         <p className="text-text-muted text-xs leading-relaxed">
           This is the same detailed questionnaire Coach Aman uses to build every client&rsquo;s custom plan &mdash;
           fill it in before your consultation so he has your full picture ready. Takes about 10&ndash;15 minutes.

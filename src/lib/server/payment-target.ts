@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { amountDue, finalAmount } from "@/lib/fee-math"
 
 export type PaymentTargetKind = "invoice" | "fee"
 
@@ -7,6 +8,7 @@ export type PaymentTarget = {
   kind: PaymentTargetKind
   clientId: string
   amount: number
+  fullAmount?: number
   status: "pending" | "paid" | "overdue"
 }
 
@@ -15,6 +17,7 @@ type TargetRow = {
   client_id: string
   total_amount?: number
   amount?: number
+  amount_paid?: number
   status: PaymentTarget["status"]
 }
 
@@ -32,9 +35,10 @@ export async function getOwnedPaymentTarget(
 ): Promise<PaymentTarget | null> {
   const supabase = serviceClient()
   const table = kind === "invoice" ? "invoices" : "fees"
+  const selectCols = kind === "invoice" ? "id, client_id, total_amount, amount, status" : "id, client_id, amount, amount_paid, status"
   const { data, error } = await supabase
     .from(table)
-    .select("id, client_id, total_amount, amount, status")
+    .select(selectCols)
     .eq("id", targetId)
     .maybeSingle()
 
@@ -51,10 +55,11 @@ export async function getOwnedPaymentTarget(
   if (accessError) throw new Error(`Unable to verify payment access: ${accessError.message}`)
   if (!access) return null
 
-  const amount = Number(kind === "invoice" ? row.total_amount : row.amount)
+  const fullAmt = Number(kind === "invoice" ? row.total_amount : finalAmount(row))
+  const amount = kind === "invoice" ? fullAmt : amountDue(row)
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Payment record has an invalid amount")
 
-  return { id: row.id, kind, clientId: row.client_id, amount, status: row.status }
+  return { id: row.id, kind, clientId: row.client_id, amount, fullAmount: fullAmt, status: row.status }
 }
 
 export async function getPaymentTarget(
@@ -63,9 +68,10 @@ export async function getPaymentTarget(
 ): Promise<PaymentTarget | null> {
   const supabase = serviceClient()
   const table = kind === "invoice" ? "invoices" : "fees"
+  const selectCols = kind === "invoice" ? "id, client_id, total_amount, amount, status" : "id, client_id, amount, amount_paid, status"
   const { data, error } = await supabase
     .from(table)
-    .select("id, client_id, total_amount, amount, status")
+    .select(selectCols)
     .eq("id", targetId)
     .maybeSingle()
 
@@ -73,10 +79,11 @@ export async function getPaymentTarget(
   if (!data) return null
 
   const row = data as unknown as TargetRow
-  const amount = Number(kind === "invoice" ? row.total_amount : row.amount)
+  const fullAmt = Number(kind === "invoice" ? row.total_amount : finalAmount(row))
+  const amount = kind === "invoice" ? fullAmt : amountDue(row)
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Payment record has an invalid amount")
 
-  return { id: row.id, kind, clientId: row.client_id, amount, status: row.status }
+  return { id: row.id, kind, clientId: row.client_id, amount, fullAmount: fullAmt, status: row.status }
 }
 
 export async function markPaymentTargetPaid(
@@ -114,6 +121,7 @@ export async function markPaymentTargetPaid(
     .update({
       status: "paid",
       paid_date: paidAt.slice(0, 10),
+      amount_paid: target.fullAmount ?? target.amount,
       razorpay_order_id: orderId,
       razorpay_payment_id: paymentId,
     })

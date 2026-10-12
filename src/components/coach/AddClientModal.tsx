@@ -1,12 +1,14 @@
 "use client"
 
-import { goalForPackage, isAntenatalPackage } from "@/lib/package-goal"
+import { PACKAGES, calculateEndDate, goalForPackage, isAntenatalPackage, type Package } from "@/lib/package-goal"
+import { validateBillInput, computeBillPreview } from "@/lib/bill-validation"
 
-import { useState, type FormEvent } from "react"
+import { useState, useEffect, type FormEvent } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X } from "lucide-react"
 import toast from "react-hot-toast"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 
 interface Props {
   isOpen: boolean
@@ -20,6 +22,9 @@ interface FormData {
   phone: string
   packageName: string
   feeAmount: string
+  discountValue: string
+  discountMode: "INR" | "PCT"
+  amountPaid: string
   feeCurrency: string
   startDate: string
   notes: string
@@ -31,42 +36,14 @@ interface FormErrors {
   phone?: string
   packageName?: string
   feeAmount?: string
+  discountValue?: string
+  amountPaid?: string
 }
-
-export interface Package {
-  name: string
-  days: number
-}
-
-export const PACKAGES: Package[] = [
-  { name: "One Time On-Call Consult", days: 1 },
-  { name: "Bodybuilding Contest Prep 12 Weeks", days: 84 },
-  { name: "Bodybuilding Contest Prep 24 Weeks", days: 168 },
-  { name: "Complete Online Coaching 12 Weeks", days: 84 },
-  { name: "Complete Online Coaching 24 Weeks", days: 168 },
-  { name: "Complete Online Coaching 1 Year", days: 365 },
-  { name: "Only Nutrition/Diet 12 Weeks", days: 84 },
-  { name: "Only Nutrition/Diet 24 Weeks", days: 168 },
-  { name: "Bodybuilding Posing 4 Sessions", days: 30 },
-  { name: "Bodybuilding Posing 8 Sessions", days: 60 },
-  { name: "Antenatal-Postnatal Complete Care", days: 280 },
-  { name: "Child Nutrition One Time", days: 3 },
-  { name: "Child Nutrition 1 Month", days: 30 },
-  { name: "Offline Training Camp", days: 30 },
-  { name: "Postpartum Care 12 Weeks", days: 84 },
-  { name: "Postpartum Care 24 Weeks", days: 168 },
-]
 
 const CURRENCY_SYMBOL: Record<string, string> = { INR: "₹", USD: "$", EUR: "€", GBP: "£", AED: "AED", CAD: "CA$" }
 
-// isAntenatalPackage / goalForPackage live in a plain file so server routes can use them too.
-export { isAntenatalPackage, goalForPackage }
-
-export function calculateEndDate(startDate: string, days: number): string {
-  const d = new Date(startDate)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().split("T")[0]
-}
+// Shared package list and helpers live in src/lib/package-goal.ts.
+export { PACKAGES, calculateEndDate, isAntenatalPackage, goalForPackage, type Package }
 
 const inputClass =
   "w-full bg-[#1A1A1A] border border-[#333333] rounded-2xl h-14 px-4 text-white outline-none focus:border-[#C9A84C] transition-colors placeholder:text-[#555555]"
@@ -80,6 +57,9 @@ const emptyForm = (): FormData => ({
   phone: "",
   packageName: "",
   feeAmount: "",
+  discountValue: "",
+  discountMode: "INR",
+  amountPaid: "0",
   feeCurrency: "INR",
   startDate: new Date().toISOString().split("T")[0],
   notes: "",
@@ -90,13 +70,60 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const [packageFeeMap, setPackageFeeMap] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (!isOpen) return
+    const supabase = createClient()
+    supabase
+      .from("package_fees")
+      .select("package_name, fee_amount")
+      .then(({ data }: { data: { package_name: string; fee_amount: number }[] | null }) => {
+        if (data) {
+          const map: Record<string, number> = {}
+          for (const row of data) {
+            if (Number(row.fee_amount) > 0) map[row.package_name] = Number(row.fee_amount)
+          }
+          setPackageFeeMap(map)
+        }
+      })
+  }, [isOpen])
 
   function set(field: keyof FormData, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    if (errors[field as keyof FormErrors]) {
+    const next = { ...form, [field]: value }
+    if (field === "packageName" && value && packageFeeMap[value] !== undefined) {
+      next.feeAmount = String(packageFeeMap[value])
+    }
+    setForm(next)
+
+    if (field === "feeAmount" || field === "discountValue" || field === "discountMode" || field === "amountPaid" || field === "packageName") {
+      const billCheck = validateBillInput({
+        packageFee: next.feeAmount,
+        discountValue: next.discountValue,
+        discountMode: next.discountMode,
+        amountPaid: next.amountPaid,
+      })
+      setErrors((prev) => ({
+        ...prev,
+        ...(field === "packageName" ? { packageName: undefined } : {}),
+        feeAmount: billCheck.errors.packageFee,
+        discountValue: billCheck.errors.discountValue,
+        amountPaid: billCheck.errors.amountPaid,
+      }))
+    } else if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
   }
+
+  const preview = computeBillPreview({
+    packageFee: form.feeAmount,
+    discountValue: form.discountValue,
+    discountMode: form.discountMode,
+    amountPaid: form.amountPaid,
+  })
+  const basePkgFee = preview.packageFee
+  const discountRupees = preview.discountRupees
+  const finalPayable = preview.finalAmount
 
   function validate(): boolean {
     const e: FormErrors = {}
@@ -104,8 +131,22 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
     if (form.phone.length !== 10) e.phone = "Enter the 10-digit WhatsApp number"
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email or leave it empty"
     if (!PACKAGES.some((p) => p.name === form.packageName)) e.packageName = "Pick a package"
-    if (!form.feeAmount || Number(form.feeAmount) <= 0) e.feeAmount = "Enter the fee"
+
+    const billValidation = validateBillInput({
+      packageFee: form.feeAmount,
+      discountValue: form.discountValue,
+      discountMode: form.discountMode,
+      amountPaid: form.amountPaid,
+    })
+    if (billValidation.errors.packageFee) e.feeAmount = billValidation.errors.packageFee
+    if (billValidation.errors.discountValue) e.discountValue = billValidation.errors.discountValue
+    if (billValidation.errors.amountPaid) e.amountPaid = billValidation.errors.amountPaid
+    if (!e.feeAmount && billValidation.errors.general) e.feeAmount = billValidation.errors.general
+
     setErrors(e)
+    if (billValidation.firstError) {
+      toast.error(billValidation.firstError)
+    }
     return Object.keys(e).length === 0
   }
 
@@ -116,9 +157,16 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!validate()) return
+    const billValidation = validateBillInput({
+      packageFee: form.feeAmount,
+      discountValue: form.discountValue,
+      discountMode: form.discountMode,
+      amountPaid: form.amountPaid,
+    })
+    if (!billValidation.valid) return
+
     setIsSubmitting(true)
     try {
-      // First payment is due on the start date (day clamped to 1-28 for the monthly cycle).
       const dueDay = Math.min(28, Number(form.startDate.slice(8, 10)) || 1)
       const res = await fetch("/api/clients/create", {
         method: "POST",
@@ -131,10 +179,16 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
           packageName: form.packageName,
           endDate: computedEndDate,
           clientType: computedClientType,
-          feeAmount: Number(form.feeAmount),
+          packageFee: billValidation.values.packageFee,
+          discount: billValidation.values.discountRupees,
+          discountValue: form.discountValue,
+          discountMode: form.discountMode,
+          amountPaid: billValidation.values.amountPaid,
+          feeAmount: billValidation.values.finalAmount,
           feeCurrency: form.feeCurrency || "INR",
           feeDueDay: dueDay,
           startDate: form.startDate,
+          dueDate: form.startDate,
           notes: form.notes.trim() || null,
         }),
       })
@@ -234,33 +288,111 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
                 >
                   <option value="" className="bg-[#1A1A1A]">Pick a package</option>
                   {PACKAGES.map((p) => (
-                    <option key={p.name} value={p.name} className="bg-[#1A1A1A]">{p.name}</option>
+                    <option key={p.name} value={p.name} className="bg-[#1A1A1A]">
+                      {p.name}{packageFeeMap[p.name] ? ` — ₹${packageFeeMap[p.name].toLocaleString("en-IN")}` : ""}
+                    </option>
                   ))}
                 </select>
                 {errors.packageName && <p className="text-red-400 text-sm mt-1">{errors.packageName}</p>}
                 {computedEndDate && <p className="text-[#888888] text-sm mt-1">Plan ends {computedEndDate}</p>}
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-[#A0A0A0] mb-1.5 block">Package Fee</label>
+                  <div
+                    className={cn(
+                      "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors",
+                      errors.feeAmount ? "border-red-500" : "border-[#333333]"
+                    )}
+                  >
+                    <span className="text-[#C9A84C] font-semibold">{CURRENCY_SYMBOL[form.feeCurrency] ?? "₹"}</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={form.feeAmount}
+                      onChange={(e) => set("feeAmount", e.target.value)}
+                      placeholder="10000"
+                      className="flex-1 min-w-0 bg-transparent text-white outline-none placeholder:text-[#555555] ml-2"
+                    />
+                  </div>
+                  {errors.feeAmount && <p className="text-red-400 text-xs mt-1">{errors.feeAmount}</p>}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-sm text-[#A0A0A0]">Discount</label>
+                    <div className="flex rounded-lg bg-[#1A1A1A] border border-[#333333] p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => set("discountMode", "INR")}
+                        className={cn("px-2 py-0.5 rounded-md font-bold cursor-pointer", form.discountMode === "INR" ? "bg-[#C9A84C] text-black" : "text-[#A0A0A0]")}
+                      >
+                        ₹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => set("discountMode", "PCT")}
+                        className={cn("px-2 py-0.5 rounded-md font-bold cursor-pointer", form.discountMode === "PCT" ? "bg-[#C9A84C] text-black" : "text-[#A0A0A0]")}
+                      >
+                        %
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors",
+                      errors.discountValue ? "border-red-500" : "border-[#333333]"
+                    )}
+                  >
+                    <span className="text-[#C9A84C] font-semibold">{form.discountMode === "PCT" ? "%" : (CURRENCY_SYMBOL[form.feeCurrency] ?? "₹")}</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={form.discountValue}
+                      onChange={(e) => set("discountValue", e.target.value)}
+                      placeholder="0"
+                      className="flex-1 min-w-0 bg-transparent text-white outline-none placeholder:text-[#555555] ml-2"
+                    />
+                  </div>
+                  {errors.discountValue && <p className="text-red-400 text-xs mt-1">{errors.discountValue}</p>}
+                </div>
+              </div>
+
               <div>
-                <label className="text-sm text-[#A0A0A0] mb-1.5 block">Fee</label>
+                <label className="text-sm text-[#A0A0A0] mb-1.5 block">Amount Paid So Far</label>
                 <div
                   className={cn(
                     "flex items-center bg-[#1A1A1A] border rounded-2xl h-14 px-4 focus-within:border-[#C9A84C] transition-colors",
-                    errors.feeAmount ? "border-red-500" : "border-[#333333]"
+                    errors.amountPaid ? "border-red-500" : "border-[#333333]"
                   )}
                 >
                   <span className="text-[#C9A84C] font-semibold">{CURRENCY_SYMBOL[form.feeCurrency] ?? "₹"}</span>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="numeric"
-                    value={form.feeAmount}
-                    onChange={(e) => set("feeAmount", e.target.value)}
-                    placeholder="10000"
-                    min="1"
+                    value={form.amountPaid}
+                    onChange={(e) => set("amountPaid", e.target.value)}
+                    placeholder="0"
                     className="flex-1 min-w-0 bg-transparent text-white outline-none placeholder:text-[#555555] ml-2"
                   />
                 </div>
-                {errors.feeAmount && <p className="text-red-400 text-sm mt-1">{errors.feeAmount}</p>}
+                {errors.amountPaid && <p className="text-red-400 text-xs mt-1">{errors.amountPaid}</p>}
+              </div>
+
+              <div className="rounded-xl bg-[#1A1A1A] border border-[#333333] px-4 py-2.5 space-y-1 text-xs text-[#A0A0A0]">
+                <div className="flex items-center justify-between">
+                  <span>Package Fee</span>
+                  <span className="text-white font-semibold">₹{basePkgFee.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex items-center justify-between text-emerald-400">
+                  <span>Discount{form.discountMode === "PCT" ? ` (${preview.discountValue}%)` : ""}</span>
+                  <span className="font-semibold">− ₹{discountRupees.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#333333] pt-1">
+                  <span className="text-white font-semibold">Final Bill</span>
+                  <span className="text-[#C9A84C] font-bold text-sm">₹{finalPayable.toLocaleString("en-IN")}</span>
+                </div>
               </div>
 
               <button

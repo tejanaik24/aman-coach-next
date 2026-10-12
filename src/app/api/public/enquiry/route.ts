@@ -16,6 +16,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
     }
     const body = await request.json()
+    if (body.clientId || body.client_id || body.userId || body.user_id) {
+      return NextResponse.json(
+        { error: "Public form submissions cannot specify a clientId or userId" },
+        { status: 403 }
+      )
+    }
     const name = String(body.name || "").trim()
     const countryCode = String(body.countryCode || "+91").trim()
     const phone = String(body.phone || "").trim()
@@ -44,28 +50,32 @@ export async function POST(request: Request) {
     }
 
     const coachPhone = process.env.AMAN_WHATSAPP || process.env.COACH_WHATSAPP_NUMBER
-    const tasks: Promise<unknown>[] = [
-      sendEnquiryAlertEmail(name, `${countryCode}${phone}`, email, interest).catch((e) => {
-        console.error("Enquiry email alert error:", e)
-        return { success: false, error: e }
-      }),
-    ]
-
-    if (coachPhone) {
-      tasks.push(
-        sendEnquiryAlert(coachPhone, name, `${countryCode}${phone}`, interest).catch((e) => {
-          console.error("Enquiry WhatsApp alert error:", e)
+    const coachTarget = { coachPhone: coachPhone || null }
+    const { isCoachNotificationsEnabled } = await import("@/lib/automation-delivery")
+    if (await isCoachNotificationsEnabled(coachTarget)) {
+      const tasks: Promise<unknown>[] = [
+        sendEnquiryAlertEmail(name, `${countryCode}${phone}`, email, interest, coachTarget).catch((e) => {
+          console.error("Enquiry email alert error:", e)
           return { success: false, error: e }
-        })
-      )
-    }
+        }),
+      ]
 
-    const results = await Promise.allSettled(tasks)
-    results.forEach((res, idx) => {
-      if (res.status === "rejected") {
-        console.error(`Enquiry notification task ${idx} failed:`, res.reason)
+      if (coachPhone) {
+        tasks.push(
+          sendEnquiryAlert(coachPhone, name, `${countryCode}${phone}`, interest, coachTarget).catch((e) => {
+            console.error("Enquiry WhatsApp alert error:", e)
+            return { success: false, error: e }
+          })
+        )
       }
-    })
+
+      const results = await Promise.allSettled(tasks)
+      results.forEach((res, idx) => {
+        if (res.status === "rejected") {
+          console.error(`Enquiry notification task ${idx} failed:`, res.reason)
+        }
+      })
+    }
 
     return NextResponse.json({ success: true, message: "Enquiry submitted" })
   } catch (err: unknown) {
