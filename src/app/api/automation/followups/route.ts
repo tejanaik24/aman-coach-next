@@ -222,6 +222,13 @@ async function run(request: Request) {
     status: string
   }[] = []
 
+  // One message per client per run: a client with several due follow-ups (e.g. 3 check-ins)
+  // used to get one WhatsApp each. Check-in follow-ups go first so the check-in template wins.
+  const notifiedClients = new Set<string>()
+  allOpen.sort(
+    (x, y) => Number(y.type === "checkin") - Number(x.type === "checkin") || x.due_date.localeCompare(y.due_date)
+  )
+
   for (const f of allOpen) {
     if (f.done_at) continue
 
@@ -347,7 +354,12 @@ async function run(request: Request) {
     let waStatus: "ok" | "failed" | "no_phone" = phone ? "failed" : "no_phone"
     let emailStatus: "ok" | "failed" | "no_email" | "skipped" = realEmail ? "skipped" : "no_email"
 
-    if (approvedTemplate === "checkin_reminder") {
+    // Already messaged this client in this run: log this follow-up as handled, send nothing.
+    const merged = notifiedClients.has(f.client_id)
+
+    if (merged) {
+      // nothing to send
+    } else if (approvedTemplate === "checkin_reminder") {
       if (phone) {
         const waRes = await sendCheckinReminder(phone, clientName)
         waStatus = waRes.success && !waRes.dryRun ? "ok" : "failed"
@@ -369,9 +381,11 @@ async function run(request: Request) {
       }
     }
 
-    const channelSummary = `wa:${waStatus},email:${emailStatus}`
+    // "merged:ok" keeps parseReminderLogType treating it as a success so it is not retried tomorrow.
+    const channelSummary = merged ? "merged:ok" : `wa:${waStatus},email:${emailStatus}`
     const logReminderType = `${stageKey}|${channelSummary}`
-    const sendSucceeded = waStatus === "ok" || emailStatus === "ok"
+    const sendSucceeded = merged || waStatus === "ok" || emailStatus === "ok"
+    if (sendSucceeded) notifiedClients.add(f.client_id)
 
     if (sendSucceeded) {
       await db.from("reminder_log").insert({
@@ -394,7 +408,7 @@ async function run(request: Request) {
       dueDate: f.due_date,
       stage: stageKey.replace(`followup_${f.id}_${f.due_date}_`, ""),
       channels: channelSummary,
-      status: sendSucceeded ? "sent" : "failed",
+      status: merged ? "merged" : sendSucceeded ? "sent" : "failed",
     })
   }
 
