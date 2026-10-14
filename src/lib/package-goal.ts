@@ -12,6 +12,8 @@ export const PACKAGES: Package[] = [
   { name: "Complete Online Coaching 12 Weeks", days: 84 },
   { name: "Complete Online Coaching 24 Weeks", days: 168 },
   { name: "Complete Online Coaching 1 Year", days: 365 },
+  // Legacy plan, admin/billing only. Public /packages page has its own list, so this stays hidden from visitors.
+  { name: "Online Only Workout Plan 12 Weeks", days: 84 },
   { name: "Only Nutrition/Diet 12 Weeks", days: 84 },
   { name: "Only Nutrition/Diet 24 Weeks", days: 168 },
   { name: "Bodybuilding Posing 4 Sessions", days: 30 },
