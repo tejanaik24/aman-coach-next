@@ -25,3 +25,4 @@ for (const { input, expected } of cases) {
 }
 
 console.log("\nALL ASSERTIONS PASSED ✅")
+
