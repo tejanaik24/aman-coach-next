@@ -253,33 +253,18 @@ export default function EditClientSheet({ isOpen, onClose, client, onSuccess, on
                 </select>
               </div>
 
-              {/* Fee & Due Day */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-                    Monthly Fee (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={feeAmount}
-                    onChange={(e) => setFeeAmount(e.target.value)}
-                    placeholder="e.g. 15000"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-                    Due Day of Month
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={feeDueDay}
-                    onChange={(e) => setFeeDueDay(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
+              {/* Fee */}
+              <div>
+                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                  Package Fee (₹)
+                </label>
+                <input
+                  type="number"
+                  value={feeAmount}
+                  onChange={(e) => setFeeAmount(e.target.value)}
+                  placeholder="e.g. 15000"
+                  className={inputClass}
+                />
               </div>
 
               {/* Start & End Dates */}

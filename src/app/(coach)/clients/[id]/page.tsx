@@ -184,7 +184,7 @@ export default function ClientDetailPage() {
       const res = await fetch(`/api/coach/clients/${id}/login-link`, { method: "POST" })
       const data = await res.json().catch(() => ({}))
       if (!res.ok || !data.url) { toast.error(data.error ?? "Could not make the login link"); return }
-      const first = (client?.profile?.name ?? "").split(" ")[0] || "there"
+      const first = (client?.profile?.name ?? "").trim() || "there"
       const text = `Hi ${first}, tap this link to open your Aman Khurana Fitness app (no password needed): ${data.url}`
       const wa = waLink(client?.profile?.phone ?? null, text)
       if (!wa) { await navigator.clipboard.writeText(data.url); toast.success("No number saved. Link copied."); return }
@@ -289,7 +289,7 @@ export default function ClientDetailPage() {
   const name = client?.profile?.name ?? "Unknown"
   const phone = client?.profile?.phone
   const avatarUrl = client?.profile?.avatar_url ?? null
-  const waHref = waLink(phone ?? null, `Hi ${name.split(" ")[0]}, this is Aman. `)
+  const waHref = waLink(phone ?? null, `Hi ${name.trim()}, this is Aman. `)
   const daysActive = client ? differenceInDays(new Date(), new Date(client.start_date)) : 0
   const activeWorkout = workoutPlans.find((p) => p.is_active)
   const activeNutrition = nutritionPlans.find((p) => p.is_active)
@@ -314,7 +314,7 @@ export default function ClientDetailPage() {
 
   function buildClientBillWaText(f: Fee): string {
     const m = resolveFeeMetrics(f)
-    const first = name.split(" ")[0]
+    const first = name.trim()
     const due = format(new Date(f.due_date + "T00:00:00"), "dd MMM yyyy")
     const upiLink = generateUpiPaymentUrl(m.balanceDue || m.amount, name, m.invNum)
     const lines = [
@@ -556,7 +556,7 @@ export default function ClientDetailPage() {
                       </div>
                       <div>
                         <span className="text-[9px] text-[#8A7F70] uppercase">Fee</span>
-                        <p className="font-heading font-bold text-[#181310] mt-0.5">₹{Number(client.fee_amount).toLocaleString("en-IN")}/mo</p>
+                        <p className="font-heading font-bold text-[#181310] mt-0.5">₹{Number(client.fee_amount).toLocaleString("en-IN")}</p>
                       </div>
                     </div>
                   )}
