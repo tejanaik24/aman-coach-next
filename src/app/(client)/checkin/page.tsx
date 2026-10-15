@@ -62,6 +62,9 @@ type CheckinFormData = {
   right_side_pic: string[]
   fav_pose_pic: string[]
   mandatory_pose_pic: string[]
+
+  // Optional BCA report (photo or PDF path in checkin-photos bucket)
+  bca_report: string[]
 }
 
 const defaultCheckinForm: CheckinFormData = {
@@ -91,7 +94,8 @@ const defaultCheckinForm: CheckinFormData = {
   both_side_pic: [],
   right_side_pic: [],
   fav_pose_pic: [],
-  mandatory_pose_pic: []
+  mandatory_pose_pic: [],
+  bca_report: []
 }
 
 // ─── Skeleton (matches ProgressSkeleton style) ─────────────────────────────
@@ -199,7 +203,7 @@ export default function CheckinFormPage() {
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)
 
-  const TOTAL_STEPS = 27
+  const TOTAL_STEPS = 28
 
   const set = useCallback(<K extends keyof CheckinFormData>(key: K, val: CheckinFormData[K]) => {
     setForm(prev => {
@@ -523,7 +527,7 @@ export default function CheckinFormPage() {
             <button onClick={handleNext} className="w-full py-4 rounded-2xl bg-[#FF6A1A] text-sm font-extrabold uppercase tracking-wider text-white hover:bg-[#FF8540] shadow-[0_0_20px_rgba(255,106,26,0.4)] transition-all">
               Let's Go 💪
             </button>
-            <p className="text-xs text-zinc-500 font-mono">27 questions • Your coach will review within 24hrs</p>
+            <p className="text-xs text-zinc-500 font-mono">28 questions • Your coach will review within 24hrs</p>
           </div>
         )}
 
@@ -938,6 +942,21 @@ export default function CheckinFormPage() {
             />
           </QuestionWrapper>
         )}
+        {/* STEP 28: BCA Report (Optional) */}
+        {step === 28 && (
+          <QuestionWrapper
+            title="BCA Report (Optional)"
+            subtitle="Attach your latest Body Composition Analysis report — photo or PDF. Skip if you don't have one."
+          >
+            <PhotoUploadScreen
+              userId={user?.id}
+              label="BCA REPORT ATTACHMENT"
+              subtitle="Photo or PDF, if available"
+              files={form.bca_report}
+              onFilesChange={(files) => set("bca_report", files)}
+            />
+          </QuestionWrapper>
+        )}
       </div>
 
       {step > 0 && (
@@ -945,7 +964,7 @@ export default function CheckinFormPage() {
           onNext={handleNext}
           isLastStep={step === TOTAL_STEPS}
           submitting={submitting}
-          showSkip={step === 26 || step === 27}
+          showSkip={step === 26 || step === 27 || step === 28}
           onSkip={handleNext}
         />
       )}

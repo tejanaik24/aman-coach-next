@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react"
 import { ClipboardCheck, ChevronRight, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
+import { openUrl } from "@/lib/utils"
 import toast from "react-hot-toast"
 import type { Checkin, Client, Profile } from "@/types"
 
@@ -18,6 +19,17 @@ interface CheckinWithClient extends Checkin {
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+}
+
+async function openCheckinFile(path: string) {
+  try {
+    const res = await fetch(`/api/checkin/photo-url?path=${encodeURIComponent(path)}`)
+    if (!res.ok) throw new Error()
+    const { url } = await res.json()
+    openUrl(url)
+  } catch {
+    toast.error("Could not open file")
+  }
 }
 
 function CheckinCardSkeleton() {
@@ -185,6 +197,25 @@ export default function CheckinsPage() {
                         <p className="text-[#8A7F70] text-[10px] mt-0.5">
                           {checkin.week_number ? `Week ${checkin.week_number} · ` : ""}{format(new Date(checkin.submitted_at), "d MMM yyyy")}
                         </p>
+                        {(() => {
+                          const v = (checkin.form_data as unknown as Record<string, unknown> | null)?.bca_report
+                          const path = Array.isArray(v) && typeof v[0] === "string" ? v[0] : typeof v === "string" && v ? v : null
+                          return (
+                            <p className="text-[10px] mt-0.5">
+                              {path ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); openCheckinFile(path) }}
+                                  className="text-accent-orange font-semibold underline cursor-pointer"
+                                >
+                                  Open BCA report
+                                </button>
+                              ) : (
+                                <span className="text-[#8A7F70]">No BCA report</span>
+                              )}
+                            </p>
+                          )
+                        })()}
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {isReviewed ? (

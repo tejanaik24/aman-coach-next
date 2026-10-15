@@ -215,6 +215,7 @@ export default function ClientPaymentsPage() {
             <div className="rounded-xl bg-bg-elevated border border-border-subtle px-4 py-3 space-y-2">
               <span className="text-[11px] text-text-muted block">Or pay by bank transfer ({COACH_BANK.bank})</span>
               {[
+                { label: "Account name", value: COACH_BANK.accountName },
                 { label: "Account number", value: COACH_BANK.accountNo },
                 { label: "IFSC", value: COACH_BANK.ifsc },
               ].map((row) => (

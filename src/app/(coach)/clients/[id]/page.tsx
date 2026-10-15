@@ -34,7 +34,7 @@ import EditClientSheet from "@/components/coach/EditClientSheet"
 import PaymentModal from "@/components/coach/PaymentModal"
 import { waLink, buildFollowupWaText } from "@/lib/quick-manage"
 import { generatePaymentReceiptPdf, generateUpiPaymentUrl, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
-import { COACH_UPI_ID } from "@/lib/upi"
+import { COACH_UPI_ID, COACH_BANK } from "@/lib/upi"
 import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
 import { mapFeeToBill, type MappedBill } from "@/lib/bill-validation"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
@@ -49,6 +49,25 @@ const FOLLOWUP_LABEL: Record<string, string> = { checkin: "Check-in", payment: "
 function flatField(c: Checkin, key: string): string | undefined {
   const v = (c.form_data as unknown as Record<string, unknown> | null)?.[key]
   return v == null || v === "" ? undefined : String(v)
+}
+
+// Optional BCA report path stored inside the existing check-in form_data (no schema change).
+function bcaReportPath(c: Checkin): string | null {
+  const v = (c.form_data as unknown as Record<string, unknown> | null)?.bca_report
+  if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") return v[0]
+  if (typeof v === "string" && v) return v
+  return null
+}
+
+async function openCheckinFile(path: string) {
+  try {
+    const res = await fetch(`/api/checkin/photo-url?path=${encodeURIComponent(path)}`)
+    if (!res.ok) throw new Error()
+    const { url } = await res.json()
+    openUrl(url)
+  } catch {
+    toast.error("Could not open file")
+  }
 }
 
 function getInitials(name: string): string {
@@ -332,6 +351,11 @@ export default function ClientDetailPage() {
       ``,
       `📲 *Pay by UPI*: ${COACH_UPI_ID} (Aman Khurana Fitness)`,
       `🔗 *UPI Link*: ${upiLink}`,
+      ``,
+      `🏦 *Bank Transfer* (${COACH_BANK.bank})`,
+      `A/c Name: ${COACH_BANK.accountName}`,
+      `A/c No: ${COACH_BANK.accountNo}`,
+      `IFSC: ${COACH_BANK.ifsc}`,
       ``,
       `Thank you! — Aman Khurana (#teamAKF)`,
     ]
@@ -739,6 +763,25 @@ export default function ClientDetailPage() {
                               <ScoreBar label="Workout adherence" value={c.adherence_workout} />
                               <ScoreBar label="Nutrition adherence" value={c.adherence_nutrition} />
                             </div>
+                            {(() => {
+                              const bcaPath = bcaReportPath(c)
+                              return (
+                                <div className="bg-[#181310]/5 rounded-xl p-3">
+                                  <p className="text-[#8A7F70] text-[10px] uppercase font-bold mb-1">BCA Report</p>
+                                  {bcaPath ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openCheckinFile(bcaPath)}
+                                      className="text-accent-orange text-sm font-semibold underline cursor-pointer"
+                                    >
+                                      Open BCA report
+                                    </button>
+                                  ) : (
+                                    <p className="text-[#8A7F70] text-sm">No BCA report</p>
+                                  )}
+                                </div>
+                              )
+                            })()}
                             {c.notes && (
                               <div className="bg-[#181310]/5 rounded-xl p-3">
                                 <p className="text-[#8A7F70] text-[10px] uppercase font-bold mb-1">Client Note</p>

@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { jsPDF } from "jspdf"
 import { createClient as createSessionClient } from "@/lib/supabase/client"
-import { COACH_UPI_ID, generateUpiLink } from "@/lib/upi"
+import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK, generateUpiLink } from "@/lib/upi"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -404,6 +404,23 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   doc.text(isPaid ? "PAID IN FULL" : "BALANCE DUE:", labelX, y + 2.5)
   doc.text(fmtCurr(pendingAmount), right - 3, y + 2.5, { align: "right" })
   y += 18
+
+  // Payment Methods (UPI + Bank transfer) — drawn in the free column to the
+  // right of the Terms card (which occupies left..left+115), above the footer.
+  const termsXEnd = left + 115 + 6
+  doc.setFontSize(7.5)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...gray)
+  doc.text("PAYMENT METHODS", termsXEnd, 218)
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "normal")
+  doc.text(`UPI: ${COACH_UPI_ID}`, termsXEnd, 224)
+  doc.text(`(${COACH_UPI_NAME})`, termsXEnd, 229)
+  doc.text("Bank Transfer:", termsXEnd, 237)
+  doc.text(`${COACH_BANK.accountName}`, termsXEnd, 242)
+  doc.text(`A/c No. ${COACH_BANK.accountNo}`, termsXEnd, 247)
+  doc.text(`IFSC ${COACH_BANK.ifsc}`, termsXEnd, 252)
+  doc.text(`${COACH_BANK.bank}`, termsXEnd, 257)
 
   // Terms & Conditions Card (Enlarged & Visually Highlighted per Task B5)
   const tcWidth = 115

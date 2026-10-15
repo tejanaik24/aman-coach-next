@@ -7,7 +7,7 @@ import { format, differenceInCalendarDays } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { generatePaymentReceiptPdf, generateUpiPaymentUrl, markInvoicePaid, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
-import { COACH_UPI_ID } from "@/lib/upi"
+import { COACH_UPI_ID, COACH_BANK } from "@/lib/upi"
 import { paidSoFar, amountDue } from "@/lib/fee-math"
 import { mapFeeToBill, type MappedBill } from "@/lib/bill-validation"
 import { waLink } from "@/lib/quick-manage"
@@ -302,6 +302,11 @@ export default function FeesPage() {
       ``,
       `📲 *Pay by UPI*: ${COACH_UPI_ID} (Aman Khurana Fitness)`,
       `🔗 *UPI Link*: ${upiLink}`,
+      ``,
+      `🏦 *Bank Transfer* (${COACH_BANK.bank})`,
+      `A/c Name: ${COACH_BANK.accountName}`,
+      `A/c No: ${COACH_BANK.accountNo}`,
+      `IFSC: ${COACH_BANK.ifsc}`,
       ``,
       `Thank you! — Aman Khurana (#teamAKF)`,
     ]
