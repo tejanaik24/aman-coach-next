@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     // Email is optional: clients sign in with their mobile number, which maps to a placeholder email.
     const phoneDigits = typeof phone === "string" ? phone.replace(/\D/g, "") : ""
     const rawEmail = typeof body.email === "string" ? body.email.trim() : ""
-    const email = rawEmail || (phoneDigits.length >= 10 ? phoneEmail(phoneDigits) : "")
+    const email = rawEmail || (phoneDigits.length >= 6 ? phoneEmail(phoneDigits) : "")
 
     const rawPkg = packageFee !== undefined && packageFee !== null ? packageFee : feeAmount
     const rawDisc = discountValue !== undefined && discountValue !== null ? discountValue : discount
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
       email,
       password: initialPassword,
       email_confirm: true,
-      user_metadata: { name, role: "client", phone: phone ?? null },
+      user_metadata: { name, role: "client", phone: phoneDigits || null },
     })
 
     if (authError) {

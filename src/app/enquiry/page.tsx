@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 import { PublicPageShell } from "@/components/shared/PublicPageShell"
+import { COUNTRIES } from "@/lib/country-codes"
 
 const INTEREST_OPTIONS = [
   "One time on call consult",
@@ -98,12 +99,18 @@ function EnquiryForm() {
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
             <label className="text-text-muted text-[11px] font-medium uppercase tracking-wide">Code*</label>
-            <input
+            <select
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-3 text-sm text-text-primary outline-none"
+              className="w-full bg-bg-elevated border border-border-subtle focus:border-accent-orange rounded-lg py-2.5 px-2 text-xs text-text-primary outline-none cursor-pointer"
               required
-            />
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.name} value={c.dial} className="bg-[#1A1A1A] text-white">
+                  {c.flag} {c.name} ({c.dial})
+                </option>
+              ))}
+            </select>
           </div>
           <div className="col-span-2 space-y-1">
             <label className="text-text-muted text-[11px] font-medium uppercase tracking-wide">Mobile Number*</label>

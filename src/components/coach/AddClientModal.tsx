@@ -9,6 +9,7 @@ import { X } from "lucide-react"
 import toast from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { COUNTRIES, phoneDigitRange } from "@/lib/country-codes"
 
 interface Props {
   isOpen: boolean
@@ -19,6 +20,7 @@ interface Props {
 interface FormData {
   name: string
   email: string
+  countryCode: string
   phone: string
   packageName: string
   feeAmount: string
@@ -54,6 +56,7 @@ const errorInputClass =
 const emptyForm = (): FormData => ({
   name: "",
   email: "",
+  countryCode: "+91",
   phone: "",
   packageName: "",
   feeAmount: "",
@@ -128,7 +131,10 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
   function validate(): boolean {
     const e: FormErrors = {}
     if (form.name.trim().length < 2) e.name = "Enter the client's name"
-    if (form.phone.length !== 10) e.phone = "Enter the 10-digit WhatsApp number"
+    const range = phoneDigitRange(form.countryCode)
+    if (form.phone.length < range.min || form.phone.length > range.max) {
+      e.phone = range.min === range.max ? `Enter the ${range.min}-digit WhatsApp number` : "Enter the WhatsApp number without the country code"
+    }
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email or leave it empty"
     if (!PACKAGES.some((p) => p.name === form.packageName)) e.packageName = "Pick a package"
 
@@ -174,7 +180,7 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: `+91${form.phone}`,
+          phone: `${form.countryCode.replace(/\D/g, "")}${form.phone.replace(/\D/g, "")}`,
           goal: goalForPackage(form.packageName),
           packageName: form.packageName,
           endDate: computedEndDate,
@@ -265,13 +271,24 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: Props) {
                     errors.phone ? "border-red-500" : "border-[#333333]"
                   )}
                 >
-                  <span className="text-[#C9A84C] font-semibold text-sm">+91</span>
+                  <select
+                    aria-label="Country code"
+                    value={form.countryCode}
+                    onChange={(e) => set("countryCode", e.target.value)}
+                    className="bg-transparent text-[#C9A84C] font-semibold text-sm outline-none cursor-pointer max-w-[6.5rem] shrink-0"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.name} value={c.dial} className="bg-[#1A1A1A] text-white">
+                        {c.flag} {c.name} ({c.dial})
+                      </option>
+                    ))}
+                  </select>
                   <div className="w-px h-5 bg-[#333333] mx-3 flex-shrink-0" />
                   <input
                     type="tel"
                     inputMode="numeric"
                     value={form.phone}
-                    onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, phoneDigitRange(form.countryCode).max))}
                     placeholder="9876543210"
                     className="flex-1 bg-transparent text-white outline-none placeholder:text-[#555555]"
                   />
