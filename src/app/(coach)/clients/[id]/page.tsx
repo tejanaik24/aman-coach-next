@@ -289,7 +289,7 @@ export default function ClientDetailPage() {
   const name = client?.profile?.name ?? "Unknown"
   const phone = client?.profile?.phone
   const avatarUrl = client?.profile?.avatar_url ?? null
-  const waHref = waLink(phone ?? null, `Hi ${name.trim()}, this is Aman. `)
+  const waHref = waLink(phone ?? null, `Dear ${name.trim()}, `)
   const daysActive = client ? differenceInDays(new Date(), new Date(client.start_date)) : 0
   const activeWorkout = workoutPlans.find((p) => p.is_active)
   const activeNutrition = nutritionPlans.find((p) => p.is_active)

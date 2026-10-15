@@ -361,7 +361,7 @@ async function run(request: Request) {
       // nothing to send
     } else if (approvedTemplate === "checkin_reminder") {
       if (phone) {
-        const waRes = await sendCheckinReminder(phone, clientName)
+        const waRes = await sendCheckinReminder(phone, clientName, undefined, f.due_date)
         waStatus = waRes.success && !waRes.dryRun ? "ok" : "failed"
       }
       if (waStatus !== "ok" && realEmail) {

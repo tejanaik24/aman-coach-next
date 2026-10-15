@@ -69,16 +69,16 @@ export function buildFollowupWaText(name: string, type: string, dueDate?: string
         ? `will be due on ${dateText}`
         : dueDate === todayStr
           ? `is due on ${dateText}`
-          : `has been due since ${dateText}`
+          : `has been overdue since ${dateText}`
     return `Dear ${first}, this is to Remind you that, Fee For your coaching package with Aman Khurana Fitness ${when}, kindly Timely Renew it, if you wish to continue with our services or if you wish to upgrade or change your package, kindly discuss with your Coach Aman Khurana for the same. Thank you.${cleanNote}\n\nView your bill and pay here: https://www.amankhuranafitness.com/payments\n\nThanks & Regards\n#teamAKF`
   }
   if (type === "feedback") {
-    return `Hi ${first}, this is Aman. How is Diet & Training going on. Following up on your progress & feedback. How are you feeling on the plan?${cleanNote}\n\n— Coach Aman`
+    return `Dear ${first}, How is Diet & Training going on. Following up on your progress & feedback. How are you feeling on the plan?${cleanNote}\n\nRegards\nAman Khurana #teamAKF`
   }
   if (note?.trim()) {
-    return `Hi ${first}, this is Aman. ${note.trim()}\n\n— Coach Aman`
+    return `Dear ${first}, ${note.trim()}\n\nRegards\nAman Khurana #teamAKF`
   }
-  return `Hi ${first}, this is Aman. Just checking in with you 🙂\n\n— Coach Aman`
+  return `Dear ${first}, Just checking in with you 🙂\n\nRegards\nAman Khurana #teamAKF`
 }
 
 function relDay(d: Date, today: Date) {

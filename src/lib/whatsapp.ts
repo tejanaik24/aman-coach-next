@@ -356,29 +356,61 @@ export async function sendCheckinReminder(
   phone: string,
   clientName: string,
   checkinUrl: string = `${SITE_URL}/checkin`,
+  dueDate?: string,
 ) {
-  const var1 = (clientName || "").trim() || "Not given";
-  const var2 = (checkinUrl || "").trim() || "Not given";
+  const name = (clientName || "").trim() || "there";
+  const url = (checkinUrl || "").trim() || `${SITE_URL}/checkin`;
+  const validDate = Boolean(dueDate && /^\d{4}-\d{2}-\d{2}$/.test(dueDate));
+  const dateFormatted = validDate
+    ? `${dueDate!.slice(8, 10)}-${dueDate!.slice(5, 7)}-${dueDate!.slice(0, 4)}`
+    : dueDate || "your scheduled date";
 
-  const components = [
-    {
-      type: "body",
-      parameters: [
-        { type: "text", text: var1 },
-        { type: "text", text: var2 },
+  // 1. Primary: checkin_reminder_v2 (name, dd-MM-yyyy date, link)
+  try {
+    const v2Result = await sendWhatsAppTemplate(
+      phone,
+      "checkin_reminder_v2",
+      "en",
+      [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: name },
+            { type: "text", text: dateFormatted },
+            { type: "text", text: url },
+          ],
+        },
       ],
-    },
-  ];
+    );
 
+    if (v2Result.success && !v2Result.dryRun) {
+      return v2Result;
+    }
+  } catch (err: unknown) {
+    console.error(
+      "[Meta WhatsApp] Exception sending template checkin_reminder_v2:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  // 2. Fallback to old "checkin_reminder" template (name, link)
   try {
     const templateResult = await sendWhatsAppTemplate(
       phone,
       "checkin_reminder",
       "en",
-      components,
+      [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: name },
+            { type: "text", text: url },
+          ],
+        },
+      ],
     );
 
-    if (templateResult.success) {
+    if (templateResult.success && !templateResult.dryRun) {
       return templateResult;
     }
 
@@ -393,17 +425,11 @@ export async function sendCheckinReminder(
     );
   }
 
-  // Fallback to free-text send if template send fails
+  // 3. Fallback to free-text send in Aman's own wording
   console.warn(
-    "[Meta WhatsApp] Falling back to free-text message for check-in reminder",
+    "[Meta WhatsApp] Falling back to free-text message for check-in reminder in Aman's wording",
   );
-  const text =
-    `⏰ *CHECK-IN REMINDER*\n\n` +
-    `Hi ${clientName || "Client"},\n` +
-    `Your check-in is due! Regular check-ins help Coach Aman track your progress, measurements, and adjust your nutrition & training plans.\n\n` +
-    `📝 Complete your check-in form now (takes ~3 mins):\n` +
-    `${checkinUrl || `${SITE_URL}/checkin`}\n\n` +
-    `Thank you!`;
+  const text = `Dear ${name}, this is to Remind you that, Your Check - In / Feedback is scheduled for ${dateFormatted}, Kindly Make Sure to Fill Up the form Attached below Positively on your scheduled date, to Avoid Any Delay In Your Updated Plan.\n${url}\n\nRegards\nAman Khurana #teamAKF`;
   return sendWhatsAppText(phone, text);
 }
 
@@ -654,7 +680,7 @@ export async function sendFeeReminder(
 
   // Aman's own fee template (his old app), with the stage wording he asked for. No UPI/bank text: link only.
   const when =
-    stage === "before" ? `will be due on ${dueDate}` : stage === "due" ? `is due on ${dueDate}` : `has been due since ${dueDate}`
+    stage === "before" ? `will be due on ${dueDate}` : stage === "due" ? `is due on ${dueDate}` : `has been overdue since ${dueDate}`
   return sendWhatsAppText(
     phone,
     `Dear ${name}, this is to Remind you that, Fee For your "${pkg}" package with Aman Khurana Fitness ${when}, kindly Timely Renew it, if you wish to continue with our services or if you wish to upgrade or change your package, kindly discuss with your Coach Aman Khurana for the same. Thank you.\n\nView your bill and pay here: ${link}\n\nThanks & Regards\n#teamAKF`,

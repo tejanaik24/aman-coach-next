@@ -46,7 +46,7 @@ async function run(request: Request) {
 
   const { data: fees, error } = await db
     .from("fees")
-    .select("id, client_id, amount, amount_paid, due_date, status, package_name")
+    .select("id, client_id, amount, amount_paid, due_date, status")
     .in("status", ["pending", "overdue"])
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -106,7 +106,7 @@ async function run(request: Request) {
     const res = await sendFeeReminder(
       phone,
       profile?.name ?? "",
-      fee.package_name || client?.package_name || "",
+      client?.package_name || "",
       prettyDate(fee.due_date),
       stage,
     )
