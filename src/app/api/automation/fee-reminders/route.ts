@@ -25,13 +25,9 @@ function stageFor(diff: number): FeeReminderStage | null {
   return null
 }
 
+// dd-MM-yyyy, same as Aman's manual messages (quick-manage.ts) and the check-in reminder.
 function prettyDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  })
+  return `${iso.slice(8, 10)}-${iso.slice(5, 7)}-${iso.slice(0, 4)}`
 }
 
 async function run(request: Request) {

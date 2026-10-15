@@ -116,7 +116,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     })
     setBusy(false)
     if (error) { toast.error("Could not add. Try again."); return }
-    toast.success(`${t.title} added for ${clientName.split(" ")[0]}`)
+    toast.success(`${t.title} added for ${clientName.trim()}`)
     setTemplateKind(null)
     load()
   }
@@ -130,7 +130,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
 
   // Removes the plan from this client only. The file stays: saved templates can share it.
   async function remove(d: Doc) {
-    if (!window.confirm(`Delete "${d.title}" for ${clientName.split(" ")[0]}? They will no longer see it in the app.`)) return
+    if (!window.confirm(`Delete "${d.title}" for ${clientName.trim()}? They will no longer see it in the app.`)) return
     const supabase = createClient()
     const { error } = await supabase.from("client_documents").delete().eq("id", d.id)
     if (error) { toast.error("Could not delete. Try again."); return }
@@ -138,7 +138,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     toast.success("Plan deleted")
   }
 
-  const first = clientName.split(" ")[0]
+  const first = clientName.trim()
   const msg = (d: Doc) =>
     `Hi ${first}, your ${d.kind} plan "${d.title}" is ready 💪 Open it in your app: ${typeof window !== "undefined" ? window.location.origin : ""}/${d.kind === "diet" ? "diet" : "workout"}`
 

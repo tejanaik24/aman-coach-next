@@ -94,6 +94,8 @@ async function run(request: Request) {
   const rawDate = url.searchParams.get("date") ?? url.searchParams.get("today") ?? bodyParams.date ?? bodyParams.today
   const today = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : todayInIndia()
   const filterClientId = url.searchParams.get("clientId") ?? bodyParams.clientId ?? null
+  // ?dryRun=1: no database writes and no messages, only lists what would happen.
+  const dryRun = url.searchParams.get("dryRun") === "1"
   const simulatedSentAt =
     rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
       ? new Date(`${rawDate}T09:00:00+05:30`).toISOString()
@@ -142,10 +144,12 @@ async function run(request: Request) {
     let open = openCheckinByClient.get(client.id)
 
     if (open && open.auto_created && last && last > open.created_at) {
-      const { error } = await db
-        .from("followups")
-        .update({ result: "successful", done_at: simulatedSentAt })
-        .eq("id", open.id)
+      const { error } = dryRun
+        ? { error: null }
+        : await db
+            .from("followups")
+            .update({ result: "successful", done_at: simulatedSentAt })
+            .eq("id", open.id)
       if (!error) {
         closed++
         open = undefined
@@ -157,17 +161,20 @@ async function run(request: Request) {
       const base = last ? last.slice(0, 10) : client.start_date
       if (!base) continue
       const due = addDays(base, CHECKIN_EVERY_DAYS)
-      const { data, error } = await db
-        .from("followups")
-        .insert({
-          client_id: client.id,
-          coach_id: client.coach_id,
-          type: "checkin",
-          due_date: due < today ? today : due,
-          auto_created: true,
-        })
-        .select("id, client_id, type, due_date, note, created_at, done_at, auto_created")
-        .single()
+      const row = {
+        client_id: client.id,
+        coach_id: client.coach_id,
+        type: "checkin",
+        due_date: due < today ? today : due,
+        auto_created: true,
+      }
+      const { data, error } = dryRun
+        ? { data: { ...row, id: `dry-run-${client.id}`, note: null, created_at: simulatedSentAt, done_at: null }, error: null }
+        : await db
+            .from("followups")
+            .insert(row)
+            .select("id, client_id, type, due_date, note, created_at, done_at, auto_created")
+            .single()
       if (!error && data) {
         created++
         openCheckinByClient.set(client.id, data as FollowupRow)
@@ -278,7 +285,9 @@ async function run(request: Request) {
       }
     } else if (diff === 0) {
       stageKey = `followup_${f.id}_${f.due_date}_due`
-      if (successfulStageKeys.has(`${f.client_id}:${stageKey}`)) {
+      // Check-ins: Aman's reminder goes 2 days before, not again on the day (only if the early one went out).
+      const preSent = successfulStageKeys.has(`${f.client_id}:followup_${f.id}_${f.due_date}_pre`)
+      if (successfulStageKeys.has(`${f.client_id}:${stageKey}`) || (f.type === "checkin" && preSent)) {
         reminders.push({
           followupId: f.id,
           clientId: f.client_id,
@@ -357,6 +366,20 @@ async function run(request: Request) {
     // Already messaged this client in this run: log this follow-up as handled, send nothing.
     const merged = notifiedClients.has(f.client_id)
 
+    if (dryRun && !merged) {
+      notifiedClients.add(f.client_id)
+      reminders.push({
+        followupId: f.id,
+        clientId: f.client_id,
+        type: f.type,
+        dueDate: f.due_date,
+        stage: stageKey.replace(`followup_${f.id}_${f.due_date}_`, ""),
+        channels: approvedTemplate ? "wa:checkin_reminder_v2" : "wa:text",
+        status: "would_send",
+      })
+      continue
+    }
+
     if (merged) {
       // nothing to send
     } else if (approvedTemplate === "checkin_reminder") {
@@ -387,7 +410,7 @@ async function run(request: Request) {
     const sendSucceeded = merged || waStatus === "ok" || emailStatus === "ok"
     if (sendSucceeded) notifiedClients.add(f.client_id)
 
-    if (sendSucceeded) {
+    if (sendSucceeded && !dryRun) {
       await db.from("reminder_log").insert({
         client_id: f.client_id,
         reminder_type: logReminderType,
@@ -412,7 +435,7 @@ async function run(request: Request) {
     })
   }
 
-  return NextResponse.json({ today, created, closed, reminders })
+  return NextResponse.json({ today, dryRun, created, closed, reminders })
 }
 
 // Vercel cron calls GET; manual/n8n calls can use POST.
