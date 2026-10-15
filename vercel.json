@@ -1,6 +1,7 @@
 {
   "regions": ["bom1"],
   "crons": [
-    { "path": "/api/automation/followups", "schedule": "30 3 * * *" }
+    { "path": "/api/automation/followups", "schedule": "30 3 * * *" },
+    { "path": "/api/automation/fee-reminders", "schedule": "40 3 * * *" }
   ]
 }
