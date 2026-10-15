@@ -14,10 +14,8 @@ import {
   type ClientBadge,
 } from "@/lib/badges";
 import { ACTIVE_OFFER, getDailyTip } from "@/lib/dailyTip";
-import { getAppointments } from "@/lib/supabase-store";
 import { createClient } from "@/lib/supabase/client";
 import type {
-  Appointment,
   Checkin,
   Client,
   NutritionPlan,
@@ -28,7 +26,6 @@ import { getISOWeek, getISOWeekYear, startOfISOWeek, subWeeks } from "date-fns";
 import {
   BadgeCheck,
   Bell,
-  Calendar,
   ChevronRight,
   Droplets,
   Flame,
@@ -73,29 +70,6 @@ function Counter({ to }: { to: number }) {
   return <>{useCountUp(to)}</>;
 }
 
-function formatSessionDate(dateStr: string): string {
-  const today = new Date();
-  const d = new Date(dateStr);
-  const isToday = d.toDateString() === today.toDateString();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const isTomorrow = d.toDateString() === tomorrow.toDateString();
-  if (isToday) return "Today";
-  if (isTomorrow) return "Tomorrow";
-  return d.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
-
-function formatTime12h(t: string): string {
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-}
-
 export default function ClientHomePage() {
   const router = useRouter();
   const supabase = createClient();
@@ -109,9 +83,6 @@ export default function ClientHomePage() {
   const [latestCheckin, setLatestCheckin] = useState<Checkin | null>(null);
   const [prevCheckin, setPrevCheckin] = useState<Checkin | null>(null);
   const [clientBadges, setClientBadges] = useState<ClientBadge[]>([]);
-  const [nextAppointment, setNextAppointment] = useState<Appointment | null>(
-    null,
-  );
   const [totalWorkoutsThisWeek, setTotalWorkoutsThisWeek] = useState(0);
   const [streak, setStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -217,29 +188,6 @@ export default function ClientHomePage() {
 
         const badges = await getClientBadges(client.id);
         setClientBadges(badges);
-
-        const appointments = await getAppointments(user.id, "client");
-        const upcoming = appointments
-          .filter(
-            (a) =>
-              a.status === "scheduled" &&
-              new Date(`${a.date}T${a.startTime}`) >=
-                new Date(new Date().toDateString()),
-          )
-          .sort(
-            (a, b) =>
-              new Date(`${a.date}T${a.startTime}`).getTime() -
-              new Date(`${b.date}T${b.startTime}`).getTime(),
-          );
-        if (upcoming[0]) setNextAppointment(upcoming[0]);
-
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-        const thisWeekCount = appointments.filter(
-          (a) => a.status === "completed" && new Date(a.date) >= weekStart,
-        ).length;
-        setTotalWorkoutsThisWeek(thisWeekCount);
 
         const sorted = [...checkins].sort(
           (a, b) =>
@@ -712,44 +660,6 @@ export default function ClientHomePage() {
               <ChevronRight className="w-4 h-4 stroke-[3]" />
             </motion.button>
           </ScrollReveal>
-
-          {/* NEXT SESSION — purple accent card */}
-          {!isLoading && nextAppointment && (
-            <ScrollReveal delay={0.25}>
-              <div
-                onClick={() => router.push("/workout")}
-                className="relative overflow-hidden rounded-2xl h-[130px] cursor-pointer group border border-violet-500/25"
-              >
-                <img
-                  src="/images/aman/aman-05.jpeg"
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover opacity-45 group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-950/90 via-violet-950/60 to-transparent" />
-                <div className="relative z-10 h-full flex flex-col justify-center pl-5 pr-16">
-                  <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest mb-1">
-                    Next Session
-                  </span>
-                  <h3 className="font-heading font-bold text-lg text-white leading-tight">
-                    {workoutPlan?.name ?? "Training Session"}
-                  </h3>
-                  <div className="flex items-center gap-3 mt-1.5 text-[11px] text-white/70">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={11} />{" "}
-                      {formatSessionDate(nextAppointment.date)},{" "}
-                      {formatTime12h(nextAppointment.startTime)}
-                    </span>
-                  </div>
-                  <span className="text-violet-300 text-[11px] font-bold mt-2 flex items-center gap-1">
-                    View Workout <ChevronRight size={13} />
-                  </span>
-                </div>
-                <div className="absolute top-1/2 -translate-y-1/2 right-4 w-11 h-11 rounded-full bg-violet-950 border border-violet-400/40 flex items-center justify-center z-10">
-                  <Zap className="w-5 h-5 text-violet-300 fill-violet-300" />
-                </div>
-              </div>
-            </ScrollReveal>
-          )}
 
           {/* TODAY AT A GLANCE — white surface card */}
           <ScrollReveal delay={0.3}>
