@@ -2,13 +2,22 @@
 // number maps to a placeholder address on our own domain (mail to it is skipped).
 export const PHONE_AUTH_DOMAIN = "clients.amankhuranafitness.com"
 
-export function phoneEmail(digits: string): string {
-  const clean = digits.replace(/\D/g, "")
-  // If exactly 10 digits starting with 6-9 (standard Indian mobile without country code), prefix 91
-  if (clean.length === 10 && /^[6-9]/.test(clean)) {
-    return `91${clean}@${PHONE_AUTH_DOMAIN}`
+export function phoneToAuthEmail(input: string): string | null {
+  const clean = input.replace(/\D/g, "")
+  if (clean.length < 6) return null
+  let local: string
+  if (clean.length === 10) {
+    local = clean
+  } else if (clean.length === 12 && clean.startsWith("91")) {
+    local = clean.slice(-10)
+  } else {
+    local = clean
   }
-  return `${clean}@${PHONE_AUTH_DOMAIN}`
+  return `${local}@${PHONE_AUTH_DOMAIN}`
+}
+
+export function phoneEmail(digits: string): string {
+  return phoneToAuthEmail(digits) ?? ""
 }
 
 export function isPlaceholderEmail(email: string): boolean {
@@ -20,11 +29,5 @@ export function isPlaceholderEmail(email: string): boolean {
 export function loginIdentifierToEmail(input: string): string {
   const v = input.trim()
   if (v.includes("@")) return v
-  const digits = v.replace(/\D/g, "")
-  if (!digits) return v
-  // India 10-digit: if exactly 10 digits starting with 6-9, prefix 91
-  if (digits.length === 10 && /^[6-9]/.test(digits)) {
-    return `91${digits}@${PHONE_AUTH_DOMAIN}`
-  }
-  return digits.length >= 6 ? `${digits}@${PHONE_AUTH_DOMAIN}` : v
+  return phoneToAuthEmail(v) ?? v
 }

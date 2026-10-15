@@ -84,12 +84,7 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
       const targetEmail = loginIdentifierToEmail(email)
-      let { error: err } = await supabase.auth.signInWithPassword({ email: targetEmail, password })
-      if (err && targetEmail.startsWith("91") && targetEmail.endsWith("@clients.amankhuranafitness.com")) {
-        const fallback10 = targetEmail.slice(2)
-        const { error: err2 } = await supabase.auth.signInWithPassword({ email: fallback10, password })
-        if (!err2) err = null
-      }
+      const { error: err } = await supabase.auth.signInWithPassword({ email: targetEmail, password })
       if (err) { setError(err.message === "Invalid login credentials" ? "Wrong mobile number or password. Please try again." : "Could not sign in. Please try again."); return }
 
       const { data: { user } } = await supabase.auth.getUser()
