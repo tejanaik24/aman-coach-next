@@ -148,7 +148,7 @@ export default function ClientsPage() {
             {filtered.map((c) => {
               const name = c.profile?.name ?? "Unknown"
               const d = endsInDays(c)
-              const wa = waLink(c.profile?.phone ?? null, `Hi ${name.split(" ")[0]}, this is Aman. `)
+              const wa = waLink(c.profile?.phone ?? null, `Hi ${name.trim()}, this is Aman. `)
               const late = lateIds.has(c.id)
               return (
                 <div key={c.id} className="rounded-2xl bg-bg-card border border-border-subtle p-4">

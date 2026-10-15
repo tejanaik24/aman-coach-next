@@ -272,7 +272,7 @@ export default function FeesPage() {
   ]
 
   function reminderText(f: FeeWithClient): string {
-    const first = f.clientName.split(" ")[0]
+    const first = f.clientName.trim()
     const dueAmt = amountDue(f)
     const amt = `₹${dueAmt.toLocaleString("en-IN")}`
     const due = format(new Date(f.dueDate + "T00:00:00"), "d MMM")
@@ -282,7 +282,7 @@ export default function FeesPage() {
   }
 
   function billWhatsAppText(f: FeeWithClient): string {
-    const first = f.clientName.split(" ")[0]
+    const first = f.clientName.trim()
     const due = format(new Date(f.dueDate + "T00:00:00"), "dd MMM yyyy")
     const paidAmt = paidSoFar(f)
     const balanceDue = amountDue(f)

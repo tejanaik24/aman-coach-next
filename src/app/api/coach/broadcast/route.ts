@@ -64,7 +64,8 @@ export async function POST(request: Request) {
     for (const c of clients ?? []) {
       const p = profileMap.get(c.user_id)
       const name = p?.name || "Client"
-      const firstName = name.trim().split(/\s+/)[0] || "there"
+      // Full name (Aman's request). Variable kept as `firstName` to leave the rest of the loop untouched.
+      const firstName = name.trim().replace(/\s+/g, " ") || "there"
 
       if (p?.notifications_enabled === false) {
         results.push({ clientId: c.id, name, status: "notifications_off" })

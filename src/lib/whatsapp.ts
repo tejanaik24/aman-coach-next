@@ -623,6 +623,69 @@ export async function sendEnquiryAlert(
   return sendWhatsAppText(coachPhone, text);
 }
 
+export type FeeReminderStage = "before" | "due" | "late"
+
+/**
+ * Template Helper: fee reminder to a client (before / on / after the due date).
+ * No UPI or bank details in the text, only the /payments link (Aman's request).
+ * Templates to create in Meta: fee_reminder_before, fee_reminder_due, fee_reminder_overdue
+ * with body vars {{1}} full name, {{2}} package, {{3}} due date, {{4}} link. Falls back to free text.
+ */
+export async function sendFeeReminder(
+  phone: string,
+  fullName: string,
+  packageName: string,
+  dueDate: string,
+  stage: FeeReminderStage,
+): Promise<WhatsAppSendResult> {
+  const name = (fullName || "").trim() || "there"
+  const pkg = (packageName || "").trim() || "your coaching"
+  const link = `${SITE_URL}/payments`
+  const templateName =
+    stage === "before" ? "fee_reminder_before" : stage === "due" ? "fee_reminder_due" : "fee_reminder_overdue"
+
+  const t = await sendWhatsAppTemplate(phone, templateName, "en", [
+    {
+      type: "body",
+      parameters: [name, pkg, dueDate, link].map((text) => ({ type: "text", text })),
+    },
+  ])
+  if (t.success && !t.dryRun) return t
+
+  // Aman's own fee template (his old app), with the stage wording he asked for. No UPI/bank text: link only.
+  const when =
+    stage === "before" ? `will be due on ${dueDate}` : stage === "due" ? `is due on ${dueDate}` : `has been due since ${dueDate}`
+  return sendWhatsAppText(
+    phone,
+    `Dear ${name}, this is to Remind you that, Fee For your "${pkg}" package with Aman Khurana Fitness ${when}, kindly Timely Renew it, if you wish to continue with our services or if you wish to upgrade or change your package, kindly discuss with your Coach Aman Khurana for the same. Thank you.\n\nView your bill and pay here: ${link}\n\nThanks & Regards\n#teamAKF`,
+  )
+}
+
+/**
+ * Template Helper: client message forwarded to the coach.
+ * Template-only (no free-text fallback) so the inbox can see the real result.
+ * Template `client_message_alert` must be approved in Meta: body vars {{1}} name, {{2}} phone, {{3}} message.
+ */
+export async function sendClientMessageAlert(
+  coachPhone: string,
+  name: string,
+  phone: string,
+  message: string,
+): Promise<WhatsAppSendResult> {
+  const clean = (v: string, max: number) =>
+    (v || "").replace(/[\r\n\t]+/g, " ").replace(/ {5,}/g, "    ").trim().slice(0, max) || "Not given";
+  return sendWhatsAppTemplate(coachPhone, "client_message_alert", "en", [
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: clean(name, 60) },
+        { type: "text", text: clean(phone, 30) },
+        { type: "text", text: clean(message, 600) },
+      ],
+    },
+  ]);
+}
+
 /**
  * Template Helper: Welcome Setup for New Client
  */

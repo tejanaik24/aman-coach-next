@@ -5,7 +5,7 @@ import { format } from "date-fns"
 import { QrCode, Download, CheckCircle2, Copy, MessageCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generatePaymentReceiptPdf, type Invoice } from "@/lib/payments"
-import { COACH_UPI_ID, generateUpiLink } from "@/lib/upi"
+import { COACH_UPI_ID, COACH_BANK, generateUpiLink } from "@/lib/upi"
 import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
 import toast from "react-hot-toast"
 import { COACH_WHATSAPP } from "@/lib/coach-contact"
@@ -104,6 +104,11 @@ export default function ClientPaymentsPage() {
   function handleCopyUpi() {
     navigator.clipboard.writeText(COACH_UPI_ID)
     toast.success(`UPI ID ${COACH_UPI_ID} copied!`)
+  }
+
+  function handleCopy(label: string, value: string) {
+    navigator.clipboard.writeText(value)
+    toast.success(`${label} copied!`)
   }
 
   // All pending/overdue bills sorted by earliest due date so total due matches Home "Fee due"
@@ -206,11 +211,34 @@ export default function ClientPaymentsPage() {
               </button>
             </div>
 
+            {/* Bank transfer */}
+            <div className="rounded-xl bg-bg-elevated border border-border-subtle px-4 py-3 space-y-2">
+              <span className="text-[11px] text-text-muted block">Or pay by bank transfer ({COACH_BANK.bank})</span>
+              {[
+                { label: "Account number", value: COACH_BANK.accountNo },
+                { label: "IFSC", value: COACH_BANK.ifsc },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-text-muted block">{row.label}</span>
+                    <span className="text-sm font-mono font-bold text-text-primary break-all">{row.value}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(row.label, row.value)}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-semibold text-text-primary flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <Copy className="size-3.5 text-accent-orange" /> Copy
+                  </button>
+                </div>
+              ))}
+            </div>
+
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5 pt-1">
               <a
                 href={upiHref}
-                className="flex-1 py-3.5 px-5 rounded-full bg-accent-orange text-black font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+                className="flex-1 min-w-0 py-3.5 px-5 rounded-full bg-accent-orange text-black font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-110 transition-all"
               >
                 <QrCode className="size-4" /> Pay by UPI (₹{dueAmt.toLocaleString("en-IN")})
               </a>

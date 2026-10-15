@@ -91,7 +91,7 @@ export default function BroadcastModal({ isOpen, onClose }: Props) {
   }
 
   const formatForClient = (clientName: string) => {
-    const first = clientName.trim().split(/\s+/)[0] || "there"
+    const first = clientName.trim().replace(/\s+/g, " ") || "there"
     const body = message.trim().replace(/\{\{\s*name\s*\}\}/gi, first)
     return `Hi ${first},\n\n${body}\n\n— Coach Aman Khurana`
   }

@@ -50,6 +50,15 @@ export default function QuickManagePage() {
   const [dateRow, setDateRow] = useState<QMRow | null>(null)
   const [busy, setBusy] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [unreadMsgs, setUnreadMsgs] = useState(0)
+
+  useEffect(() => {
+    createClient()
+      .from("whatsapp_inbound")
+      .select("id", { count: "exact", head: true })
+      .is("read_by_coach_at", null)
+      .then(({ count }: { count: number | null }) => setUnreadMsgs(count ?? 0))
+  }, [])
 
   useEffect(() => {
     setTodayStr(format(new Date(), "EEEE, d MMM"))
@@ -215,6 +224,17 @@ export default function QuickManagePage() {
           role="coach"
           onNameUpdated={setCoachName}
         />
+
+        <button
+          type="button"
+          onClick={() => router.push("/messages")}
+          className={`w-full h-14 rounded-2xl px-4 flex items-center justify-between cursor-pointer ${unreadMsgs > 0 ? "bg-[#25D366] text-black" : "bg-white/5 text-text-muted"}`}
+        >
+          <span className="flex items-center gap-2 font-semibold text-base">
+            <MessageCircle className="w-5 h-5" /> WhatsApp messages
+          </span>
+          <span className="font-bold tabular-nums">{unreadMsgs > 0 ? `${unreadMsgs} new` : "Open"}</span>
+        </button>
 
         {/* Tiles */}
         {rows === null ? (
