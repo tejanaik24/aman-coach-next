@@ -1,5 +1,14 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { sendWhatsAppText } from "@/lib/whatsapp";
+import {
+  ackOncePerDay,
+  adminDb,
+  applyDeliveryStatus,
+  coachPhone,
+  findCoachId,
+  forwardToCoach,
+  matchClient,
+  type InboundRow,
+} from "@/lib/server/whatsapp-inbox";
 import { NextResponse } from "next/server";
 
 /**
@@ -54,10 +63,7 @@ export async function GET(req: Request) {
       });
     }
 
-    console.warn(
-      "[Meta WhatsApp Webhook] Verification failed: token mismatch",
-      { token, expected: VERIFY_TOKEN },
-    );
+    console.warn("[Meta WhatsApp Webhook] Verification failed: token mismatch");
     return new Response("Forbidden", { status: 403 });
   } catch (error: unknown) {
     console.error("[Meta WhatsApp Webhook] GET error:", error);
@@ -104,56 +110,81 @@ export async function POST(req: Request) {
         if (change.field === "messages") {
           const value = change.value || {};
 
-          // 1. Process Inbound Messages from Clients
+          // 1. Process Inbound Messages from Clients:
+          //    save first (so nothing is lost), then forward to Aman, then ack the client.
           const messages = value.messages || [];
           for (const msg of messages) {
-            const senderPhone = msg.from; // e.g. "919815690656"
-            const msgType = msg.type;
-            const textBody = msg.text?.body || "";
-            const messageId = msg.id;
-            const timestamp = msg.timestamp;
+            const senderPhone = String(msg.from || ""); // e.g. "919815690656"
+            const msgType = String(msg.type || "text");
+            const messageId = String(msg.id || "");
+            const cleanedCoachPhone = coachPhone().replace(/\D/g, "");
 
             console.log(
-              `[Meta WhatsApp Webhook] Inbound from ${senderPhone} (${msgType}): ${textBody}`,
+              `[Meta WhatsApp Webhook] Inbound from ${senderPhone} (${msgType}) id=${messageId}`,
             );
 
-            // Auto-Forwarding Pipeline:
-            // Forward the client's message to Coach Aman's personal phone with a 1-tap wa.me reply link
-            const coachPhone = process.env.AMAN_WHATSAPP || "+919815690656";
-            const cleanedCoachPhone = coachPhone.replace(/\D/g, "");
+            if (!senderPhone || !messageId || senderPhone === cleanedCoachPhone) continue;
 
-            if (senderPhone !== cleanedCoachPhone && textBody) {
-              const forwardAlert =
-                `🚨 *NEW CLIENT WHATSAPP MESSAGE*\n\n` +
-                `👤 *From:* +${senderPhone}\n` +
-                `💬 *Message:* "${textBody}"\n\n` +
-                `👉 *Tap to reply directly on personal WhatsApp:*\n` +
-                `https://wa.me/${senderPhone}`;
+            try {
+              const db = adminDb();
+              const coachId = await findCoachId(db);
+              if (!coachId) {
+                console.error("[Meta WhatsApp Webhook] No coach profile found; message not saved");
+                continue;
+              }
+              const { clientId, name } = await matchClient(db, coachId, senderPhone);
+              const bodyText: string | null =
+                msg.text?.body ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? null;
+              const mediaId: string | null =
+                msg.image?.id ?? msg.audio?.id ?? msg.video?.id ?? msg.document?.id ?? msg.sticker?.id ?? null;
+              const receivedAt = msg.timestamp
+                ? new Date(Number(msg.timestamp) * 1000).toISOString()
+                : new Date().toISOString();
 
-              // Send alert to Aman's personal phone
-              await sendWhatsAppText(coachPhone, forwardAlert);
+              // wa_message_id is UNIQUE: if Meta retries this webhook, the insert fails and we stop (no duplicates).
+              const { data: saved, error: saveErr } = await db
+                .from("whatsapp_inbound")
+                .insert({
+                  coach_id: coachId,
+                  wa_message_id: messageId,
+                  from_phone: senderPhone,
+                  client_id: clientId,
+                  msg_type: msgType,
+                  body: bodyText,
+                  media_id: mediaId,
+                  received_at: receivedAt,
+                })
+                .select("*")
+                .single();
+              if (saveErr || !saved) {
+                if (saveErr?.code !== "23505") {
+                  console.error("[Meta WhatsApp Webhook] Could not save inbound:", saveErr?.message);
+                }
+                continue;
+              }
 
-              // Auto-acknowledge client so they know Aman is on it
-              const clientAck =
-                `👋 *Hi! Coach Aman received your message.*\n\n` +
-                `Coach Aman will reply directly to you from his personal WhatsApp line (+91 98156 90656) shortly! 💪`;
-
-              await sendWhatsAppText(senderPhone, clientAck);
+              const row = saved as InboundRow;
+              await forwardToCoach(db, row, name);
+              await ackOncePerDay(db, row);
+            } catch (err) {
+              console.error("[Meta WhatsApp Webhook] Inbound handling failed:", err);
             }
           }
 
-          // 2. Process Message Delivery Statuses (sent, delivered, read)
+          // 2. Process Message Delivery Statuses (sent, delivered, read, failed)
           const statuses = value.statuses || [];
           for (const status of statuses) {
-            const statusType = status.status; // "sent" | "delivered" | "read" | "failed"
-            const recipientPhone = status.recipient_id;
-            const messageId = status.id;
-
-            if (statusType === "failed") {
+            if (!status?.id) continue;
+            if (status.status === "failed") {
               console.warn(
-                `[Meta WhatsApp Webhook] Delivery failed for ${messageId} to ${recipientPhone}:`,
+                `[Meta WhatsApp Webhook] Delivery failed for ${status.id} to ${status.recipient_id}:`,
                 status.errors,
               );
+            }
+            try {
+              await applyDeliveryStatus(adminDb(), String(status.id), String(status.status), status.errors);
+            } catch (err) {
+              console.error("[Meta WhatsApp Webhook] Status update failed:", err);
             }
           }
         }
