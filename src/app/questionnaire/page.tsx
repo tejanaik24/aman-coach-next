@@ -227,19 +227,24 @@ export default function PublicQuestionnairePage() {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
+  // Marks a question required with Aman's * (his old form's convention). Coach mode has no required questions.
+  const star = (label: string) => (forClient ? label : `${label}*`)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const found: Record<string, string> = {}
-    for (const key of REQUIRED_TEXT) if (!form[key]?.trim()) found[key] = "Required"
-    // Photos need a camera and a gallery: the coach filling in for a client may skip them.
+    // Coach mode: Aman fills this in for a client and may save a half-filled form, so nothing is required there.
     if (!forClient) {
+      for (const key of REQUIRED_TEXT) if (!form[key]?.trim()) found[key] = "Required"
+      // Photos need a camera and a gallery: the coach filling in for a client may skip them.
       for (const p of PHOTO_FIELDS) if ((uploads[p.key]?.length ?? 0) < p.min) found[p.key] = p.error
     }
     setErrors(found)
     const firstMissing = [...REQUIRED_TEXT, ...PHOTO_FIELDS.map((p) => p.key)].find((k) => found[k])
     if (firstMissing) {
       requestAnimationFrame(() => document.getElementById(`f-${firstMissing}`)?.scrollIntoView({ behavior: "smooth", block: "center" }))
-      toast.error("Some required answers are missing — they are marked in red below")
+      // Same id so a double tap on Submit shows one message, not a stack of them.
+      toast.error("Some required answers are missing — they are marked in red below", { id: "missing-answers" })
       return
     }
     setIsSubmitting(true)
@@ -310,7 +315,9 @@ export default function PublicQuestionnairePage() {
           This is the same detailed questionnaire Coach Aman uses to build every client&rsquo;s custom plan &mdash;
           fill it in before your consultation so he has your full picture ready. Takes about 10&ndash;15 minutes.
           Your answers are saved on this phone as you type, so you can close this page and come back to it later.
-          Questions marked with <span className="text-accent-orange font-semibold">*</span> are required.
+          {!forClient && (
+            <>Questions marked with <span className="text-accent-orange font-semibold">*</span> are required. </>
+          )}
           Answer honestly, no judgment. Where a question asks for a photo or report, just tap the
           upload button and pick it from your phone gallery, camera or files (PDF works too).
         </p>
@@ -319,38 +326,38 @@ export default function PublicQuestionnairePage() {
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         <div className="ledger p-5 space-y-4">
           <h2 className={sectionTitleClass}>About You</h2>
-          <Field id="f-q1_name" label="Your Full Name*" error={errors.q1_name}><input value={form.q1_name} onChange={(e) => set("q1_name", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q2_email" label="Your Email ID*" error={errors.q2_email}><input type="email" value={form.q2_email} onChange={(e) => set("q2_email", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q3_address" label="Your Complete Residence Address*" error={errors.q3_address}><textarea value={form.q3_address} onChange={(e) => set("q3_address", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q4_phone" label="Your Primary Contact Number (WhatsApp)*" error={errors.q4_phone}><input value={form.q4_phone} inputMode="tel" onChange={(e) => set("q4_phone", e.target.value.replace(/[^\d+ ]/g, ""))} className={inputClass} /></Field>
+          <Field id="f-q1_name" label={star("Your Full Name")} error={errors.q1_name}><input value={form.q1_name} onChange={(e) => set("q1_name", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q2_email" label={star("Your Email ID")} error={errors.q2_email}><input type="email" value={form.q2_email} onChange={(e) => set("q2_email", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q3_address" label={star("Your Complete Residence Address")} error={errors.q3_address}><textarea value={form.q3_address} onChange={(e) => set("q3_address", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q4_phone" label={star("Your Primary Contact Number (WhatsApp)")} error={errors.q4_phone}><input value={form.q4_phone} inputMode="tel" onChange={(e) => set("q4_phone", e.target.value.replace(/[^\d+ ]/g, ""))} className={inputClass} /></Field>
           <Field label="Alternate Contact Number"><input value={form.q5_alt_phone} onChange={(e) => set("q5_alt_phone", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q6_dob" label="Date of Birth*" error={errors.q6_dob}><input type="date" value={form.q6_dob} onChange={(e) => set("q6_dob", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q6_dob" label={star("Date of Birth")} error={errors.q6_dob}><input type="date" value={form.q6_dob} onChange={(e) => set("q6_dob", e.target.value)} className={inputClass} /></Field>
           <Field label="Age (years)"><input type="number" value={form.q6_age} onChange={(e) => set("q6_age", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q7_height" label="Height (cm or ft-in)*" error={errors.q7_height}><input value={form.q7_height} onChange={(e) => set("q7_height", e.target.value)} className={inputClass} placeholder="e.g. 175 cm or 5'9" /></Field>
-          <Field id="f-q8_goal" label="What is your goal?*" sub="Be detailed on your ideal outcome" error={errors.q8_goal}><textarea value={form.q8_goal} onChange={(e) => set("q8_goal", e.target.value)} rows={3} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q7_height" label={star("Height (cm or ft-in)")} error={errors.q7_height}><input value={form.q7_height} onChange={(e) => set("q7_height", e.target.value)} className={inputClass} placeholder="e.g. 175 cm or 5'9" /></Field>
+          <Field id="f-q8_goal" label={star("What is your goal?")} sub="Be detailed on your ideal outcome" error={errors.q8_goal}><textarea value={form.q8_goal} onChange={(e) => set("q8_goal", e.target.value)} rows={3} className={`${inputClass} resize-none`} /></Field>
         </div>
 
         <div className="ledger p-5 space-y-4">
           <h2 className={sectionTitleClass}>Daily Routine</h2>
-          <Field id="f-q9_wake_time" label="What time do you wake up?*" error={errors.q9_wake_time}><input type="time" value={form.q9_wake_time} onChange={(e) => set("q9_wake_time", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q10_sleep_time" label="What time do you sleep?*" error={errors.q10_sleep_time}><input type="time" value={form.q10_sleep_time} onChange={(e) => set("q10_sleep_time", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q9_wake_time" label={star("What time do you wake up?")} error={errors.q9_wake_time}><input type="time" value={form.q9_wake_time} onChange={(e) => set("q9_wake_time", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q10_sleep_time" label={star("What time do you sleep?")} error={errors.q10_sleep_time}><input type="time" value={form.q10_sleep_time} onChange={(e) => set("q10_sleep_time", e.target.value)} className={inputClass} /></Field>
           <Field label="Have you ever hired any coach/Nutritionist before? Who & why did you leave?"><textarea value={form.q11_hired_coach} onChange={(e) => set("q11_hired_coach", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q12_home_equipment" label="Do you have any equipment at home? (cycle, dumbbells etc.)*" error={errors.q12_home_equipment}><textarea value={form.q12_home_equipment} onChange={(e) => set("q12_home_equipment", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if you have nothing" /></Field>
-          <Field id="f-q13_work_schedule" label="Are you working? Sitting or standing job? How many hours & timings?*" error={errors.q13_work_schedule}><textarea value={form.q13_work_schedule} onChange={(e) => set("q13_work_schedule", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q14_exercise_history" label="Do you exercise currently? What type & since how long?*" error={errors.q14_exercise_history}><textarea value={form.q14_exercise_history} onChange={(e) => set("q14_exercise_history", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q12_home_equipment" label={star("Do you have any equipment at home? (cycle, dumbbells etc.)")} error={errors.q12_home_equipment}><textarea value={form.q12_home_equipment} onChange={(e) => set("q12_home_equipment", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if you have nothing" /></Field>
+          <Field id="f-q13_work_schedule" label={star("Are you working? Sitting or standing job? How many hours & timings?")} error={errors.q13_work_schedule}><textarea value={form.q13_work_schedule} onChange={(e) => set("q13_work_schedule", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q14_exercise_history" label={star("Do you exercise currently? What type & since how long?")} error={errors.q14_exercise_history}><textarea value={form.q14_exercise_history} onChange={(e) => set("q14_exercise_history", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
           <Field label="Share your exact workout routine (exercises/sets/reps/split/days/duration)"><textarea value={form.q15_workout_routine} onChange={(e) => set("q15_workout_routine", e.target.value)} rows={4} className={`${inputClass} resize-none`} /></Field>
           <Field label="How many steps do you walk daily on average?"><input type="number" value={form.q16_steps_daily} onChange={(e) => set("q16_steps_daily", e.target.value)} className={inputClass} /></Field>
           <Field label="Do you do cardio regularly? How many mins/day or week & what type?"><textarea value={form.q17_cardio_regular} onChange={(e) => set("q17_cardio_regular", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q18_workout_timings" label="Morning or evening workouts? Tentative time? How many days per week?*" error={errors.q18_workout_timings}><textarea value={form.q18_workout_timings} onChange={(e) => set("q18_workout_timings", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q18_workout_timings" label={star("Morning or evening workouts? Tentative time? How many days per week?")} error={errors.q18_workout_timings}><textarea value={form.q18_workout_timings} onChange={(e) => set("q18_workout_timings", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
         </div>
 
         <div className="ledger p-5 space-y-4">
           <h2 className={sectionTitleClass}>Health History</h2>
-          <Field id="f-q19_injuries_pain" label="Any injury, pain, stiffness, joint mobility problem or surgery history?*" error={errors.q19_injuries_pain}><textarea value={form.q19_injuries_pain} onChange={(e) => set("q19_injuries_pain", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if nothing" /></Field>
-          <Field id="f-q20_health_issues" label="Any health issues or genetic disorders?*" sub="PCOS, Thyroid, Diabetes, High BP, Cholesterol" error={errors.q20_health_issues}><textarea value={form.q20_health_issues} onChange={(e) => set("q20_health_issues", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if nothing" /></Field>
+          <Field id="f-q19_injuries_pain" label={star("Any injury, pain, stiffness, joint mobility problem or surgery history?")} error={errors.q19_injuries_pain}><textarea value={form.q19_injuries_pain} onChange={(e) => set("q19_injuries_pain", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if nothing" /></Field>
+          <Field id="f-q20_health_issues" label={star("Any health issues or genetic disorders?")} sub="PCOS, Thyroid, Diabetes, High BP, Cholesterol" error={errors.q20_health_issues}><textarea value={form.q20_health_issues} onChange={(e) => set("q20_health_issues", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if nothing" /></Field>
           <Field label="Are you taking any prescribed drugs/medicines? If yes, mention names."><textarea value={form.q21_prescribed_drugs} onChange={(e) => set("q21_prescribed_drugs", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q22_constipation_history" label="Are you prone to constipation? Stool frequency per day/week?*" error={errors.q22_constipation_history}><textarea value={form.q22_constipation_history} onChange={(e) => set("q22_constipation_history", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q23_addictions" label="Any addiction — drugs, alcohol, smoking? Mention frequency & amount.*" error={errors.q23_addictions}><textarea value={form.q23_addictions} onChange={(e) => set("q23_addictions", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if nothing" /></Field>
+          <Field id="f-q22_constipation_history" label={star("Are you prone to constipation? Stool frequency per day/week?")} error={errors.q22_constipation_history}><textarea value={form.q22_constipation_history} onChange={(e) => set("q22_constipation_history", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q23_addictions" label={star("Any addiction — drugs, alcohol, smoking? Mention frequency & amount.")} error={errors.q23_addictions}><textarea value={form.q23_addictions} onChange={(e) => set("q23_addictions", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Write 'None' if nothing" /></Field>
           <Field label="Your average urine colour throughout the day (except early morning)?"><ChipSelect options={URINE_OPTIONS} value={form.q24_urine_color} onChange={(v) => set("q24_urine_color", v)} /></Field>
           <Field label="Menstrual Health (For Women) — Bleeding duration (days)"><input value={form.q25_menstrual_duration} onChange={(e) => set("q25_menstrual_duration", e.target.value)} className={inputClass} placeholder="e.g. 4-5 days" /></Field>
           <Field label="Cycle frequency (days)"><input value={form.q25_menstrual_frequency} onChange={(e) => set("q25_menstrual_frequency", e.target.value)} className={inputClass} placeholder="e.g. 28-30 days" /></Field>
@@ -361,19 +368,19 @@ export default function PublicQuestionnairePage() {
 
         <div className="ledger p-5 space-y-4">
           <h2 className={sectionTitleClass}>Diet Preferences</h2>
-          <Field id="f-q27_diet_preference" label="Are you Vegetarian / Vegan / Non-Vegetarian / Eggetarian?*" error={errors.q27_diet_preference}><ChipSelect options={DIET_OPTIONS} value={form.q27_diet_preference} onChange={(v) => set("q27_diet_preference", v)} /></Field>
+          <Field id="f-q27_diet_preference" label={star("Are you Vegetarian / Vegan / Non-Vegetarian / Eggetarian?")} error={errors.q27_diet_preference}><ChipSelect options={DIET_OPTIONS} value={form.q27_diet_preference} onChange={(v) => set("q27_diet_preference", v)} /></Field>
           <Field label="Any specific days you avoid non-veg for religious reasons?"><input value={form.q28_nonveg_fast_days} onChange={(e) => set("q28_nonveg_fast_days", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q29_lactose_intolerant" label="Are you lactose intolerant?*" error={errors.q29_lactose_intolerant}><ChipSelect options={["Yes", "No", "Partially"]} value={form.q29_lactose_intolerant} onChange={(v) => set("q29_lactose_intolerant", v)} /></Field>
+          <Field id="f-q29_lactose_intolerant" label={star("Are you lactose intolerant?")} error={errors.q29_lactose_intolerant}><ChipSelect options={["Yes", "No", "Partially"]} value={form.q29_lactose_intolerant} onChange={(v) => set("q29_lactose_intolerant", v)} /></Field>
           <Field label="Breakfast time"><input type="time" value={form.q30_meal_bf} onChange={(e) => set("q30_meal_bf", e.target.value)} className={inputClass} /></Field>
           <Field label="Mid-day snack time"><input type="time" value={form.q30_meal_midday} onChange={(e) => set("q30_meal_midday", e.target.value)} className={inputClass} /></Field>
           <Field label="Lunch time"><input type="time" value={form.q30_meal_lunch} onChange={(e) => set("q30_meal_lunch", e.target.value)} className={inputClass} /></Field>
           <Field label="Evening snack time"><input type="time" value={form.q30_meal_eve} onChange={(e) => set("q30_meal_eve", e.target.value)} className={inputClass} /></Field>
           <Field label="Dinner time"><input type="time" value={form.q30_meal_dinner} onChange={(e) => set("q30_meal_dinner", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q31_max_meals" label="Maximum number of meals manageable for you? (3–5)*" error={errors.q31_max_meals}><input type="number" min={3} max={5} value={form.q31_max_meals} onChange={(e) => set("q31_max_meals", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q32_preworkout_meal" label="Can you prepare & eat a pre-workout meal 60–90 min before workout?*" error={errors.q32_preworkout_meal}><ChipSelect options={YES_NO_SOMETIMES} value={form.q32_preworkout_meal} onChange={(v) => set("q32_preworkout_meal", v)} /></Field>
-          <Field id="f-q33_supplements" label="Do you take any supplements? Mention which ones.*" error={errors.q33_supplements}><textarea value={form.q33_supplements} onChange={(e) => set("q33_supplements", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Whey, Creatine, Multivitamin, Omega 3... Write 'None' if none" /></Field>
+          <Field id="f-q31_max_meals" label={star("Maximum number of meals manageable for you? (3–5)")} error={errors.q31_max_meals}><input type="number" min={3} max={5} value={form.q31_max_meals} onChange={(e) => set("q31_max_meals", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q32_preworkout_meal" label={star("Can you prepare & eat a pre-workout meal 60–90 min before workout?")} error={errors.q32_preworkout_meal}><ChipSelect options={YES_NO_SOMETIMES} value={form.q32_preworkout_meal} onChange={(v) => set("q32_preworkout_meal", v)} /></Field>
+          <Field id="f-q33_supplements" label={star("Do you take any supplements? Mention which ones.")} error={errors.q33_supplements}><textarea value={form.q33_supplements} onChange={(e) => set("q33_supplements", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Whey, Creatine, Multivitamin, Omega 3... Write 'None' if none" /></Field>
           <Field label="Supplement photos (optional)"><PublicUploadField multiple buttonText="Add supplement photos" onChange={(p) => setUpload("q33_supplements_pics", p)} /></Field>
-          <Field id="f-q34_whey_protein" label="Would you take Whey Protein supplement?*" error={errors.q34_whey_protein}><ChipSelect options={["Yes", "No", "Already taking"]} value={form.q34_whey_protein} onChange={(v) => set("q34_whey_protein", v)} /></Field>
+          <Field id="f-q34_whey_protein" label={star("Would you take Whey Protein supplement?")} error={errors.q34_whey_protein}><ChipSelect options={["Yes", "No", "Already taking"]} value={form.q34_whey_protein} onChange={(v) => set("q34_whey_protein", v)} /></Field>
           <Field label="Any food allergies?"><textarea value={form.q35_food_allergies} onChange={(e) => set("q35_food_allergies", e.target.value)} rows={2} className={`${inputClass} resize-none`} placeholder="Peanuts, Gluten, Dairy..." /></Field>
           <Field label="Food intolerance test report (optional)" sub="Photo or PDF"><PublicUploadField multiple buttonText="Add report" onChange={(p) => setUpload("q35_allergy_reports", p)} /></Field>
         </div>
@@ -381,16 +388,16 @@ export default function PublicQuestionnairePage() {
         <div className="ledger p-5 space-y-4">
           <h2 className={sectionTitleClass}>Current Diet</h2>
           <Field label="Early Morning"><textarea value={form.q36_diet_morning} onChange={(e) => set("q36_diet_morning", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="Warm water, almonds..." /></Field>
-          <Field id="f-q36_diet_bf" label="Breakfast*" error={errors.q36_diet_bf}><textarea value={form.q36_diet_bf} onChange={(e) => set("q36_diet_bf", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="4 eggs, toast, tea..." /></Field>
+          <Field id="f-q36_diet_bf" label={star("Breakfast")} error={errors.q36_diet_bf}><textarea value={form.q36_diet_bf} onChange={(e) => set("q36_diet_bf", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="4 eggs, toast, tea..." /></Field>
           <Field label="Mid-day"><textarea value={form.q36_diet_midday} onChange={(e) => set("q36_diet_midday", e.target.value)} rows={1} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q36_diet_lunch" label="Lunch*" error={errors.q36_diet_lunch}><textarea value={form.q36_diet_lunch} onChange={(e) => set("q36_diet_lunch", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="Rice, chicken/paneer, dal..." /></Field>
+          <Field id="f-q36_diet_lunch" label={star("Lunch")} error={errors.q36_diet_lunch}><textarea value={form.q36_diet_lunch} onChange={(e) => set("q36_diet_lunch", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="Rice, chicken/paneer, dal..." /></Field>
           <Field label="Evening"><textarea value={form.q36_diet_eve} onChange={(e) => set("q36_diet_eve", e.target.value)} rows={1} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q36_diet_dinner" label="Dinner*" error={errors.q36_diet_dinner}><textarea value={form.q36_diet_dinner} onChange={(e) => set("q36_diet_dinner", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="Roti, sabzi, salad..." /></Field>
-          <Field id="f-q37_water_intake" label="Your present water intake? (litres)*" error={errors.q37_water_intake}><input type="number" step={0.5} value={form.q37_water_intake} onChange={(e) => set("q37_water_intake", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q38_food_love" label="Food items you LOVE to eat?*" error={errors.q38_food_love}><textarea value={form.q38_food_love} onChange={(e) => set("q38_food_love", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q39_food_hate" label="Food items you HATE eating?*" error={errors.q39_food_hate}><textarea value={form.q39_food_hate} onChange={(e) => set("q39_food_hate", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q40_food_want" label="Food items you specifically want in your plan?*" error={errors.q40_food_want}><textarea value={form.q40_food_want} onChange={(e) => set("q40_food_want", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
-          <Field id="f-q41_seasonal_fruits" label="Seasonal fruits available in your area? Likes/dislikes?*" error={errors.q41_seasonal_fruits}><textarea value={form.q41_seasonal_fruits} onChange={(e) => set("q41_seasonal_fruits", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q36_diet_dinner" label={star("Dinner")} error={errors.q36_diet_dinner}><textarea value={form.q36_diet_dinner} onChange={(e) => set("q36_diet_dinner", e.target.value)} rows={1} className={`${inputClass} resize-none`} placeholder="Roti, sabzi, salad..." /></Field>
+          <Field id="f-q37_water_intake" label={star("Your present water intake? (litres)")} error={errors.q37_water_intake}><input type="number" step={0.5} value={form.q37_water_intake} onChange={(e) => set("q37_water_intake", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q38_food_love" label={star("Food items you LOVE to eat?")} error={errors.q38_food_love}><textarea value={form.q38_food_love} onChange={(e) => set("q38_food_love", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q39_food_hate" label={star("Food items you HATE eating?")} error={errors.q39_food_hate}><textarea value={form.q39_food_hate} onChange={(e) => set("q39_food_hate", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q40_food_want" label={star("Food items you specifically want in your plan?")} error={errors.q40_food_want}><textarea value={form.q40_food_want} onChange={(e) => set("q40_food_want", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
+          <Field id="f-q41_seasonal_fruits" label={star("Seasonal fruits available in your area? Likes/dislikes?")} error={errors.q41_seasonal_fruits}><textarea value={form.q41_seasonal_fruits} onChange={(e) => set("q41_seasonal_fruits", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
           <Field label="Savoury palate or sweet tooth?"><ChipSelect options={["Savoury", "Sweet", "Both"]} value={form.q42_palate} onChange={(v) => set("q42_palate", v)} /></Field>
           <Field label="Do you like chocolates? Which ones specifically?"><textarea value={form.q43_chocolates} onChange={(e) => set("q43_chocolates", e.target.value)} rows={2} className={`${inputClass} resize-none`} /></Field>
           <Field label="Your favourite cheat/treat meal?"><input value={form.q44_cheat_meal} onChange={(e) => set("q44_cheat_meal", e.target.value)} className={inputClass} /></Field>
@@ -408,7 +415,7 @@ export default function PublicQuestionnairePage() {
             <Field
               key={p.key}
               id={`f-${p.key}`}
-              label={forClient ? p.label : `${p.label}*`}
+              label={star(p.label)}
               sub="Empty stomach morning, after getting fresh. Front, back and both sides."
               error={errors[p.key]}
             >
@@ -421,10 +428,10 @@ export default function PublicQuestionnairePage() {
             </Field>
           ))}
           <Field label="Favourite pose (optional)"><PublicUploadField multiple buttonText="Add favourite pose" onChange={(p) => setUpload("q49_fav_pose", p)} /></Field>
-          <Field id="f-q55_weight" label="Current Weight (kg)*" error={errors.q55_weight}><input type="number" step={0.1} value={form.q55_weight} onChange={(e) => set("q55_weight", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q55_weight" label={star("Current Weight (kg)")} error={errors.q55_weight}><input type="number" step={0.1} value={form.q55_weight} onChange={(e) => set("q55_weight", e.target.value)} className={inputClass} /></Field>
           <Field label="Neck (cm)"><input type="number" step={0.5} value={form.q56_neck} onChange={(e) => set("q56_neck", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q57_abdomen" label="Abdomen at navel (cm)*" error={errors.q57_abdomen}><input type="number" step={0.5} value={form.q57_abdomen} onChange={(e) => set("q57_abdomen", e.target.value)} className={inputClass} /></Field>
-          <Field id="f-q58_hips" label="Hips (cm)*" error={errors.q58_hips}><input type="number" step={0.5} value={form.q58_hips} onChange={(e) => set("q58_hips", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q57_abdomen" label={star("Abdomen at navel (cm)")} error={errors.q57_abdomen}><input type="number" step={0.5} value={form.q57_abdomen} onChange={(e) => set("q57_abdomen", e.target.value)} className={inputClass} /></Field>
+          <Field id="f-q58_hips" label={star("Hips (cm)")} error={errors.q58_hips}><input type="number" step={0.5} value={form.q58_hips} onChange={(e) => set("q58_hips", e.target.value)} className={inputClass} /></Field>
           <Field label="Right Arm (cm)"><input type="number" step={0.5} value={form.q59_arm} onChange={(e) => set("q59_arm", e.target.value)} className={inputClass} /></Field>
           <Field label="Right Thigh (cm)"><input type="number" step={0.5} value={form.q60_thigh} onChange={(e) => set("q60_thigh", e.target.value)} className={inputClass} /></Field>
           <Field label="Right Calf (cm)"><input type="number" step={0.5} value={form.q61_calf} onChange={(e) => set("q61_calf", e.target.value)} className={inputClass} /></Field>
