@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Snapshot output and a one-off local generator are not application source.
     "mock/**",
     "make_pdf_forms.js",
+    "_phase*/**",
+    "public/js/vendor/**",
   ]),
   {
     rules: {
