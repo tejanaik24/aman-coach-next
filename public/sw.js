@@ -1,4 +1,4 @@
-const CACHE_NAME = "ak-coach-v16";
+const CACHE_NAME = "ak-coach-v17";
 const OFFLINE_URLS = [
   "/",
   "/home",
