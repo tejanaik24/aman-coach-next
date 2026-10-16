@@ -247,12 +247,21 @@ mm.add('(min-width: 769px)', () => {
   // A CSS transition can't have that failure mode.
   images.forEach(function(img, i) { img.classList.toggle('active', i === 0); });
 
-  // Split each item's text into character spans for stagger animation
+  // Split each item's text into character spans for stagger animation.
+  // Characters sit inside a per-word span so lines break between words, never mid-word.
   items.forEach(function(item) {
     var text = item.textContent;
     item.innerHTML = '';
+    var word = null;
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
+      if (ch !== ' ' && !word) {
+        word = document.createElement('span');
+        word.style.display = 'inline-flex';
+        word.style.whiteSpace = 'nowrap';
+        item.appendChild(word);
+      }
+      if (ch === ' ') word = null;
       var wrapper = document.createElement('span');
       wrapper.className = 'hover-char';
       var out = document.createElement('span');
@@ -263,7 +272,7 @@ mm.add('(min-width: 769px)', () => {
       inn.textContent = ch === ' ' ? '\u00A0' : ch;
       wrapper.appendChild(out);
       wrapper.appendChild(inn);
-      item.appendChild(wrapper);
+      (word || item).appendChild(wrapper);
     }
   });
 

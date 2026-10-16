@@ -3263,7 +3263,7 @@ button {
   flex: 1;
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 3/2; /* service photos are 3:2, so no black bars */
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(232, 80, 26, 0.2);
@@ -3307,8 +3307,6 @@ button {
     margin-bottom: 2rem;
   }
   .hover-slider-images {
-    aspect-ratio: 3/4;
-    max-width: 400px;
     margin: 0 auto;
   }
 }

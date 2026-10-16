@@ -12,10 +12,10 @@ import { isPlaceholderEmail } from "@/lib/phone-login"
 import { buildFollowupWaText } from "@/lib/quick-manage"
 
 // Daily job (Vercel cron, ~9am IST):
-//  1. keeps one open "check-in" follow-up per active client (next one = last check-in + 7 days)
-//  2. closes an auto-created check-in follow-up once the client has checked in
-//  3. Sends stage-separated follow-up reminders (_pre, _due, _late_1..3) respecting notifications_enabled
-const CHECKIN_EVERY_DAYS = 7
+//  1. closes an old auto-created check-in follow-up once the client has checked in
+//  2. Sends stage-separated follow-up reminders (_pre, _due, _late_1..3) respecting notifications_enabled
+// Aman sets every check-in date himself (16 Oct): the job no longer creates check-ins, and
+// old auto-created ones never message clients.
 const REMIND_DAYS_BEFORE = 2
 const OVERDUE_COOLDOWN_DAYS = 3
 const OVERDUE_MAX_REMINDERS = 3
@@ -23,12 +23,6 @@ const OVERDUE_MAX_REMINDERS = 3
 // Approved Meta templates in this account; only "checkin_reminder" fits client follow-up reminders (for type="checkin").
 const APPROVED_WA_TEMPLATES: Record<string, string> = {
   checkin: "checkin_reminder",
-}
-
-function addDays(date: string, n: number): string {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + n)
-  return d.toISOString().slice(0, 10)
 }
 
 function toIndiaDateString(isoTimestamp: string): string {
@@ -136,12 +130,12 @@ async function run(request: Request) {
     if (!prev || f.due_date < prev.due_date) openCheckinByClient.set(f.client_id, f)
   }
 
-  let created = 0
+
   let closed = 0
   for (const client of activeClients) {
     if (!client.coach_id) continue
     const last = lastCheckin.get(client.id)
-    let open = openCheckinByClient.get(client.id)
+    const open = openCheckinByClient.get(client.id)
 
     if (open && open.auto_created && last && last > open.created_at) {
       const { error } = dryRun
@@ -152,35 +146,10 @@ async function run(request: Request) {
             .eq("id", open.id)
       if (!error) {
         closed++
-        open = undefined
-        openCheckinByClient.delete(client.id)
+        open.done_at = simulatedSentAt
       }
     }
 
-    if (!open) {
-      const base = last ? last.slice(0, 10) : client.start_date
-      if (!base) continue
-      const due = addDays(base, CHECKIN_EVERY_DAYS)
-      const row = {
-        client_id: client.id,
-        coach_id: client.coach_id,
-        type: "checkin",
-        due_date: due < today ? today : due,
-        auto_created: true,
-      }
-      const { data, error } = dryRun
-        ? { data: { ...row, id: `dry-run-${client.id}`, note: null, created_at: simulatedSentAt, done_at: null }, error: null }
-        : await db
-            .from("followups")
-            .insert(row)
-            .select("id, client_id, type, due_date, note, created_at, done_at, auto_created")
-            .single()
-      if (!error && data) {
-        created++
-        openCheckinByClient.set(client.id, data as FollowupRow)
-        allOpen.push(data as FollowupRow)
-      }
-    }
   }
 
   const clientById = new Map(activeClients.map((c) => [c.id, c]))
@@ -237,7 +206,7 @@ async function run(request: Request) {
   )
 
   for (const f of allOpen) {
-    if (f.done_at) continue
+    if (f.done_at || f.auto_created) continue
 
     const diff = daysBetween(today, f.due_date)
     if (diff > REMIND_DAYS_BEFORE) {
@@ -435,7 +404,7 @@ async function run(request: Request) {
     })
   }
 
-  return NextResponse.json({ today, dryRun, created, closed, reminders })
+  return NextResponse.json({ today, dryRun, created: 0, closed, reminders })
 }
 
 // Vercel cron calls GET; manual/n8n calls can use POST.

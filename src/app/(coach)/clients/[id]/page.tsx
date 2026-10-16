@@ -141,7 +141,7 @@ export default function ClientDetailPage() {
       supabase.from("workout_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       supabase.from("nutrition_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       getClientBadges(id),
-      supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).order("due_date").limit(5),
+      supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).not("auto_created", "is", true).order("due_date").limit(5),
       supabase.from("form_submissions").select("id, form_type, submitted_at").eq("client_id", id).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }),
       supabase.from("form_submissions").select("id, form_type, submitted_at, sender:form_data->>q1_name").is("client_id", null).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }).limit(30),
     ])
@@ -266,11 +266,22 @@ export default function ClientDetailPage() {
   const saveFollowupDate = async (newDate: string) => {
     if (!dateFor) return
     const supabase = createClient()
-    const { error } = await supabase.from("followups").update({ due_date: newDate }).eq("id", dateFor.id)
-    if (error) { toast.error("Could not update date"); return }
+    const { data, error } = await supabase.from("followups").update({ due_date: newDate, auto_created: false }).eq("id", dateFor.id).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
     setFollowups((prev) => prev.map((f) => (f.id === dateFor.id ? { ...f, due_date: newDate } : f)))
     setDateFor(null)
     toast.success("Date updated")
+  }
+
+  const handleEditFollowupNote = async (fId: string, currentNote: string | null) => {
+    const next = window.prompt("Follow-up note", currentNote ?? "")
+    if (next === null) return
+    const note = next.trim()
+    const supabase = createClient()
+    const { data, error } = await supabase.from("followups").update({ note: note || null, auto_created: false }).eq("id", fId).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
+    setFollowups((prev) => prev.map((f) => (f.id === fId ? { ...f, note: note || null } : f)))
+    toast.success("Note updated")
   }
 
   const handleDeleteCheckin = async (cId: string) => {
@@ -510,6 +521,13 @@ export default function ClientDetailPage() {
                     )}
                   </div>
                   <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleEditFollowupNote(f.id, f.note)}
+                      className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
+                    >
+                      Edit note
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleChangeFollowupDate(f.id, f.due_date)}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
-import { Dumbbell, Salad, FileText, Upload, Trash2 } from "lucide-react"
+import { Dumbbell, Salad, FileText, Upload, Trash2, Pencil } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { openUrl } from "@/lib/utils"
 
@@ -98,11 +98,23 @@ export default function PlansLibraryPage() {
     openUrl(body.url)
   }
 
+  async function rename(t: Template) {
+    const next = window.prompt("Plan name", t.title)
+    if (next === null) return
+    const title = next.trim()
+    if (!title) { toast.error("Enter a plan name"); return }
+    const supabase = createClient()
+    const { data, error } = await supabase.from("client_documents").update({ title }).eq("id", t.id).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
+    setTemplates((ts) => (ts ?? []).map((x) => (x.id === t.id ? { ...x, title } : x)))
+    toast.success("Plan renamed")
+  }
+
   async function remove(t: Template) {
     if (!window.confirm(`Remove "${t.title}" from your saved plans? Clients who already have it keep it.`)) return
     const supabase = createClient()
-    const { error } = await supabase.from("client_documents").delete().eq("id", t.id)
-    if (error) { toast.error("Could not remove. Try again."); return }
+    const { data, error } = await supabase.from("client_documents").delete().eq("id", t.id).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not delete. Try again."); return }
     setTemplates((ts) => (ts ?? []).filter((x) => x.id !== t.id))
   }
 
@@ -144,8 +156,11 @@ export default function PlansLibraryPage() {
                       <p className="text-text-muted text-sm mt-0.5">Saved {format(new Date(t.created_at), "d MMM yyyy")}</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mt-3">
+                  <div className="grid grid-cols-3 gap-2 mt-3">
                     <button type="button" onClick={() => open(t.id)} className="h-12 rounded-xl bg-white/10 text-white font-bold text-base cursor-pointer">Open</button>
+                    <button type="button" onClick={() => rename(t)} className="h-12 rounded-xl bg-white/10 text-white font-bold text-base flex items-center justify-center gap-2 cursor-pointer">
+                      <Pencil className="size-4" /> Rename
+                    </button>
                     <button type="button" onClick={() => remove(t)} className="h-12 rounded-xl bg-white/5 text-red-300 font-bold text-base flex items-center justify-center gap-2 cursor-pointer">
                       <Trash2 className="size-4" /> Remove
                     </button>

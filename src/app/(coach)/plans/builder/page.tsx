@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
-import { Dumbbell, Apple, Plus, X } from "lucide-react"
+import { Dumbbell, Apple, Plus, X, Pencil, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import toast from "react-hot-toast"
@@ -43,6 +43,7 @@ export default function PlansPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalType, setModalType] = useState<TabKey>("workout")
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   // Modal form state — shared
   const [selectedClientId, setSelectedClientId] = useState("")
@@ -122,6 +123,7 @@ export default function PlansPage() {
 
   function openModal(type: TabKey) {
     setModalType(type)
+    setEditingId(null)
     setSelectedClientId(clientOptions[0]?.clientId ?? "")
     setPlanName("")
     setWeeks("12")
@@ -132,13 +134,50 @@ export default function PlansPage() {
     setIsModalOpen(true)
   }
 
+  function openEditWorkout(plan: WorkoutPlanWithClient) {
+    setModalType("workout")
+    setEditingId(plan.id)
+    setSelectedClientId(plan.client_id)
+    setPlanName(plan.name)
+    setWeeks(String(plan.weeks))
+    setIsModalOpen(true)
+  }
+
+  function openEditDiet(plan: NutritionPlanWithClient) {
+    setModalType("nutrition")
+    setEditingId(plan.id)
+    setSelectedClientId(plan.client_id)
+    setCalories(plan.total_calories?.toString() ?? "")
+    setProtein(plan.protein_g?.toString() ?? "")
+    setCarbs(plan.carbs_g?.toString() ?? "")
+    setFats(plan.fats_g?.toString() ?? "")
+    setIsModalOpen(true)
+  }
+
   function closeModal() {
     setIsModalOpen(false)
+    setEditingId(null)
+  }
+
+  async function deleteWorkoutPlan(plan: WorkoutPlanWithClient) {
+    if (!window.confirm(`Delete "${plan.name}" for ${plan.clientName}? This cannot be undone.`)) return
+    const { data, error } = await supabase.from("workout_plans").delete().eq("id", plan.id).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not delete. Try again."); return }
+    setWorkoutPlans((prev) => prev.filter((p) => p.id !== plan.id))
+    toast.success("Plan deleted")
+  }
+
+  async function deleteDietPlan(plan: NutritionPlanWithClient) {
+    if (!window.confirm(`Delete diet plan for ${plan.clientName}? This cannot be undone.`)) return
+    const { data, error } = await supabase.from("nutrition_plans").delete().eq("id", plan.id).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not delete. Try again."); return }
+    setNutritionPlans((prev) => prev.filter((p) => p.id !== plan.id))
+    toast.success("Plan deleted")
   }
 
   async function handleCreatePlan(e: FormEvent) {
     e.preventDefault()
-    if (!selectedClientId) { toast.error("Select a client"); return }
+    if (!editingId && !selectedClientId) { toast.error("Select a client"); return }
 
     const { data: userData } = await supabase.auth.getUser()
     if (!userData.user) return
@@ -149,6 +188,16 @@ export default function PlansPage() {
         if (!planName.trim()) { toast.error("Enter a plan name"); return }
         const weeksNum = Number(weeks)
         if (!weeksNum || weeksNum < 1 || weeksNum > 52) { toast.error("Weeks must be between 1 and 52"); return }
+
+        if (editingId) {
+          const { data: updated, error } = await supabase.from("workout_plans").update({ name: planName.trim(), weeks: weeksNum }).eq("id", editingId).select("id")
+          if (error || !updated || updated.length !== 1) { toast.error("Could not save. Try again."); return }
+          setWorkoutPlans((prev) => prev.map((p) => (p.id === editingId ? { ...p, name: planName.trim(), weeks: weeksNum } : p)))
+          toast.success("Plan saved")
+          setIsModalOpen(false)
+          setEditingId(null)
+          return
+        }
 
         const { data: inserted, error } = await supabase.from("workout_plans").insert({
           client_id: selectedClientId,
@@ -162,13 +211,27 @@ export default function PlansPage() {
         toast.success("Plan created!")
         router.push(`/plans/workout/${inserted.id}`)
       } else {
-        const { data: inserted, error } = await supabase.from("nutrition_plans").insert({
-          client_id: selectedClientId,
-          coach_id: userData.user.id,
+        const macros = {
           total_calories: calories ? Number(calories) : null,
           protein_g: protein ? Number(protein) : null,
           carbs_g: carbs ? Number(carbs) : null,
           fats_g: fats ? Number(fats) : null,
+        }
+
+        if (editingId) {
+          const { data: updated, error } = await supabase.from("nutrition_plans").update(macros).eq("id", editingId).select("id")
+          if (error || !updated || updated.length !== 1) { toast.error("Could not save. Try again."); return }
+          setNutritionPlans((prev) => prev.map((p) => (p.id === editingId ? { ...p, ...macros } : p)))
+          toast.success("Plan saved")
+          setIsModalOpen(false)
+          setEditingId(null)
+          return
+        }
+
+        const { data: inserted, error } = await supabase.from("nutrition_plans").insert({
+          client_id: selectedClientId,
+          coach_id: userData.user.id,
+          ...macros,
           is_active: true,
         }).select("id").single()
         if (error) throw error
@@ -176,7 +239,7 @@ export default function PlansPage() {
         router.push(`/plans/nutrition/${inserted.id}`)
       }
     } catch {
-      toast.error("Failed to create plan")
+      toast.error(editingId ? "Could not save. Try again." : "Failed to create plan")
     } finally {
       setIsSubmitting(false)
     }
@@ -278,6 +341,24 @@ export default function PlansPage() {
                 }`}>
                   {plan.is_active ? "Active" : "Inactive"}
                 </span>
+                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => openEditWorkout(plan)}
+                    aria-label="Edit plan"
+                    className="w-7 h-7 rounded-full bg-bg-elevated border border-border-subtle flex items-center justify-center text-text-muted hover:text-accent-orange cursor-pointer transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteWorkoutPlan(plan)}
+                    aria-label="Delete plan"
+                    className="w-7 h-7 rounded-full bg-bg-elevated border border-border-subtle flex items-center justify-center text-red-400 hover:bg-red-950/60 cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -301,11 +382,29 @@ export default function PlansPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-text-primary font-heading font-bold text-xs">{plan.clientName}</p>
-                <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                  plan.is_active ? "bg-accent-orange/15 border border-accent-orange/30 text-accent-orange" : "bg-bg-elevated text-text-muted"
-                }`}>
-                  {plan.is_active ? "Active" : "Inactive"}
-                </span>
+                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
+                    plan.is_active ? "bg-accent-orange/15 border border-accent-orange/30 text-accent-orange" : "bg-bg-elevated text-text-muted"
+                  }`}>
+                    {plan.is_active ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => openEditDiet(plan)}
+                    aria-label="Edit diet plan"
+                    className="w-7 h-7 rounded-full bg-bg-elevated border border-border-subtle flex items-center justify-center text-text-muted hover:text-accent-orange cursor-pointer transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteDietPlan(plan)}
+                    aria-label="Delete diet plan"
+                    className="w-7 h-7 rounded-full bg-bg-elevated border border-border-subtle flex items-center justify-center text-red-400 hover:bg-red-950/60 cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {plan.total_calories !== null && (
@@ -345,7 +444,7 @@ export default function PlansPage() {
 
               <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
                 <h2 className="font-heading font-bold text-lg text-text-primary">
-                  Create {modalType === "workout" ? "Workout" : "Diet"} Plan
+                  {editingId ? "Edit" : "Create"} {modalType === "workout" ? "Workout" : "Diet"} Plan
                 </h2>
                 <button onClick={closeModal} className="w-8 h-8 rounded-full bg-bg-elevated flex items-center justify-center text-text-muted cursor-pointer">
                   <X className="size-4" />
@@ -353,6 +452,7 @@ export default function PlansPage() {
               </div>
 
               <form onSubmit={handleCreatePlan} className="flex-1 overflow-y-auto px-5 pb-32 space-y-4">
+                {!editingId && (
                 <div>
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5 block">Client *</label>
                   <select
@@ -372,6 +472,7 @@ export default function PlansPage() {
                     )}
                   </select>
                 </div>
+                )}
 
                 {modalType === "workout" ? (
                   <>
@@ -415,6 +516,8 @@ export default function PlansPage() {
                 >
                   {isSubmitting ? (
                     <div className="w-5 h-5 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+                  ) : editingId ? (
+                    "Save changes"
                   ) : (
                     "Create Plan"
                   )}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
-import { Dumbbell, Plus, X, ArrowLeft, Trash2, GripVertical } from "lucide-react"
+import { Dumbbell, Plus, X, ArrowLeft, Trash2, GripVertical, Pencil } from "lucide-react"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import type { WorkoutPlan, WorkoutDay, Exercise } from "@/types"
@@ -198,6 +198,19 @@ export default function WorkoutPlanBuilderPage() {
     fetchData()
   }
 
+  async function handleRenameDay(dayId: string) {
+    const day = days.find((d) => d.id === dayId)
+    if (!day) return
+    const next = window.prompt("Day name", day.day_name)
+    if (next === null) return
+    const name = next.trim()
+    if (!name) { toast.error("Enter a day name"); return }
+    const { data, error } = await supabase.from("workout_days").update({ day_name: name }).eq("id", dayId).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
+    setDays((prev) => prev.map((d) => (d.id === dayId ? { ...d, day_name: name } : d)))
+    toast.success("Day renamed")
+  }
+
   function openAddExercise() {
     setEditingExercise(null)
     setExName("")
@@ -309,9 +322,14 @@ export default function WorkoutPlanBuilderPage() {
               {activeDay.day_name}{activeDay.focus ? ` · ${activeDay.focus}` : ""}
             </h3>
           </div>
-          <button onClick={() => handleDeleteDay(activeDay.id)} className="text-zinc-500 hover:text-red-400 p-1 cursor-pointer transition-colors">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => handleRenameDay(activeDay.id)} aria-label="Rename day" className="text-zinc-500 hover:text-[#FFB800] p-1 cursor-pointer transition-colors">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => handleDeleteDay(activeDay.id)} aria-label="Delete day" className="text-zinc-500 hover:text-red-400 p-1 cursor-pointer transition-colors">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       ) : (
         <div className="text-center py-8">

@@ -163,11 +163,23 @@ export default function QuickManagePage() {
   async function saveFollowupDate(newDate: string) {
     if (!dateRow || dateRow.action.kind !== "followup") return
     const supabase = createClient()
-    const { error } = await supabase.from("followups").update({ due_date: newDate }).eq("id", dateRow.action.followupId)
-    if (error) { toast.error("Could not update date. Try again."); return }
+    const { data, error } = await supabase.from("followups").update({ due_date: newDate, auto_created: false }).eq("id", dateRow.action.followupId).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
     toast.success("Follow-up date updated")
     removeRow(dateRow.id)
     setDateRow(null)
+  }
+
+  async function editFollowupNote(r: QMRow) {
+    if (r.action.kind !== "followup") return
+    const next = window.prompt("Follow-up note", r.action.note ?? "")
+    if (next === null) return
+    const note = next.trim()
+    const supabase = createClient()
+    const { data, error } = await supabase.from("followups").update({ note: note || null, auto_created: false }).eq("id", r.action.followupId).select("id")
+    if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
+    toast.success("Note updated")
+    load()
   }
 
   async function removeFollowup(r: QMRow) {
@@ -332,6 +344,13 @@ export default function QuickManagePage() {
                     </div>
                     {r.action.kind === "followup" && (
                       <div className="flex items-center justify-end gap-3 mt-2.5 pt-2 border-t border-border-subtle/50">
+                        <button
+                          type="button"
+                          onClick={() => editFollowupNote(r)}
+                          className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
+                        >
+                          Edit note
+                        </button>
                         <button
                           type="button"
                           onClick={() => setDateRow(r)}
