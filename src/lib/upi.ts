@@ -3,7 +3,6 @@ export const COACH_UPI_NAME = "Aman Khurana Fitness"
 
 // Bank transfer details, exactly as Aman sent them (his old renewal message, 2026-10-14).
 export const COACH_BANK = {
-  accountName: "Aman Khurana Fitness",
   bank: "HDFC Bank",
   accountNo: "50100833186672",
   ifsc: "HDFC0000450",

@@ -405,23 +405,6 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
   doc.text(fmtCurr(pendingAmount), right - 3, y + 2.5, { align: "right" })
   y += 18
 
-  // Payment Methods (UPI + Bank transfer) — drawn in the free column to the
-  // right of the Terms card (which occupies left..left+115), above the footer.
-  const termsXEnd = left + 115 + 6
-  doc.setFontSize(7.5)
-  doc.setFont("helvetica", "bold")
-  doc.setTextColor(...gray)
-  doc.text("PAYMENT METHODS", termsXEnd, 218)
-  doc.setFontSize(8)
-  doc.setFont("helvetica", "normal")
-  doc.text(`UPI: ${COACH_UPI_ID}`, termsXEnd, 224)
-  doc.text(`(${COACH_UPI_NAME})`, termsXEnd, 229)
-  doc.text("Bank Transfer:", termsXEnd, 237)
-  doc.text(`${COACH_BANK.accountName}`, termsXEnd, 242)
-  doc.text(`A/c No. ${COACH_BANK.accountNo}`, termsXEnd, 247)
-  doc.text(`IFSC ${COACH_BANK.ifsc}`, termsXEnd, 252)
-  doc.text(`${COACH_BANK.bank}`, termsXEnd, 257)
-
   // Terms & Conditions Card (Enlarged & Visually Highlighted per Task B5)
   const tcWidth = 115
   const tcY = totalsStartY
@@ -451,6 +434,30 @@ export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
     doc.text(lines, left + 4, currentTcY)
     currentTcY += lines.length * 3.2 + 1.2
   }
+
+  // Payment Methods (UPI + Bank transfer) — placed in the left column directly
+  // under the Terms card, anchored to the card's real bottom edge so it stays
+  // put when the bill has more rows (never fixed y). The right column is left
+  // free for the Authorised Signatory block.
+  let pmY = tcY + tcCardHeight + 8
+  doc.setFontSize(7.5)
+  doc.setFont("helvetica", "bold")
+  doc.setTextColor(...gray)
+  doc.text("PAYMENT METHODS", left, pmY)
+  pmY += 5
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "normal")
+  doc.text(`UPI: ${COACH_UPI_ID}`, left, pmY)
+  pmY += 5
+  doc.text(`(${COACH_UPI_NAME})`, left, pmY)
+  pmY += 6
+  doc.text("Bank Transfer:", left, pmY)
+  pmY += 5
+  doc.text(`A/c No. ${COACH_BANK.accountNo}`, left, pmY)
+  pmY += 5
+  doc.text(`IFSC ${COACH_BANK.ifsc}`, left, pmY)
+  pmY += 5
+  doc.text(`${COACH_BANK.bank}`, left, pmY)
 
   y = Math.max(y, tcY + tcCardHeight + 8)
 

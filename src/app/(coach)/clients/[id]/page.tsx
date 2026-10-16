@@ -353,7 +353,6 @@ export default function ClientDetailPage() {
       `🔗 *UPI Link*: ${upiLink}`,
       ``,
       `🏦 *Bank Transfer* (${COACH_BANK.bank})`,
-      `A/c Name: ${COACH_BANK.accountName}`,
       `A/c No: ${COACH_BANK.accountNo}`,
       `IFSC: ${COACH_BANK.ifsc}`,
       ``,
