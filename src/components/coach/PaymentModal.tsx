@@ -713,9 +713,16 @@ export default function PaymentModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
-                Due Date
-              </label>
+              <div className="flex items-baseline justify-between mb-1">
+                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  Payment due date
+                </label>
+                {(startDate || endDate) && (
+                  <span className="text-[11px] text-text-muted">
+                    Package: {startDate || "—"} to {endDate || "—"}
+                  </span>
+                )}
+              </div>
               <input
                 type="date"
                 value={dueDate}

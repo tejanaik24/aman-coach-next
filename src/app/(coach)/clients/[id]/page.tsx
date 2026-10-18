@@ -36,7 +36,7 @@ import { waLink, buildFollowupWaText } from "@/lib/quick-manage"
 import { generatePaymentReceiptPdf, generateUpiPaymentUrl, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
 import { COACH_UPI_ID, COACH_BANK } from "@/lib/upi"
 import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
-import { mapFeeToBill, type MappedBill } from "@/lib/bill-validation"
+import { mapFeeToBill, buildSharedBillWaText, type MappedBill } from "@/lib/bill-validation"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
 import { openUrl } from "@/lib/utils"
 
@@ -367,32 +367,18 @@ export default function ClientDetailPage() {
 
   function buildClientBillWaText(f: Fee): string {
     const m = resolveFeeMetrics(f)
-    const first = name.trim()
-    const due = format(new Date(f.due_date + "T00:00:00"), "dd MMM yyyy")
-    const upiLink = generateUpiPaymentUrl(m.balanceDue || m.amount, name, m.invNum)
-    const lines = [
-      `Hi ${first}, here is your coaching bill from *Aman Khurana Fitness*:`,
-      ``,
-      `📄 *Invoice #*: ${m.invNum}`,
-      ...(m.pkgName ? [`📦 *Package*: ${m.pkgName}`] : []),
-      `💰 *Package Fee*: ₹${m.packageFee.toLocaleString("en-IN")}`,
-      ...(m.discount > 0 ? [`🏷️ *Discount*: −₹${m.discount.toLocaleString("en-IN")}`] : []),
-      ...(m.otherCharges > 0 ? [`➕ *Other Charges*: ₹${m.otherCharges.toLocaleString("en-IN")}`] : []),
-      `✅ *Final Amount*: ₹${m.amount.toLocaleString("en-IN")}`,
-      ...(m.amountPaid > 0 ? [`💵 *Paid*: ₹${m.amountPaid.toLocaleString("en-IN")}`] : []),
-      `📌 *Amount Due*: ₹${m.balanceDue.toLocaleString("en-IN")}`,
-      `📅 *Due Date*: ${due}`,
-      ``,
-      `📲 *Pay by UPI*: ${COACH_UPI_ID} (Aman Khurana Fitness)`,
-      `🔗 *UPI Link*: ${upiLink}`,
-      ``,
-      `🏦 *Bank Transfer* (${COACH_BANK.bank})`,
-      `A/c No: ${COACH_BANK.accountNo}`,
-      `IFSC: ${COACH_BANK.ifsc}`,
-      ``,
-      `Thank you! — Aman Khurana (#teamAKF)`,
-    ]
-    return lines.join("\n")
+    return buildSharedBillWaText({
+      clientName: name,
+      invoiceNumber: m.invNum,
+      packageName: m.pkgName,
+      amount: m.amount,
+      amountPaid: m.amountPaid,
+      balanceDue: m.balanceDue,
+      dueDate: f.due_date,
+      token: f.token,
+      emiNo: f.emi_no,
+      emiTotal: f.emi_total,
+    })
   }
 
   async function handleDownloadClientReceipt(f: Fee) {

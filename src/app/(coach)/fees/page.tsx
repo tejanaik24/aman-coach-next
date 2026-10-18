@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { generatePaymentReceiptPdf, generateUpiPaymentUrl, markInvoicePaid, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
 import { COACH_UPI_ID, COACH_BANK } from "@/lib/upi"
 import { paidSoFar, amountDue } from "@/lib/fee-math"
-import { mapFeeToBill, type MappedBill } from "@/lib/bill-validation"
+import { mapFeeToBill, buildSharedBillWaText, type MappedBill } from "@/lib/bill-validation"
 import { waLink } from "@/lib/quick-manage"
 import PaymentModal from "@/components/coach/PaymentModal"
 import { PACKAGES } from "@/lib/package-goal"
@@ -282,34 +282,18 @@ export default function FeesPage() {
   }
 
   function billWhatsAppText(f: FeeWithClient): string {
-    const first = f.clientName.trim()
-    const due = format(new Date(f.dueDate + "T00:00:00"), "dd MMM yyyy")
-    const paidAmt = paidSoFar(f)
-    const balanceDue = amountDue(f)
-    const upiLink = generateUpiPaymentUrl(balanceDue || f.amount, f.clientName, f.invoiceNumber)
-    const lines = [
-      `Hi ${first}, here is your coaching bill from *Aman Khurana Fitness*:`,
-      ``,
-      `📄 *Invoice #*: ${f.invoiceNumber}`,
-      ...(f.packageName ? [`📦 *Package*: ${f.packageName}`] : []),
-      `💰 *Package Fee*: ₹${f.packageFee.toLocaleString("en-IN")}`,
-      ...(f.discount > 0 ? [`🏷️ *Discount*: −₹${f.discount.toLocaleString("en-IN")}`] : []),
-      ...(f.otherCharges > 0 ? [`➕ *Other Charges*: ₹${f.otherCharges.toLocaleString("en-IN")}`] : []),
-      `✅ *Final Amount*: ₹${f.amount.toLocaleString("en-IN")}`,
-      ...(paidAmt > 0 ? [`💵 *Paid*: ₹${paidAmt.toLocaleString("en-IN")}`] : []),
-      `📌 *Amount Due*: ₹${balanceDue.toLocaleString("en-IN")}`,
-      `📅 *Due Date*: ${due}`,
-      ``,
-      `📲 *Pay by UPI*: ${COACH_UPI_ID} (Aman Khurana Fitness)`,
-      `🔗 *UPI Link*: ${upiLink}`,
-      ``,
-      `🏦 *Bank Transfer* (${COACH_BANK.bank})`,
-      `A/c No: ${COACH_BANK.accountNo}`,
-      `IFSC: ${COACH_BANK.ifsc}`,
-      ``,
-      `Thank you! — Aman Khurana (#teamAKF)`,
-    ]
-    return lines.join("\n")
+    return buildSharedBillWaText({
+      clientName: f.clientName,
+      invoiceNumber: f.invoiceNumber,
+      packageName: f.packageName,
+      amount: f.amount,
+      amountPaid: paidSoFar(f),
+      balanceDue: amountDue(f),
+      dueDate: f.dueDate,
+      token: f.token,
+      emiNo: f.emiNo,
+      emiTotal: f.emiTotal,
+    })
   }
 
   return (

@@ -1,3 +1,4 @@
+import { format } from "date-fns"
 import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
 import type { Fee } from "@/types"
 
@@ -269,6 +270,10 @@ export interface MappedBill {
   amountPaid: number
   balanceDue: number
   notes: string | null
+  token?: string | null
+  emiGroup?: string | null
+  emiNo?: number | null
+  emiTotal?: number | null
 }
 
 /**
@@ -318,6 +323,49 @@ export function mapFeeToBill(
     amountPaid,
     balanceDue,
     notes: f.notes ?? null,
+    token: f.token ?? null,
+    emiGroup: f.emi_group ?? null,
+    emiNo: f.emi_no ?? null,
+    emiTotal: f.emi_total ?? null,
   }
+}
+
+/**
+ * Phase 3: Single unified WhatsApp bill message builder.
+ * Short, clean, points to public bill link without un-clickable upi:// schemes.
+ */
+export function buildSharedBillWaText(b: {
+  clientName: string
+  invoiceNumber: string
+  packageName?: string | null
+  amount: number
+  amountPaid: number
+  balanceDue: number
+  dueDate: string
+  token?: string | null
+  emiNo?: number | null
+  emiTotal?: number | null
+}): string {
+  const first = b.clientName.trim() || "there"
+  const isPaid = b.balanceDue <= 0
+  const billUrl = b.token
+    ? `https://www.amankhuranafitness.com/bill/${b.token}`
+    : `https://www.amankhuranafitness.com/payments`
+
+  const emiSuffix = b.emiNo && b.emiTotal ? ` (EMI ${b.emiNo} of ${b.emiTotal})` : ""
+  const pkg = (b.packageName || "Personal Coaching") + emiSuffix
+
+  if (isPaid) {
+    const paidAmt = b.amountPaid > 0 ? b.amountPaid : b.amount
+    return `Hi ${first}, your payment of ₹${paidAmt.toLocaleString("en-IN")} is received. Receipt: ${billUrl}\n\n– Aman Khurana #teamAKF`
+  }
+
+  // Pending / Overdue bill
+  const due = format(new Date(b.dueDate + "T00:00:00"), "dd MMM yyyy")
+  return `Hi ${first}, your bill from Aman Khurana Fitness is ready.
+Invoice #${b.invoiceNumber} · ${pkg}
+Amount due: ₹${b.balanceDue.toLocaleString("en-IN")} · Due ${due}
+View, pay or download: ${billUrl}
+– Aman Khurana #teamAKF`
 }
 

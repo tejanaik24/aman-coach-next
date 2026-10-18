@@ -158,6 +158,10 @@ export interface Fee {
   reward_points_redeemed?: number | null
   amount_paid?: number | null
   invoice_number?: string | null
+  token?: string | null
+  emi_group?: string | null
+  emi_no?: number | null
+  emi_total?: number | null
   currency: string
   due_date: string
   paid_date: string | null
