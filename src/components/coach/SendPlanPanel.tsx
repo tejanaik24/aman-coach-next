@@ -40,8 +40,10 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
   const [title, setTitle] = useState("")
   const [note, setNote] = useState("")
   const [saveTemplate, setSaveTemplate] = useState(false)
+  const [reminderWeeks, setReminderWeeks] = useState<number | null>(4) // 2 | 4 | 6 | 8 | 12 | null
   const [busy, setBusy] = useState(false)
   const [templateKind, setTemplateKind] = useState<Kind | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<Doc | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -67,7 +69,39 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     setTitle(file.name.replace(/\.[^.]+$/, ""))
     setNote("")
     setSaveTemplate(false)
+    setReminderWeeks(pickKind === "cycle" ? null : 4)
     if (fileRef.current) fileRef.current.value = ""
+  }
+
+  async function schedulePlanUpdateReminder(coachId: string, kind: Kind, weeks: number | null) {
+    if (!weeks) return
+    const supabase = createClient()
+    const noteText = `Update ${kind} plan`
+    const dueDate = format(new Date(Date.now() + weeks * 7 * 86400000), "yyyy-MM-dd")
+
+    // Check if an open plan_update for the same client and kind already exists
+    const { data: existing } = await supabase
+      .from("followups")
+      .select("id, note")
+      .eq("coach_id", coachId)
+      .eq("client_id", clientId)
+      .eq("type", "plan_update")
+      .is("done_at", null)
+
+    const match = ((existing ?? []) as { id: string; note: string | null }[]).find((f) => (f.note ?? "").toLowerCase().includes(kind))
+
+    if (match) {
+      await supabase.from("followups").update({ due_date: dueDate, note: noteText, auto_created: false }).eq("id", match.id)
+    } else {
+      await supabase.from("followups").insert({
+        coach_id: coachId,
+        client_id: clientId,
+        type: "plan_update",
+        due_date: dueDate,
+        note: noteText,
+        auto_created: false,
+      })
+    }
   }
 
   async function upload() {
@@ -94,6 +128,8 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       const ins = await supabase.from("client_documents").insert(rows)
       if (ins.error) throw ins.error
 
+      await schedulePlanUpdateReminder(user.id, pending.kind, reminderWeeks)
+
       toast.success("Saved. Now tap WhatsApp to tell the client.")
       setPending(null)
       load()
@@ -107,18 +143,28 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     }
   }
 
-  async function applyTemplate(t: Doc) {
+  async function applyTemplate(t: Doc, weeks: number | null) {
     setBusy(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from("client_documents").insert({
-      coach_id: user?.id, client_id: clientId, kind: t.kind, title: t.title, file_path: t.file_path, note: t.note, is_template: false,
-    })
-    setBusy(false)
-    if (error) { toast.error("Could not add. Try again."); return }
-    toast.success(`${t.title} added for ${clientName.trim()}`)
-    setTemplateKind(null)
-    load()
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not signed in")
+      const { error } = await supabase.from("client_documents").insert({
+        coach_id: user.id, client_id: clientId, kind: t.kind, title: t.title, file_path: t.file_path, note: t.note, is_template: false,
+      })
+      if (error) throw error
+
+      await schedulePlanUpdateReminder(user.id, t.kind, weeks)
+
+      toast.success(`${t.title} added for ${clientName.trim()}`)
+      setSelectedTemplate(null)
+      setTemplateKind(null)
+      load()
+    } catch (err) {
+      toast.error("Could not add. Try again.")
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function open(id: string) {
@@ -216,6 +262,36 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
             <p className="text-sm text-text-muted mb-1">File: {pending.file.name}</p>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name of the plan" className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mt-2 mb-3" />
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Note for the client (optional)" className="w-full rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 py-3 text-white text-base outline-none focus:border-[#C9A84C] mb-4 resize-none" />
+
+            {/* Reminder chips */}
+            <div className="mb-4">
+              <p className="text-text-muted text-xs font-semibold mb-2">Remind me to update in</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "2 weeks", value: 2 },
+                  { label: "4 weeks", value: 4 },
+                  { label: "6 weeks", value: 6 },
+                  { label: "8 weeks", value: 8 },
+                  { label: "12 weeks", value: 12 },
+                  { label: "No reminder", value: null },
+                ].map((opt) => {
+                  const sel = reminderWeeks === opt.value
+                  return (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setReminderWeeks(opt.value)}
+                      className={`h-9 px-3.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                        sel ? "bg-accent-orange text-black" : "bg-white/10 text-white hover:bg-white/15"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             {pending.kind !== "cycle" ? (
               <label className="flex items-center gap-3 text-base mb-5 cursor-pointer">
                 <input type="checkbox" checked={saveTemplate} onChange={(e) => setSaveTemplate(e.target.checked)} className="size-6 accent-[#FF6A1A]" />
@@ -231,20 +307,80 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
 
       {/* Saved templates */}
       {templateKind && (
-        <div className="fixed inset-0 z-[60] flex items-end bg-black/70" onClick={() => setTemplateKind(null)}>
+        <div className="fixed inset-0 z-[60] flex items-end bg-black/70" onClick={() => { if (!busy) { setTemplateKind(null); setSelectedTemplate(null) } }}>
           <div className="w-full max-w-lg mx-auto rounded-t-3xl bg-bg-card border-t border-border-subtle p-5 pb-8 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-heading italic text-2xl mb-4">Saved {templateKind} plans</h3>
-            <div className="grid gap-2">
-              {templates.filter((t) => t.kind === templateKind).length === 0 ? (
-                <p className="text-text-muted text-base">None saved yet.</p>
-              ) : (
-                templates.filter((t) => t.kind === templateKind).map((t) => (
-                  <button key={t.id} disabled={busy} type="button" onClick={() => applyTemplate(t)} className="h-14 rounded-xl bg-[#F3EDE2] text-[#181310] font-bold text-lg px-4 text-left cursor-pointer disabled:opacity-50">
-                    {t.title}
+            {selectedTemplate ? (
+              <div className="space-y-4">
+                <p className="text-white text-lg font-semibold">{selectedTemplate.title}</p>
+                <div>
+                  <p className="text-text-muted text-xs font-semibold mb-2">Remind me to update in</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: "2 weeks", value: 2 },
+                      { label: "4 weeks", value: 4 },
+                      { label: "6 weeks", value: 6 },
+                      { label: "8 weeks", value: 8 },
+                      { label: "12 weeks", value: 12 },
+                      { label: "No reminder", value: null },
+                    ].map((opt) => {
+                      const sel = reminderWeeks === opt.value
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => setReminderWeeks(opt.value)}
+                          className={`h-9 px-3.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                            sel ? "bg-accent-orange text-black" : "bg-white/10 text-white hover:bg-white/15"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setSelectedTemplate(null)}
+                    className="h-12 rounded-xl bg-white/10 text-white font-bold text-base cursor-pointer disabled:opacity-50"
+                  >
+                    Back
                   </button>
-                ))
-              )}
-            </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => applyTemplate(selectedTemplate, reminderWeeks)}
+                    className="h-12 rounded-xl bg-accent-orange text-black font-bold text-base cursor-pointer disabled:opacity-50"
+                  >
+                    {busy ? "Adding…" : "Add plan"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {templates.filter((t) => t.kind === templateKind).length === 0 ? (
+                  <p className="text-text-muted text-base">None saved yet.</p>
+                ) : (
+                  templates.filter((t) => t.kind === templateKind).map((t) => (
+                    <button
+                      key={t.id}
+                      disabled={busy}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTemplate(t)
+                        setReminderWeeks(4)
+                      }}
+                      className="h-14 rounded-xl bg-[#F3EDE2] text-[#181310] font-bold text-lg px-4 text-left cursor-pointer disabled:opacity-50"
+                    >
+                      {t.title}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

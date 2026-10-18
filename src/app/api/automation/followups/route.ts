@@ -212,7 +212,8 @@ async function run(request: Request) {
   )
 
   for (const f of allOpen) {
-    if (f.done_at || f.auto_created) continue
+    // Exclude auto_created followups and coach-only plan_update reminders from client automation
+    if (f.done_at || f.auto_created || f.type === "plan_update") continue
 
     const diff = daysBetween(today, f.due_date)
     if (diff > REMIND_DAYS_BEFORE) {

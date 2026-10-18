@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
 import {
   ArrowLeft,
@@ -109,6 +109,8 @@ export default function ClientDetailPage() {
   const params = useParams()
   const id = params.id as string
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialTab = searchParams.get("tab") as Tab | null
 
   const [client, setClient] = useState<ClientWithProfile | null>(null)
   const [checkins, setCheckins] = useState<Checkin[]>([])
@@ -117,7 +119,9 @@ export default function ClientDetailPage() {
   const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>([])
   const [clientBadges, setClientBadges] = useState<ClientBadge[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<Tab>("overview")
+  const [activeTab, setActiveTab] = useState<Tab>(
+    initialTab === "plans" || initialTab === "checkins" || initialTab === "fees" ? initialTab : "overview"
+  )
   const [expandedCheckin, setExpandedCheckin] = useState<string | null>(null)
   const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({})
   const [savingFeedback, setSavingFeedback] = useState<string | null>(null)

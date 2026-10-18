@@ -3,10 +3,11 @@ import { format, differenceInCalendarDays } from "date-fns"
 import { amountDue } from "@/lib/fee-math"
 
 // Aman's own words (from his old app's "Quick Manage" panel).
-export type TileKey = "followups" | "payments" | "renewals" | "enquiries" | "checkins" | "silent" | "calls" | "birthdays"
+export type TileKey = "followups" | "plans" | "payments" | "renewals" | "enquiries" | "checkins" | "silent" | "calls" | "birthdays"
 
 export const TILE_LABELS: Record<TileKey, string> = {
   followups: "Follow-ups",
+  plans: "Plans to update",
   payments: "Pending payments",
   renewals: "Upcoming renewals",
   enquiries: "New enquiries",
@@ -16,7 +17,7 @@ export const TILE_LABELS: Record<TileKey, string> = {
   birthdays: "Birthdays",
 }
 
-export const TILE_ORDER: TileKey[] = ["followups", "payments", "renewals", "enquiries", "checkins", "silent", "calls", "birthdays"]
+export const TILE_ORDER: TileKey[] = ["followups", "plans", "payments", "renewals", "enquiries", "checkins", "silent", "calls", "birthdays"]
 
 export type RowAction =
   | { kind: "followup"; followupId: string; clientId: string; note: string | null; dueDate?: string; type?: string }
@@ -133,14 +134,14 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
       .select("id, client_id, start_time")
       .eq("booking_date", todayStr)
       .eq("status", "confirmed"),
-    // Include follow-ups due today or within the next 2 days so Coach Aman can act on them immediately.
+    // Include follow-ups due today or within the next 3 days so Coach Aman can act on them immediately.
     supabase
       .from("followups")
       .select("id, client_id, type, due_date, note")
       .eq("coach_id", coachId)
       .is("done_at", null)
       .not("auto_created", "is", true) // Aman sets check-in dates himself; old auto-made ones stay hidden
-      .lte("due_date", plus(2))
+      .lte("due_date", plus(3))
       .order("due_date"),
     // date of birth comes from the joining questionnaire (form_data.q6_dob)
     supabase
@@ -166,6 +167,22 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
   for (const f of (followupsRes.data ?? []) as { id: string; client_id: string; type: string; due_date: string; note: string | null }[]) {
     const c = clients.get(f.client_id)
     if (!c) continue
+
+    if (f.type === "plan_update") {
+      const rel = relDay(new Date(f.due_date + "T00:00:00"), today)
+      rows.push({
+        id: `fu-${f.id}`,
+        tile: "plans",
+        name: c.name,
+        phone: c.phone,
+        clientId: f.client_id,
+        reason: `${f.note ? f.note : "Update plan"} · due ${rel}`,
+        waText: "", // plan_update is an internal coach reminder, no client WhatsApp message
+        action: { kind: "followup", followupId: f.id, clientId: f.client_id, note: f.note, dueDate: f.due_date, type: f.type },
+      })
+      continue
+    }
+
     const label = { checkin: "Check-in", payment: "Payment", renewal: "Renewal", feedback: "Feedback", birthday: "Birthday", other: "Follow-up" }[f.type] ?? "Follow-up"
     rows.push({
       id: `fu-${f.id}`, tile: "followups", name: c.name, phone: c.phone, clientId: f.client_id,

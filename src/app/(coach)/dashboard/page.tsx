@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Plus, Check, MessageCircle } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
@@ -113,8 +113,11 @@ export default function QuickManagePage() {
     return { totalAmount, overdueCount, overdueAmount }
   }, [rows])
 
-  // the opened tile defaults to the first one that has something in it
-  const openTile = open ?? TILE_ORDER.find((k) => counts[k] > 0) ?? null
+  const searchParams = useSearchParams()
+  const tileParam = searchParams.get("tile") as TileKey | null
+
+  // the opened tile defaults to the query param or first one that has something in it
+  const openTile = open ?? (tileParam && counts[tileParam] > 0 ? tileParam : null) ?? TILE_ORDER.find((k) => counts[k] > 0) ?? null
 
   const removeRow = (id: string) => setRows((rs) => (rs ?? []).filter((r) => r.id !== id))
   const totalTodo = TILE_ORDER.reduce((n, k) => n + counts[k], 0)
@@ -333,7 +336,16 @@ export default function QuickManagePage() {
                       <p className="text-text-muted text-base mt-1">{r.reason}</p>
                     </button>
                     <div className="grid grid-cols-2 gap-2 mt-3">
-                      {wa ? (
+                      {r.tile === "plans" ? (
+                        <button
+                          type="button"
+                          disabled={!r.clientId}
+                          onClick={() => r.clientId && router.push(`/clients/${r.clientId}?tab=plans`)}
+                          className="h-12 rounded-xl bg-accent-orange text-black font-bold text-base flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+                        >
+                          Open plans
+                        </button>
+                      ) : wa ? (
                         <a
                           href={wa}
                           target="_blank"
@@ -354,7 +366,7 @@ export default function QuickManagePage() {
                           <Check className="w-5 h-5" /> Done
                         </button>
                       ) : r.action.kind === "followup" ? (
-                        <button type="button" onClick={() => { setSheetRow(r); setPickingDate(false) }} className="h-12 rounded-xl bg-accent-orange text-black font-bold text-base flex items-center justify-center gap-2 cursor-pointer">
+                        <button type="button" onClick={() => { setSheetRow(r); setPickingDate(false) }} className={`h-12 rounded-xl ${r.tile === "plans" ? "bg-white/10 text-white" : "bg-accent-orange text-black"} font-bold text-base flex items-center justify-center gap-2 cursor-pointer`}>
                           <Check className="w-5 h-5" /> Done
                         </button>
                       ) : (
