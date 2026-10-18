@@ -37,10 +37,11 @@ import { generatePaymentReceiptPdf, generateUpiPaymentUrl, DEFAULT_UPI_ID, type 
 import { COACH_UPI_ID, COACH_BANK } from "@/lib/upi"
 import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
 import { mapFeeToBill, buildSharedBillWaText, type MappedBill } from "@/lib/bill-validation"
+import { PACKAGES, calculateEndDate } from "@/lib/package-goal"
 import type { ClientWithProfile, Checkin, Fee, WorkoutPlan, NutritionPlan } from "@/types"
 import { openUrl } from "@/lib/utils"
 
-type Tab = "overview" | "checkins" | "plans" | "fees"
+type Tab = "overview" | "checkins" | "plans" | "fees" | "history"
 
 const FOLLOWUP_LABEL: Record<string, string> = { checkin: "Check-in", payment: "Payment", renewal: "Renewal", feedback: "Feedback", birthday: "Birthday", other: "Follow-up" }
 
@@ -120,7 +121,7 @@ export default function ClientDetailPage() {
   const [clientBadges, setClientBadges] = useState<ClientBadge[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>(
-    initialTab === "plans" || initialTab === "checkins" || initialTab === "fees" ? initialTab : "overview"
+    initialTab === "plans" || initialTab === "checkins" || initialTab === "fees" || initialTab === "history" ? initialTab : "overview"
   )
   const [expandedCheckin, setExpandedCheckin] = useState<string | null>(null)
   const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({})
@@ -134,11 +135,14 @@ export default function ClientDetailPage() {
   const [selectedFormId, setSelectedFormId] = useState("")
   const [attachingForm, setAttachingForm] = useState(false)
 
+  const [reminderLogs, setReminderLogs] = useState<{ id: string; reminder_type: string; sent_at: string; status: string }[]>([])
+  const [allFollowups, setAllFollowups] = useState<{ id: string; type: string; due_date: string; done_at: string | null; note: string | null }[]>([])
+
   const actionsRef = useStaggerReveal<HTMLDivElement>([isLoading])
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
-    const [clientRes, r1, r2, r3, r4, badges, r5, formsRes, unattachedRes] = await Promise.allSettled([
+    const [clientRes, r1, r2, r3, r4, badges, r5, formsRes, unattachedRes, remLogRes, allFuRes] = await Promise.allSettled([
       supabase.from("clients").select("*, profile:profiles!user_id(*)").eq("id", id).single(),
       supabase.from("checkins").select("*").eq("client_id", id).order("submitted_at", { ascending: false }),
       supabase.from("fees").select("*").eq("client_id", id).order("due_date", { ascending: false }),
@@ -148,6 +152,8 @@ export default function ClientDetailPage() {
       supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).not("auto_created", "is", true).order("due_date").limit(5),
       supabase.from("form_submissions").select("id, form_type, submitted_at").eq("client_id", id).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }),
       supabase.from("form_submissions").select("id, form_type, submitted_at, sender:form_data->>q1_name").is("client_id", null).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }).limit(30),
+      supabase.from("reminder_log").select("id, reminder_type, sent_at, status").eq("client_id", id).order("sent_at", { ascending: false }).limit(50),
+      supabase.from("followups").select("id, type, due_date, done_at, note").eq("client_id", id).order("due_date", { ascending: false }).limit(50),
     ])
 
     if (clientRes.status === "fulfilled" && clientRes.value.data) {
@@ -166,6 +172,8 @@ export default function ClientDetailPage() {
     if (badges.status === "fulfilled") setClientBadges(badges.value)
     if (r5.status === "fulfilled") setFollowups(r5.value.data ?? [])
     if (formsRes.status === "fulfilled") setJoiningForms((formsRes.value.data ?? []) as { id: string; form_type: string; submitted_at: string }[])
+    if (remLogRes.status === "fulfilled") setReminderLogs((remLogRes.value.data ?? []) as { id: string; reminder_type: string; sent_at: string; status: string }[])
+    if (allFuRes.status === "fulfilled") setAllFollowups((allFuRes.value.data ?? []) as { id: string; type: string; due_date: string; done_at: string | null; note: string | null }[])
     if (unattachedRes.status === "fulfilled") {
       const list = ((unattachedRes.value.data ?? []) as unknown as { id: string; form_type: string; submitted_at: string; sender: string | null }[]).map((u) => ({
         id: u.id,
@@ -254,7 +262,35 @@ export default function ClientDetailPage() {
 
   const [editSheetOpen, setEditSheetOpen] = useState(false)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [editingFee, setEditingFee] = useState<MappedBill | null>(null)
+  const [editingFee, setEditingFee] = useState<any | null>(null)
+
+  useEffect(() => {
+    if (searchParams.get("renew") === "true" && client) {
+      const nextStart = client.end_date
+        ? (() => {
+            const d = new Date(client.end_date + "T00:00:00")
+            d.setDate(d.getDate() + 1)
+            return d.toISOString().split("T")[0]
+          })()
+        : new Date().toISOString().split("T")[0]
+      const pkg = PACKAGES.find((p) => p.name === client.package_name)
+      const nextEnd = pkg ? calculateEndDate(nextStart, pkg.days) : ""
+      setEditingFee({
+        amount: Number(client.fee_amount) || 0,
+        packageFee: Number(client.fee_amount) || 0,
+        packageName: client.package_name || "",
+        startDate: nextStart,
+        endDate: nextEnd,
+        dueDate: nextStart,
+        status: "pending",
+        discount: 0,
+        otherCharges: 0,
+        rewardPointsRedeemed: 0,
+        amountPaid: 0,
+      })
+      setPaymentModalOpen(true)
+    }
+  }, [searchParams, client])
 
   const handleRemoveFollowup = async (fId: string) => {
     if (!window.confirm("Are you sure you want to remove this follow-up?")) return
@@ -417,6 +453,7 @@ export default function ClientDetailPage() {
     { key: "checkins", label: "Check-ins" },
     { key: "plans", label: "Plans" },
     { key: "fees", label: "Money" },
+    { key: "history", label: "History" },
   ]
 
   return (
@@ -608,6 +645,50 @@ export default function ClientDetailPage() {
                         <span className="text-[9px] text-[#8A7F70] uppercase">Fee</span>
                         <p className="font-heading font-bold text-[#181310] mt-0.5">₹{Number(client.fee_amount).toLocaleString("en-IN")}</p>
                       </div>
+                      {client.end_date && (
+                        <div className="col-span-2 pt-2 border-t border-[#181310]/[0.08] flex items-center justify-between">
+                          <div>
+                            <span className="text-[9px] text-[#8A7F70] uppercase">Plan Ends</span>
+                            <p className="font-heading font-bold text-[#181310] mt-0.5">
+                              {format(new Date(client.end_date + "T00:00:00"), "d MMM yyyy")}
+                              {differenceInDays(new Date(client.end_date + "T00:00:00"), new Date()) <= 14 && (
+                                <span className="ml-2 text-accent-orange text-[10px] font-bold">
+                                  ({differenceInDays(new Date(client.end_date + "T00:00:00"), new Date()) <= 0 ? "Expired" : `Ends in ${differenceInDays(new Date(client.end_date + "T00:00:00"), new Date())}d`})
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          {differenceInDays(new Date(client.end_date + "T00:00:00"), new Date()) <= 14 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const oldEnd = client.end_date || new Date().toISOString().slice(0, 10)
+                                const parts = oldEnd.split("-").map(Number)
+                                const nextStart = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + 1)).toISOString().slice(0, 10)
+                                const pkg = PACKAGES.find((p) => p.name === client.package_name)
+                                const nextEnd = pkg ? calculateEndDate(nextStart, pkg.days) : ""
+                                setEditingFee({
+                                  amount: Number(client.fee_amount) || 0,
+                                  packageFee: Number(client.fee_amount) || 0,
+                                  packageName: client.package_name || "",
+                                  startDate: nextStart,
+                                  endDate: nextEnd,
+                                  dueDate: nextStart,
+                                  status: "pending",
+                                  discount: 0,
+                                  otherCharges: 0,
+                                  rewardPointsRedeemed: 0,
+                                  amountPaid: 0,
+                                })
+                                setPaymentModalOpen(true)
+                              }}
+                              className="h-9 px-4 rounded-xl bg-accent-orange text-black font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm hover:opacity-95"
+                            >
+                              Renew Plan
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1059,6 +1140,130 @@ export default function ClientDetailPage() {
                     )
                   })
                 )}
+              </div>
+            )}
+
+            {activeTab === "history" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-1">
+                  <h3 className="font-heading font-bold text-sm text-[#181310] uppercase tracking-wider">Client Activity Timeline</h3>
+                  <span className="text-xs text-[#8A7F70]">Newest first</span>
+                </div>
+
+                {(() => {
+                  type HistoryItem = { id: string; date: string; title: string; subtitle?: string; badge: string; color: string }
+                  const items: HistoryItem[] = []
+
+                  for (const f of fees) {
+                    if (f.paid_date) {
+                      items.push({
+                        id: `fee-paid-${f.id}`,
+                        date: f.paid_date,
+                        title: `Payment received: ₹${Number(f.amount_paid || f.amount).toLocaleString("en-IN")}`,
+                        subtitle: `Invoice #${f.invoice_number || "—"} · ${f.package_name || "Coaching fee"}`,
+                        badge: "Paid",
+                        color: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+                      })
+                    }
+                    items.push({
+                      id: `fee-due-${f.id}`,
+                      date: f.due_date,
+                      title: `Bill due: ₹${Number(f.amount).toLocaleString("en-IN")}`,
+                      subtitle: `Invoice #${f.invoice_number || "—"} · Status: ${f.status}${f.emi_no ? ` (EMI ${f.emi_no}/${f.emi_total})` : ""}`,
+                      badge: "Bill",
+                      color: "bg-[#C9A84C]/15 text-[#856514] border-[#C9A84C]/30",
+                    })
+                  }
+
+                  for (const wp of workoutPlans) {
+                    items.push({
+                      id: `wp-${wp.id}`,
+                      date: wp.created_at ? wp.created_at.slice(0, 10) : "",
+                      title: `Workout plan assigned: ${wp.name || "Workout Plan"}`,
+                      subtitle: `${wp.weeks ? `${wp.weeks} weeks` : "Active plan"}`,
+                      badge: "Workout",
+                      color: "bg-accent-orange/15 text-accent-orange border-accent-orange/30",
+                    })
+                  }
+
+                  for (const np of nutritionPlans) {
+                    items.push({
+                      id: `np-${np.id}`,
+                      date: np.created_at ? np.created_at.slice(0, 10) : "",
+                      title: "Diet plan assigned",
+                      subtitle: `${np.total_calories ? `${np.total_calories} kcal · ` : ""}P: ${np.protein_g ?? "—"}g, C: ${np.carbs_g ?? "—"}g, F: ${np.fats_g ?? "—"}g`,
+                      badge: "Diet",
+                      color: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+                    })
+                  }
+
+                  for (const chk of checkins) {
+                    items.push({
+                      id: `chk-${chk.id}`,
+                      date: chk.submitted_at ? chk.submitted_at.slice(0, 10) : "",
+                      title: `Check-in submitted${chk.weight ? ` (${chk.weight} kg)` : ""}`,
+                      subtitle: chk.coach_feedback ? `Reviewed by Aman: "${chk.coach_feedback.slice(0, 60)}…"` : "Awaiting review",
+                      badge: "Check-in",
+                      color: "bg-blue-500/15 text-blue-700 border-blue-500/30",
+                    })
+                  }
+
+                  for (const fu of allFollowups) {
+                    items.push({
+                      id: `fu-${fu.id}`,
+                      date: fu.due_date,
+                      title: `Follow-up: ${FOLLOWUP_LABEL[fu.type] ?? fu.type}`,
+                      subtitle: `${fu.note ? `Note: ${fu.note} · ` : ""}${fu.done_at ? `Done ${format(new Date(fu.done_at), "d MMM")}` : "Open"}`,
+                      badge: "Follow-up",
+                      color: "bg-purple-500/15 text-purple-700 border-purple-500/30",
+                    })
+                  }
+
+                  for (const rl of reminderLogs) {
+                    items.push({
+                      id: `rl-${rl.id}`,
+                      date: rl.sent_at ? rl.sent_at.slice(0, 10) : "",
+                      title: `WhatsApp sent: ${rl.reminder_type}`,
+                      subtitle: `Status: ${rl.status || "delivered"}`,
+                      badge: "WhatsApp",
+                      color: "bg-[#25D366]/15 text-[#128C7E] border-[#25D366]/30",
+                    })
+                  }
+
+                  // Sort newest date first
+                  items.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
+
+                  if (items.length === 0) {
+                    return (
+                      <div className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-10 text-center">
+                        <p className="text-[#8A7F70] text-sm">No activity recorded yet</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="space-y-2.5">
+                      {items.map((it) => (
+                        <div key={it.id} className="bg-[#F3EDE2] shadow-[0_12px_30px_-15px_rgba(0,0,0,0.3)] rounded-2xl p-3.5 flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${it.color}`}>
+                                {it.badge}
+                              </span>
+                              <p className="text-xs font-bold text-[#181310] truncate">{it.title}</p>
+                            </div>
+                            {it.subtitle && <p className="text-[#8A7F70] text-[11px] mt-1 line-clamp-1">{it.subtitle}</p>}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-[11px] font-semibold text-[#8A7F70]">
+                              {it.date ? format(new Date(it.date + "T00:00:00"), "d MMM yyyy") : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             )}
         </div>

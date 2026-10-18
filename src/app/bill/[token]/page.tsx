@@ -7,6 +7,7 @@ import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK, generateUpiLink } from "@/lib/upi"
 import { generatePaymentReceiptPdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
+import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 
 interface BillData {
   id: string
@@ -247,6 +248,20 @@ export default function PublicBillPage() {
                 {copiedUpi ? <><Check className="size-4" /> Copied</> : <><Copy className="size-4" /> Copy UPI ID</>}
               </span>
             </button>
+
+            {process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && (
+              <RazorpayCheckoutButton
+                feeId={bill.id}
+                packageName={bill.packageName}
+                clientName={bill.clientName}
+                clientPhone={bill.clientPhone ?? undefined}
+                buttonText="Pay by card / netbanking (Razorpay)"
+                className="w-full h-12 rounded-2xl bg-white/10 border border-white/20 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/15 cursor-pointer"
+                onSuccess={() => {
+                  setBill((prev) => (prev ? { ...prev, status: "paid" } : prev))
+                }}
+              />
+            )}
 
             {/* Bank Transfer Details Accordion */}
             <details className="rounded-2xl bg-[#141414] border border-[#262626] p-4 text-xs space-y-2 group">

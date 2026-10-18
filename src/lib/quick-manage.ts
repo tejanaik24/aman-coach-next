@@ -22,6 +22,7 @@ export const TILE_ORDER: TileKey[] = ["followups", "plans", "payments", "renewal
 export type RowAction =
   | { kind: "followup"; followupId: string; clientId: string; note: string | null; dueDate?: string; type?: string }
   | { kind: "paid"; feeId: string; amount: number; dueDate?: string; isOverdue?: boolean }
+  | { kind: "renewal"; clientId: string; packageName?: string | null; feeAmount?: number | null; endDate?: string | null }
   | { kind: "enquiry"; submissionId: string }
   | { kind: "none" }
 
@@ -95,6 +96,8 @@ interface ClientRow {
   status?: string | null
   end_date: string | null
   start_date: string | null
+  package_name?: string | null
+  fee_amount?: number | null
   profile: { name: string | null; phone: string | null } | { name: string | null; phone: string | null }[] | null
 }
 
@@ -113,7 +116,7 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
   const [clientsRes, feesRes, unreviewedRes, recentRes, enquiriesRes, callsRes, followupsRes, dobRes] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, status, end_date, start_date, profile:profiles!user_id(name, phone)")
+      .select("id, status, end_date, start_date, package_name, fee_amount, profile:profiles!user_id(name, phone)")
       .eq("coach_id", coachId),
     supabase
       .from("fees")
@@ -151,11 +154,11 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
       .not("client_id", "is", null),
   ])
 
-  const allClients = new Map<string, { name: string; phone: string | null; end: string | null; start: string | null }>()
-  const clients = new Map<string, { name: string; phone: string | null; end: string | null; start: string | null }>()
+  const allClients = new Map<string, { name: string; phone: string | null; end: string | null; start: string | null; packageName?: string | null; feeAmount?: number | null }>()
+  const clients = new Map<string, { name: string; phone: string | null; end: string | null; start: string | null; packageName?: string | null; feeAmount?: number | null }>()
   for (const c of (clientsRes.data ?? []) as unknown as ClientRow[]) {
     const p = one(c.profile)
-    const entry = { name: p?.name ?? "Client", phone: p?.phone ?? null, end: c.end_date, start: c.start_date }
+    const entry = { name: p?.name ?? "Client", phone: p?.phone ?? null, end: c.end_date, start: c.start_date, packageName: c.package_name, feeAmount: c.fee_amount }
     allClients.set(c.id, entry)
     if (c.status === "active") {
       clients.set(c.id, entry)
@@ -216,7 +219,7 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
       id: `ren-${id}`, tile: "renewals", name: c.name, phone: c.phone, clientId: id,
       reason: `Plan ends ${format(end, "d MMM")} (${relDay(end, today)})`,
       waText: `Hi ${fullName(c.name)}, your coaching plan ends on ${format(end, "d MMM")}. Shall we continue your journey? — Aman`,
-      action: { kind: "none" },
+      action: { kind: "renewal", clientId: id, packageName: c.packageName, feeAmount: c.feeAmount, endDate: c.end },
     })
   }
 

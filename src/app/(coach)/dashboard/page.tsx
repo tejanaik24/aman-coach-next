@@ -369,6 +369,14 @@ export default function QuickManagePage() {
                         <button type="button" onClick={() => { setSheetRow(r); setPickingDate(false) }} className={`h-12 rounded-xl ${r.tile === "plans" ? "bg-white/10 text-white" : "bg-accent-orange text-black"} font-bold text-base flex items-center justify-center gap-2 cursor-pointer`}>
                           <Check className="w-5 h-5" /> Done
                         </button>
+                      ) : r.action.kind === "renewal" ? (
+                        <button
+                          type="button"
+                          onClick={() => r.clientId && router.push(`/clients/${r.clientId}?renew=true`)}
+                          className="h-12 rounded-xl bg-accent-orange text-black font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          Renew
+                        </button>
                       ) : (
                         <button type="button" disabled={!r.clientId} onClick={() => r.clientId && router.push(`/clients/${r.clientId}`)} className="h-12 rounded-xl bg-white/10 text-white font-bold text-base cursor-pointer disabled:opacity-40">
                           Open
