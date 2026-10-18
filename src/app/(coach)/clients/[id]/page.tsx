@@ -955,9 +955,16 @@ export default function ClientDetailPage() {
                       <div key={f.id} className="bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-[#181310] font-heading font-bold text-lg">
-                              {f.status === "paid" ? `₹${m.amount.toLocaleString("en-IN")}` : `Due ₹${m.balanceDue.toLocaleString("en-IN")}`}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[#181310] font-heading font-bold text-lg">
+                                {f.status === "paid" ? `₹${m.amount.toLocaleString("en-IN")}` : `Due ₹${m.balanceDue.toLocaleString("en-IN")}`}
+                              </p>
+                              {f.emi_no && f.emi_total && (
+                                <span className="px-2 py-0.5 rounded-md bg-[#C9A84C]/20 text-[#856514] border border-[#C9A84C]/40 text-[10px] font-bold uppercase tracking-wider">
+                                  EMI {f.emi_no} of {f.emi_total}
+                                </span>
+                              )}
+                            </div>
                             {m.pkgName && (
                               <p className="text-[#181310] text-xs font-semibold mt-0.5 truncate">{m.pkgName}</p>
                             )}

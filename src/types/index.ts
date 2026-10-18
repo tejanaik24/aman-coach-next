@@ -25,6 +25,7 @@ export interface Client {
   end_date: string | null
   client_type: "standard" | "antenatal"
   status: "active" | "paused" | "inactive"
+  emi_allowed?: boolean
   notes: string | null
   created_at: string
 }

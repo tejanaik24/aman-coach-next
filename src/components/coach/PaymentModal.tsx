@@ -3,6 +3,7 @@
 import { useState, type FormEvent, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X, CheckCircle2 } from "lucide-react"
+import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { paidSoFar } from "@/lib/fee-math"
@@ -57,6 +58,7 @@ interface ClientSnapshot {
   startDate: string | null
   endDate: string | null
   feeAmount: number | null
+  emiAllowed: boolean
 }
 
 const inputClass =
@@ -93,6 +95,8 @@ export default function PaymentModal({
   const [status, setStatus] = useState(initialFee?.status || "pending")
   const [alsoUpdateClient, setAlsoUpdateClient] = useState(mode === "add")
   const [currentClientSnapshot, setCurrentClientSnapshot] = useState<ClientSnapshot | null>(null)
+  const [isEmi, setIsEmi] = useState(false)
+  const [emiParts, setEmiParts] = useState<2 | 3 | 4>(3)
   const [fieldErrors, setFieldErrors] = useState<BillFieldErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [packageFeeMap, setPackageFeeMap] = useState<Record<string, number>>({})
@@ -145,6 +149,7 @@ export default function PaymentModal({
           startDate: initialFee.startDate || null,
           endDate: initialFee.endDate || null,
           feeAmount: Number(initialFee.amount) || null,
+          emiAllowed: false,
         }
       )
       const cId = initialFee.clientId || initialFee.client_id || clientId
@@ -178,7 +183,7 @@ export default function PaymentModal({
     const supabase = createClient()
     supabase
       .from("clients")
-      .select("package_name, start_date, end_date, fee_amount")
+      .select("package_name, start_date, end_date, fee_amount, emi_allowed")
       .eq("id", targetId)
       .maybeSingle()
       .then(
@@ -190,6 +195,7 @@ export default function PaymentModal({
             start_date?: string | null
             end_date?: string | null
             fee_amount?: number | null
+            emi_allowed?: boolean | null
           } | null
         }) => {
           if (data) {
@@ -198,6 +204,7 @@ export default function PaymentModal({
               startDate: data.start_date ?? null,
               endDate: data.end_date ?? null,
               feeAmount: data.fee_amount ?? null,
+              emiAllowed: Boolean(data.emi_allowed),
             })
             if (mode === "add" && !packageName && data.package_name) {
               const pkg = data.package_name
@@ -332,24 +339,66 @@ export default function PaymentModal({
       }
 
       if (mode === "add") {
-        const { error } = await supabase.from("fees").insert({
-          client_id: targetClientId,
-          package_fee: validPkgFee,
-          discount: validDiscountRupees,
-          other_charges: validOtherCharges,
-          amount: validFinalAmount,
-          amount_paid: resolvedAmountPaid,
-          currency: "INR",
-          due_date: dueDate,
-          notes: notes.trim() || null,
-          status: resolvedStatus,
-          paid_date: resolvedPaidDate,
-        })
-        if (error) {
-          toast.error("Could not add payment: " + error.message)
-          return
+        if (isEmi && currentClientSnapshot?.emiAllowed) {
+          const emiGroupId = crypto.randomUUID()
+          const partCount = emiParts
+          const basePartAmount = Math.floor(validFinalAmount / partCount)
+          const remainder = validFinalAmount - basePartAmount * partCount
+
+          const rowsToInsert = []
+          for (let i = 1; i <= partCount; i++) {
+            // Due date: monthly intervals
+            const partDueDateObj = new Date(dueDate + "T00:00:00")
+            partDueDateObj.setMonth(partDueDateObj.getMonth() + (i - 1))
+            const partDueDate = format(partDueDateObj, "yyyy-MM-dd")
+
+            // Last instalment gets the rounding remainder
+            const partAmount = i === partCount ? basePartAmount + remainder : basePartAmount
+
+            rowsToInsert.push({
+              client_id: targetClientId,
+              package_fee: Math.round(validPkgFee / partCount),
+              discount: Math.round(validDiscountRupees / partCount),
+              other_charges: Math.round(validOtherCharges / partCount),
+              amount: partAmount,
+              amount_paid: 0,
+              currency: "INR",
+              due_date: partDueDate,
+              notes: notes.trim() ? `${notes.trim()} (EMI ${i} of ${partCount})` : `EMI ${i} of ${partCount}`,
+              status: "pending" as const,
+              paid_date: null,
+              emi_group: emiGroupId,
+              emi_no: i,
+              emi_total: partCount,
+            })
+          }
+
+          const { error } = await supabase.from("fees").insert(rowsToInsert)
+          if (error) {
+            toast.error("Could not add EMI instalments: " + error.message)
+            return
+          }
+          toast.success(`${partCount} EMI instalments created`)
+        } else {
+          const { error } = await supabase.from("fees").insert({
+            client_id: targetClientId,
+            package_fee: validPkgFee,
+            discount: validDiscountRupees,
+            other_charges: validOtherCharges,
+            amount: validFinalAmount,
+            amount_paid: resolvedAmountPaid,
+            currency: "INR",
+            due_date: dueDate,
+            notes: notes.trim() || null,
+            status: resolvedStatus,
+            paid_date: resolvedPaidDate,
+          })
+          if (error) {
+            toast.error("Could not add payment: " + error.message)
+            return
+          }
+          toast.success("Payment added")
         }
-        toast.success("Payment added")
       } else if (mode === "edit" && initialFee) {
         const { error } = await supabase
           .from("fees")
@@ -711,6 +760,49 @@ export default function PaymentModal({
                 <span className="text-accent-orange">₹{finalAmount.toLocaleString("en-IN")}</span>
               </div>
             </div>
+
+            {/* EMI option: only shown when client has EMI allowed and adding new payment */}
+            {mode === "add" && currentClientSnapshot?.emiAllowed && (
+              <div className="rounded-2xl bg-[#1A1A1A] border border-[#C9A84C]/40 p-4 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isEmi}
+                    onChange={(e) => setIsEmi(e.target.checked)}
+                    className="size-5 accent-[#C9A84C] rounded cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-sm font-bold text-white block">Pay in instalments (EMI)</span>
+                    <span className="text-xs text-text-muted">Split total into monthly instalments</span>
+                  </div>
+                </label>
+
+                {isEmi && (
+                  <div className="pt-2 border-t border-white/10 space-y-2">
+                    <p className="text-xs text-text-muted font-semibold">Number of monthly parts:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([2, 3, 4] as const).map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setEmiParts(n)}
+                          className={`h-10 rounded-xl text-xs font-bold transition-colors cursor-pointer border ${
+                            emiParts === n
+                              ? "bg-[#C9A84C] text-black border-[#C9A84C]"
+                              : "bg-[#141414] border-[#333333] text-white hover:border-[#555]"
+                          }`}
+                        >
+                          {n} parts
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-[#C9A84C] font-medium pt-1">
+                      Will create {emiParts} bills of ~₹{Math.floor(finalAmount / emiParts).toLocaleString("en-IN")}/mo starting on due date.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <div className="flex items-baseline justify-between mb-1">

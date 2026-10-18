@@ -369,7 +369,14 @@ export default function FeesPage() {
                 <div key={f.id} className={`rounded-2xl bg-bg-card border p-4 ${late ? "border-red-500/60" : "border-border-subtle"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-lg font-semibold leading-tight">{f.clientName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-semibold leading-tight">{f.clientName}</p>
+                        {f.emiNo && f.emiTotal && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#C9A84C]/15 text-[#C9A84C] border border-[#C9A84C]/30 text-[10px] font-bold uppercase tracking-wider">
+                            EMI {f.emiNo} of {f.emiTotal}
+                          </span>
+                        )}
+                      </div>
                       {f.packageName && (
                         <p className="text-xs text-text-muted mt-0.5 truncate">{f.packageName}</p>
                       )}

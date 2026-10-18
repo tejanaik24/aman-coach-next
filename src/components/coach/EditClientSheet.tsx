@@ -36,6 +36,7 @@ export default function EditClientSheet({ isOpen, onClose, client, onSuccess, on
   const [endDate, setEndDate] = useState(client.end_date ?? "")
   const [notes, setNotes] = useState(client.notes ?? "")
   const [status, setStatus] = useState<ClientStatus>(client.status ?? "active")
+  const [emiAllowed, setEmiAllowed] = useState(client.emi_allowed ?? false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -76,6 +77,7 @@ export default function EditClientSheet({ isOpen, onClose, client, onSuccess, on
           end_date: endDate || null,
           notes: notes.trim(),
           status,
+          emi_allowed: emiAllowed,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -291,6 +293,23 @@ export default function EditClientSheet({ isOpen, onClose, client, onSuccess, on
                     className={inputClass}
                   />
                 </div>
+              </div>
+
+              {/* EMI Option */}
+              <div className="rounded-2xl bg-[#1A1A1A] border border-[#333333] p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-white text-sm font-semibold">Allow EMI for this client</p>
+                  <p className="text-text-muted text-xs mt-0.5">Enables paying fees in monthly instalments in Add Bill</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={emiAllowed}
+                    onChange={(e) => setEmiAllowed(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-[#333333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C9A84C]"></div>
+                </label>
               </div>
 
               {/* Notes */}

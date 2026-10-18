@@ -18,7 +18,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!client || client.coach_id !== user.id) return NextResponse.json({ error: "Client not found" }, { status: 404 })
 
   const body = await req.json().catch(() => ({}))
-  const { name, phone, package_name, fee_amount, fee_due_day, start_date, end_date, notes, status } = body
+  const { name, phone, package_name, fee_amount, fee_due_day, start_date, end_date, notes, status, emi_allowed } = body
 
   if (status !== undefined && !["active", "paused", "inactive"].includes(status)) {
     return NextResponse.json({ error: "Pick Active, Paused or Stopped." }, { status: 400 })
@@ -55,6 +55,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (end_date !== undefined) clientUpdates.end_date = end_date
   if (notes !== undefined) clientUpdates.notes = notes
   if (status !== undefined) clientUpdates.status = status
+  if (emi_allowed !== undefined) clientUpdates.emi_allowed = Boolean(emi_allowed)
 
   if (Object.keys(clientUpdates).length > 0) {
     const { error: clientErr } = await admin.from("clients").update(clientUpdates).eq("id", id)
