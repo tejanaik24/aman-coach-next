@@ -6,14 +6,24 @@ interface Props {
   title: string
   subtitle?: string
   current: string // YYYY-MM-DD
+  type?: string
   onSave: (date: string) => void | Promise<void>
   onClose: () => void
 }
 
 // A real date picker for moving a follow-up. Replaces the old box that asked Aman to type "2026-12-01".
-export default function ChangeDateSheet({ title, subtitle, current, onSave, onClose }: Props) {
+export default function ChangeDateSheet({ title, subtitle, current, type, onSave, onClose }: Props) {
   const [date, setDate] = useState(current)
   const [saving, setSaving] = useState(false)
+
+  const isClose = (() => {
+    if (type !== "checkin" || !date) return false
+    const d = new Date(date + "T00:00:00")
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const diff = Math.round((d.getTime() - now.getTime()) / 86400000)
+    return diff <= 2
+  })()
 
   async function save() {
     if (!date || saving) return
@@ -32,6 +42,11 @@ export default function ChangeDateSheet({ title, subtitle, current, onSave, onCl
           onChange={(e) => setDate(e.target.value)}
           className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mb-4"
         />
+        {isClose && (
+          <p className="text-accent-orange text-xs mb-3">
+            Reminder goes to the client 2 days before. This date is close, so it was sent now.
+          </p>
+        )}
         <button
           type="button"
           disabled={!date || saving}

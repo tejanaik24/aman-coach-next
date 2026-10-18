@@ -150,7 +150,8 @@ export default function QuickManagePage() {
       .eq("id", followupId)
     if (!error && result === "again" && againDays) {
       const due = format(new Date(Date.now() + againDays * 86400000), "yyyy-MM-dd")
-      await supabase.from("followups").insert({ client_id: clientId, coach_id: coachId, type: "other", due_date: due })
+      const originalType = sheetRow.action.kind === "followup" && sheetRow.action.type ? sheetRow.action.type : "checkin"
+      await supabase.from("followups").insert({ client_id: clientId, coach_id: coachId, type: originalType, due_date: due })
     }
     setBusy(false)
     if (error) { toast.error("Could not save. Try again."); return }
@@ -162,9 +163,29 @@ export default function QuickManagePage() {
 
   async function saveFollowupDate(newDate: string) {
     if (!dateRow || dateRow.action.kind !== "followup") return
+    const { followupId, clientId, type } = dateRow.action
     const supabase = createClient()
-    const { data, error } = await supabase.from("followups").update({ due_date: newDate, auto_created: false }).eq("id", dateRow.action.followupId).select("id")
+    const { data, error } = await supabase.from("followups").update({ due_date: newDate, auto_created: false }).eq("id", followupId).select("id")
     if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
+
+    if (type === "checkin" && clientId) {
+      const d = new Date(newDate + "T00:00:00")
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      const diff = Math.round((d.getTime() - now.getTime()) / 86400000)
+      if (diff <= 2) {
+        try {
+          await fetch("/api/coach/followups/early-reminder", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ followupId, clientId, dueDate: newDate }),
+          })
+        } catch (err) {
+          console.warn("Early checkin reminder failed:", err)
+        }
+      }
+    }
+
     toast.success("Follow-up date updated")
     removeRow(dateRow.id)
     setDateRow(null)
@@ -404,7 +425,14 @@ export default function QuickManagePage() {
 
       {/* Follow-up result sheet: one tap logs the outcome */}
       {dateRow && (
-        <ChangeDateSheet title="Move follow-up to" subtitle={dateRow.name} current={new Date().toISOString().slice(0, 10)} onSave={saveFollowupDate} onClose={() => setDateRow(null)} />
+        <ChangeDateSheet
+          title="Move follow-up to"
+          subtitle={dateRow.name}
+          current={dateRow.action.kind === "followup" && dateRow.action.dueDate ? dateRow.action.dueDate : new Date().toISOString().slice(0, 10)}
+          type={dateRow.action.kind === "followup" ? dateRow.action.type : undefined}
+          onSave={saveFollowupDate}
+          onClose={() => setDateRow(null)}
+        />
       )}
       {sheetRow && (
         <div className="fixed inset-0 z-[60] flex items-end bg-black/70" onClick={() => setSheetRow(null)}>

@@ -43,6 +43,15 @@ export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName
 
   if (!isOpen) return null
 
+  const isClose = (() => {
+    if (type !== "checkin" || !date) return false
+    const d = new Date(date + "T00:00:00")
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const diff = Math.round((d.getTime() - now.getTime()) / 86400000)
+    return diff <= 2
+  })()
+
   async function save(sendOnWhatsApp = false) {
     setSaving(true)
     try {
@@ -50,14 +59,31 @@ export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not signed in")
       const cleanNote = note.trim() || null
-      const { error } = await supabase.from("followups").insert({
+      const { data: inserted, error } = await supabase.from("followups").insert({
         client_id: clientId,
         coach_id: user.id,
         type,
         due_date: date,
         note: cleanNote,
-      })
+      }).select("id").single()
       if (error) throw error
+
+      if (type === "checkin" && isClose && inserted?.id) {
+        try {
+          await fetch("/api/coach/followups/early-reminder", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              followupId: inserted.id,
+              clientId,
+              dueDate: date,
+            }),
+          })
+        } catch (err) {
+          console.warn("Early checkin reminder failed:", err)
+        }
+      }
+
       toast.success(`Follow-up set for ${format(new Date(date + "T00:00:00"), "d MMM")}`)
       if (sendOnWhatsApp && clientPhone) {
         const wa = waLink(clientPhone, buildFollowupWaText(clientName, type, date, cleanNote))
@@ -130,6 +156,12 @@ export default function AddFollowupSheet({ isOpen, onClose, clientId, clientName
           placeholder="Note (optional)"
           className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] placeholder:text-[#555555] mb-5"
         />
+
+        {isClose && (
+          <p className="text-accent-orange text-xs mb-3">
+            Reminder goes to the client 2 days before. This date is close, so it was sent now.
+          </p>
+        )}
 
         <div className="space-y-2.5">
           <button

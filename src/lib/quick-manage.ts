@@ -19,7 +19,7 @@ export const TILE_LABELS: Record<TileKey, string> = {
 export const TILE_ORDER: TileKey[] = ["followups", "payments", "renewals", "enquiries", "checkins", "silent", "calls", "birthdays"]
 
 export type RowAction =
-  | { kind: "followup"; followupId: string; clientId: string; note: string | null }
+  | { kind: "followup"; followupId: string; clientId: string; note: string | null; dueDate?: string; type?: string }
   | { kind: "paid"; feeId: string; amount: number; dueDate?: string; isOverdue?: boolean }
   | { kind: "enquiry"; submissionId: string }
   | { kind: "none" }
@@ -171,7 +171,7 @@ export async function fetchQuickManage(supabase: SupabaseClient, coachId: string
       id: `fu-${f.id}`, tile: "followups", name: c.name, phone: c.phone, clientId: f.client_id,
       reason: `${label}${f.note ? ` · ${f.note}` : ""} · due ${relDay(new Date(f.due_date + "T00:00:00"), today)}`,
       waText: buildFollowupWaText(c.name, f.type, f.due_date, f.note),
-      action: { kind: "followup", followupId: f.id, clientId: f.client_id, note: f.note },
+      action: { kind: "followup", followupId: f.id, clientId: f.client_id, note: f.note, dueDate: f.due_date, type: f.type },
     })
   }
 

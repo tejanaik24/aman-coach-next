@@ -124,7 +124,7 @@ export default function ClientDetailPage() {
   const [followups, setFollowups] = useState<{ id: string; type: string; due_date: string; note: string | null }[]>([])
   const [followupOpen, setFollowupOpen] = useState(false)
   const [sendingLink, setSendingLink] = useState(false)
-  const [dateFor, setDateFor] = useState<{ id: string; due: string } | null>(null)
+  const [dateFor, setDateFor] = useState<{ id: string; due: string; type?: string } | null>(null)
   const [joiningForms, setJoiningForms] = useState<{ id: string; form_type: string; submitted_at: string }[]>([])
   const [unattachedForms, setUnattachedForms] = useState<{ id: string; form_type: string; submitted_at: string; senderName: string }[]>([])
   const [selectedFormId, setSelectedFormId] = useState("")
@@ -261,13 +261,32 @@ export default function ClientDetailPage() {
     toast.success("Follow-up removed")
   }
 
-  const handleChangeFollowupDate = (fId: string, currentDue: string) => setDateFor({ id: fId, due: currentDue })
+  const handleChangeFollowupDate = (fId: string, currentDue: string, fType?: string) => setDateFor({ id: fId, due: currentDue, type: fType })
 
   const saveFollowupDate = async (newDate: string) => {
     if (!dateFor) return
     const supabase = createClient()
     const { data, error } = await supabase.from("followups").update({ due_date: newDate, auto_created: false }).eq("id", dateFor.id).select("id")
     if (error || !data || data.length !== 1) { toast.error("Could not save. Try again."); return }
+
+    if (dateFor.type === "checkin" && client?.id) {
+      const d = new Date(newDate + "T00:00:00")
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      const diff = Math.round((d.getTime() - now.getTime()) / 86400000)
+      if (diff <= 2) {
+        try {
+          await fetch("/api/coach/followups/early-reminder", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ followupId: dateFor.id, clientId: client.id, dueDate: newDate }),
+          })
+        } catch (err) {
+          console.warn("Early checkin reminder failed:", err)
+        }
+      }
+    }
+
     setFollowups((prev) => prev.map((f) => (f.id === dateFor.id ? { ...f, due_date: newDate } : f)))
     setDateFor(null)
     toast.success("Date updated")
@@ -530,7 +549,7 @@ export default function ClientDetailPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleChangeFollowupDate(f.id, f.due_date)}
+                      onClick={() => handleChangeFollowupDate(f.id, f.due_date, f.type)}
                       className="text-xs text-accent-orange font-semibold hover:underline cursor-pointer"
                     >
                       Change date
@@ -1068,7 +1087,7 @@ export default function ClientDetailPage() {
       />
 
       {dateFor && (
-        <ChangeDateSheet title="Move follow-up to" subtitle={name} current={dateFor.due} onSave={saveFollowupDate} onClose={() => setDateFor(null)} />
+        <ChangeDateSheet title="Move follow-up to" subtitle={name} current={dateFor.due} type={dateFor.type} onSave={saveFollowupDate} onClose={() => setDateFor(null)} />
       )}
       {followupOpen && (
         <AddFollowupSheet

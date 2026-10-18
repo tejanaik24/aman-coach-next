@@ -168,12 +168,18 @@ async function run(request: Request) {
 
   const logRows = (loggedRes.data ?? []) as ReminderLogRow[]
   const successfulStageKeys = new Set<string>()
+  const successfulFollowupIds = new Set<string>()
   const lateLogsByFollowup = new Map<string, { stageKey: string; sentDate: string }[]>()
 
   for (const row of logRows) {
     const { baseKey, succeeded } = parseReminderLogType(row.reminder_type)
     if (!succeeded) continue
     successfulStageKeys.add(`${row.client_id}:${baseKey}`)
+
+    const followupMatch = baseKey.match(/^followup_([0-9a-f-]+)_/i)
+    if (followupMatch) {
+      successfulFollowupIds.add(followupMatch[1])
+    }
 
     const lateMatch = baseKey.match(/^followup_([0-9a-f-]+)_(\d{4}-\d{2}-\d{2})_late_(\d+)$/i)
     if (lateMatch) {
@@ -241,7 +247,7 @@ async function run(request: Request) {
     const followupLateKey = `${f.id}_${f.due_date}`
     if (diff > 0) {
       stageKey = `followup_${f.id}_${f.due_date}_pre`
-      if (successfulStageKeys.has(`${f.client_id}:${stageKey}`)) {
+      if (successfulStageKeys.has(`${f.client_id}:${stageKey}`) || (f.type === "checkin" && successfulFollowupIds.has(f.id))) {
         reminders.push({
           followupId: f.id,
           clientId: f.client_id,
@@ -254,9 +260,10 @@ async function run(request: Request) {
       }
     } else if (diff === 0) {
       stageKey = `followup_${f.id}_${f.due_date}_due`
-      // Check-ins: Aman's reminder goes 2 days before, not again on the day (only if the early one went out).
-      const preSent = successfulStageKeys.has(`${f.client_id}:followup_${f.id}_${f.due_date}_pre`)
-      if (successfulStageKeys.has(`${f.client_id}:${stageKey}`) || (f.type === "checkin" && preSent)) {
+      // Check-ins: Aman: "Due-day message: only send if NO reminder for that follow-up id was ever sent (any date). Never send twice for one check-in."
+      const hasAnyPriorSend = successfulFollowupIds.has(f.id)
+      const dueAlreadySent = successfulStageKeys.has(`${f.client_id}:${stageKey}`)
+      if (dueAlreadySent || (f.type === "checkin" && hasAnyPriorSend)) {
         reminders.push({
           followupId: f.id,
           clientId: f.client_id,
@@ -386,6 +393,7 @@ async function run(request: Request) {
         sent_at: simulatedSentAt,
       })
       successfulStageKeys.add(`${f.client_id}:${stageKey}`)
+      successfulFollowupIds.add(f.id)
       if (diff < 0) {
         const list = lateLogsByFollowup.get(followupLateKey) ?? []
         list.push({ stageKey, sentDate: today })
