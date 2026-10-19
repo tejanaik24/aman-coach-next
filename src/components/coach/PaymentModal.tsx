@@ -3,7 +3,7 @@
 import { useState, type FormEvent, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X, CheckCircle2 } from "lucide-react"
-import { format } from "date-fns"
+import { format, addMonths } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { paidSoFar } from "@/lib/fee-math"
@@ -345,28 +345,57 @@ export default function PaymentModal({
           const basePartAmount = Math.floor(validFinalAmount / partCount)
           const remainder = validFinalAmount - basePartAmount * partCount
 
+          let remainingPaid = resolvedAmountPaid
           const rowsToInsert = []
+
+          // Full package breakdown note for instalment 1
+          const baseNote = notes.trim()
+          const discText = validDiscountRupees > 0 ? ` - discount ₹${validDiscountRupees.toLocaleString("en-IN")}` : ""
+          const otherText = validOtherCharges > 0 ? ` + other charges ₹${validOtherCharges.toLocaleString("en-IN")}` : ""
+          const fullBreakdownNote = `Package ₹${validPkgFee.toLocaleString("en-IN")}${discText}${otherText} = ₹${validFinalAmount.toLocaleString("en-IN")}, in ${partCount} EMIs`
+
           for (let i = 1; i <= partCount; i++) {
-            // Due date: monthly intervals
-            const partDueDateObj = new Date(dueDate + "T00:00:00")
-            partDueDateObj.setMonth(partDueDateObj.getMonth() + (i - 1))
-            const partDueDate = format(partDueDateObj, "yyyy-MM-dd")
+            // Due date: monthly intervals using date-fns addMonths
+            const partDueDate = format(addMonths(new Date(dueDate + "T00:00:00"), i - 1), "yyyy-MM-dd")
 
             // Last instalment gets the rounding remainder
             const partAmount = i === partCount ? basePartAmount + remainder : basePartAmount
 
+            let partPaid = 0
+            let partStatus: "paid" | "pending" = "pending"
+            let partPaidDate: string | null = null
+
+            if (remainingPaid >= partAmount) {
+              partPaid = partAmount
+              remainingPaid -= partAmount
+              partStatus = "paid"
+              partPaidDate = today
+            } else if (remainingPaid > 0) {
+              partPaid = remainingPaid
+              remainingPaid = 0
+              partStatus = "pending"
+              partPaidDate = null
+            }
+
+            let instalmentNotes = ""
+            if (i === 1) {
+              instalmentNotes = baseNote ? `${baseNote} · ${fullBreakdownNote}` : fullBreakdownNote
+            } else {
+              instalmentNotes = baseNote ? `${baseNote} (EMI ${i} of ${partCount})` : `EMI ${i} of ${partCount}`
+            }
+
             rowsToInsert.push({
               client_id: targetClientId,
-              package_fee: Math.round(validPkgFee / partCount),
-              discount: Math.round(validDiscountRupees / partCount),
-              other_charges: Math.round(validOtherCharges / partCount),
+              package_fee: partAmount,
+              discount: 0,
+              other_charges: 0,
               amount: partAmount,
-              amount_paid: 0,
+              amount_paid: partPaid,
               currency: "INR",
               due_date: partDueDate,
-              notes: notes.trim() ? `${notes.trim()} (EMI ${i} of ${partCount})` : `EMI ${i} of ${partCount}`,
-              status: "pending" as const,
-              paid_date: null,
+              notes: instalmentNotes,
+              status: partStatus,
+              paid_date: partPaidDate,
               emi_group: emiGroupId,
               emi_no: i,
               emi_total: partCount,
@@ -811,7 +840,7 @@ export default function PaymentModal({
                 </label>
                 {(startDate || endDate) && (
                   <span className="text-[11px] text-text-muted">
-                    Package: {startDate || "—"} to {endDate || "—"}
+                    Package: {startDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? format(new Date(startDate + "T00:00:00"), "d MMM yyyy") : (startDate || "—")} to {endDate && /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? format(new Date(endDate + "T00:00:00"), "d MMM yyyy") : (endDate || "—")}
                   </span>
                 )}
               </div>

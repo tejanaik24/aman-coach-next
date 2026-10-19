@@ -80,14 +80,18 @@ export default function FeesPage() {
       if (!user) return
       const coachId = user.id
 
-      const [clientRes, pkgFeesRes] = await Promise.all([
+      const [clientRes, pkgFeesRes, feeRes] = await Promise.all([
         supabase
           .from("clients")
-          .select("id, user_id, member_number, package_name, start_date, end_date, fee_amount")
+          .select("id, user_id, member_number, package_name, start_date, end_date, fee_amount, profile:profiles!user_id(id, name, phone, avatar_url)")
           .eq("coach_id", coachId),
         supabase
           .from("package_fees")
           .select("package_name, fee_amount"),
+        supabase
+          .from("fees")
+          .select("*")
+          .order("due_date", { ascending: true }),
       ])
 
       if (pkgFeesRes.data) {
@@ -98,43 +102,28 @@ export default function FeesPage() {
         setPackageFeesDraft(draft)
       }
 
-      const clients = (clientRes.data || []) as ClientSummaryRow[]
-      if (clients.length === 0) {
-        setFees([])
-        return
-      }
+      type ClientWithNestedProfile = ClientSummaryRow & { profile: ProfileSummaryRow | ProfileSummaryRow[] | null }
+      const clients = (clientRes.data || []) as unknown as ClientWithNestedProfile[]
+      const clientById = new Map<string, ClientWithNestedProfile>(clients.map((c) => [c.id, c]))
 
-      const clientIds = clients.map((c) => c.id)
-      const userIds = clients.map((c) => c.user_id).filter((uid): uid is string => uid !== null)
-
-      const clientById = new Map<string, ClientSummaryRow>(clients.map((c) => [c.id, c]))
-      const userIdByClientId = new Map<string, string>()
-      for (const c of clients) if (c.user_id) userIdByClientId.set(c.id, c.user_id)
-
-      const [profileRes, feeRes] = await Promise.all([
-        supabase.from("profiles").select("id, name, phone, avatar_url").in("id", userIds),
-        supabase.from("fees").select("*").in("client_id", clientIds).order("due_date", { ascending: true }),
-      ])
-
-      const profiles = (profileRes.data || []) as ProfileSummaryRow[]
-      const profileByUserId = new Map<string, ProfileSummaryRow>(profiles.map((p) => [p.id, p]))
-
-      function resolveClient(clientId: string): ProfileSummaryRow | undefined {
-        const uid = userIdByClientId.get(clientId)
-        return uid ? profileByUserId.get(uid) : undefined
+      function resolveProfile(c?: ClientWithNestedProfile): ProfileSummaryRow | undefined {
+        if (!c?.profile) return undefined
+        return Array.isArray(c.profile) ? c.profile[0] : c.profile
       }
 
       const feeRows = (feeRes.data || []) as Fee[]
-      const mapped: FeeWithClient[] = feeRows.map((f) => {
-        const client = clientById.get(f.client_id)
-        const profile = resolveClient(f.client_id)
-        return mapFeeToBill(f, client, profile)
-      })
+      const mapped: FeeWithClient[] = feeRows
+        .filter((f) => clientById.has(f.client_id))
+        .map((f) => {
+          const client = clientById.get(f.client_id)
+          const profile = resolveProfile(client)
+          return mapFeeToBill(f, client, profile)
+        })
       setFees(mapped)
       setClientOptions(
         clients.map((c) => ({
           id: c.id,
-          name: resolveClient(c.id)?.name ?? "Unknown",
+          name: resolveProfile(c)?.name ?? "Unknown",
           packageName: c.package_name,
           startDate: c.start_date,
           endDate: c.end_date,
@@ -554,26 +543,35 @@ export default function FeesPage() {
               </div>
 
               <div>
-                <h3 className="font-heading text-xl text-[#181310]">UPI Payment Link</h3>
+                <h3 className="font-heading text-xl text-[#181310]">Bill & Payment Link</h3>
                 <p className="text-xs text-[#8A7F70] mt-1">
                   Client: {upiModalFee.clientName} | Due: ₹{amountDue(upiModalFee).toLocaleString("en-IN")}
                 </p>
                 <p className="text-xs text-[#181310] font-mono font-bold mt-1">UPI ID: {COACH_UPI_ID}</p>
               </div>
 
-              <div className="p-3 bg-[#181310]/5 rounded-xl border border-[#181310]/10 text-xs font-mono text-accent-orange break-all select-all">
-                {generateUpiPaymentUrl(amountDue(upiModalFee) || upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber)}
-              </div>
+              {(() => {
+                const billUrl = upiModalFee.token
+                  ? `${typeof window !== "undefined" ? window.location.origin : "https://www.amankhuranafitness.com"}/bill/${upiModalFee.token}`
+                  : `${typeof window !== "undefined" ? window.location.origin : "https://www.amankhuranafitness.com"}/payments`
+                return (
+                  <>
+                    <div className="p-3 bg-[#181310]/5 rounded-xl border border-[#181310]/10 text-xs font-mono text-accent-orange break-all select-all">
+                      {billUrl}
+                    </div>
 
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(generateUpiPaymentUrl(amountDue(upiModalFee) || upiModalFee.amount, upiModalFee.clientName, upiModalFee.invoiceNumber))
-                  toast.success("UPI payment link copied!")
-                }}
-                className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider cursor-pointer"
-              >
-                Copy UPI Link
-              </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(billUrl)
+                        toast.success("Bill link copied!")
+                      }}
+                      className="w-full py-3 rounded-full bg-accent-orange text-bg-primary text-xs font-bold uppercase tracking-wider cursor-pointer"
+                    >
+                      Copy Bill Link
+                    </button>
+                  </>
+                )
+              })()}
             </motion.div>
           </motion.div>
         )}

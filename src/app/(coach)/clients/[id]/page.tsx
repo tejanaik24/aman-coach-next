@@ -43,7 +43,15 @@ import { openUrl } from "@/lib/utils"
 
 type Tab = "overview" | "checkins" | "plans" | "fees" | "history"
 
-const FOLLOWUP_LABEL: Record<string, string> = { checkin: "Check-in", payment: "Payment", renewal: "Renewal", feedback: "Feedback", birthday: "Birthday", other: "Follow-up" }
+const FOLLOWUP_LABEL: Record<string, string> = {
+  checkin: "Check-in",
+  plan_update: "Plan update reminder",
+  payment: "Payment follow-up",
+  renewal: "Renewal follow-up",
+  feedback: "Feedback",
+  birthday: "Birthday",
+  other: "Follow-up",
+}
 
 // Check-ins come in two shapes: older ones nest answers (form_data.training...), the current
 // 27-step form saves flat keys (t3_workout_deviation...). Read whichever is there.
@@ -1160,16 +1168,17 @@ export default function ClientDetailPage() {
                         id: `fee-paid-${f.id}`,
                         date: f.paid_date,
                         title: `Payment received: ₹${Number(f.amount_paid || f.amount).toLocaleString("en-IN")}`,
-                        subtitle: `Invoice #${f.invoice_number || "—"} · ${f.package_name || "Coaching fee"}`,
+                        subtitle: `Invoice #${f.invoice_number || "—"}${f.package_name ? ` · ${f.package_name}` : ""}`,
                         badge: "Paid",
                         color: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
                       })
                     }
+                    const emiPart = f.emi_no && f.emi_total ? ` · EMI ${f.emi_no} of ${f.emi_total}` : ""
                     items.push({
                       id: `fee-due-${f.id}`,
                       date: f.due_date,
-                      title: `Bill due: ₹${Number(f.amount).toLocaleString("en-IN")}`,
-                      subtitle: `Invoice #${f.invoice_number || "—"} · Status: ${f.status}${f.emi_no ? ` (EMI ${f.emi_no}/${f.emi_total})` : ""}`,
+                      title: `Bill ₹${Number(f.amount).toLocaleString("en-IN")}${emiPart} · ${f.status}`,
+                      subtitle: `Invoice #${f.invoice_number || "—"}${f.package_name ? ` · ${f.package_name}` : ""}${f.notes ? ` · ${f.notes}` : ""}`,
                       badge: "Bill",
                       color: "bg-[#C9A84C]/15 text-[#856514] border-[#C9A84C]/30",
                     })
@@ -1209,21 +1218,28 @@ export default function ClientDetailPage() {
                   }
 
                   for (const fu of allFollowups) {
+                    const label = FOLLOWUP_LABEL[fu.type] ?? "Follow-up"
                     items.push({
                       id: `fu-${fu.id}`,
                       date: fu.due_date,
-                      title: `Follow-up: ${FOLLOWUP_LABEL[fu.type] ?? fu.type}`,
-                      subtitle: `${fu.note ? `Note: ${fu.note} · ` : ""}${fu.done_at ? `Done ${format(new Date(fu.done_at), "d MMM")}` : "Open"}`,
+                      title: label,
+                      subtitle: `${fu.note ? `Note: ${fu.note} · ` : ""}${fu.done_at ? `Done ${format(new Date(fu.done_at), "d MMM yyyy")}` : "Open"}`,
                       badge: "Follow-up",
                       color: "bg-purple-500/15 text-purple-700 border-purple-500/30",
                     })
                   }
 
                   for (const rl of reminderLogs) {
+                    const rawType = rl.reminder_type.split("|")[0]
+                    let friendly = rawType
+                    if (rawType.includes("checkin")) friendly = "Check-in reminder"
+                    else if (rawType.includes("payment")) friendly = "Payment reminder"
+                    else if (rawType.includes("renewal")) friendly = "Renewal reminder"
+                    else if (rawType.includes("plan_update")) friendly = "Plan update reminder"
                     items.push({
                       id: `rl-${rl.id}`,
                       date: rl.sent_at ? rl.sent_at.slice(0, 10) : "",
-                      title: `WhatsApp sent: ${rl.reminder_type}`,
+                      title: `WhatsApp sent: ${friendly}`,
                       subtitle: `Status: ${rl.status || "delivered"}`,
                       badge: "WhatsApp",
                       color: "bg-[#25D366]/15 text-[#128C7E] border-[#25D366]/30",
@@ -1256,7 +1272,7 @@ export default function ClientDetailPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <span className="text-[11px] font-semibold text-[#8A7F70]">
-                              {it.date ? format(new Date(it.date + "T00:00:00"), "d MMM yyyy") : "—"}
+                              {it.date ? format(new Date(it.date.slice(0, 10) + "T00:00:00"), "d MMM yyyy") : "—"}
                             </span>
                           </div>
                         </div>

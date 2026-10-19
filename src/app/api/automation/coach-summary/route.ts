@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
-import { automationSupabase as db, isAuthorizedAutomationRequest } from "@/lib/automation"
+import { automationSupabase as db, isAuthorizedAutomationRequest, todayInIndia } from "@/lib/automation"
 import { fetchQuickManage } from "@/lib/quick-manage"
 import { isCoachNotificationsEnabled } from "@/lib/automation-delivery"
 import { sendWhatsAppTemplate, sendWhatsAppText, getWhatsAppConfigStatus } from "@/lib/whatsapp"
+import { differenceInCalendarDays } from "date-fns"
 
 export const dynamic = "force-dynamic"
 
@@ -39,64 +40,98 @@ export async function GET(request: Request) {
   }
 
   const rows = await fetchQuickManage(db, coachId)
+  const todayStr = todayInIndia()
+  const today = new Date(todayStr + "T00:00:00")
 
-  const checkinsDue = rows.filter((r) => r.tile === "checkins").length
+  // Parameter mappings:
+  // {{1}} = "Aman"
+  // {{2}} = open check-in follow-ups due today or within 2 days (tile followups, type checkin)
+  // {{3}} = tile checkins (check-ins to review)
+  // {{4}} = tile plans (plans to update)
+  // {{5}} = tile payments (fees due)
+  // {{6}} = renewals ending within 7 days (renewals this week)
+  // {{7}} = birthdays today
+  // {{8}} = tile enquiries (new enquiries)
+  const checkinsDue = rows.filter((r) => {
+    if (r.tile !== "followups" || r.action.kind !== "followup") return false
+    if (r.action.type !== "checkin" || !r.action.dueDate) return false
+    const diff = differenceInCalendarDays(new Date(r.action.dueDate + "T00:00:00"), today)
+    return diff <= 2
+  }).length
+
+  const checkinsToReview = rows.filter((r) => r.tile === "checkins").length
   const plansToUpdate = rows.filter((r) => r.tile === "plans").length
   const feesDue = rows.filter((r) => r.tile === "payments").length
-  const renewals = rows.filter((r) => r.tile === "renewals").length
-  const birthdays = rows.filter((r) => r.tile === "birthdays" && r.reason.includes("today")).length
-  const enquiries = rows.filter((r) => r.tile === "enquiries").length
 
-  const total = checkinsDue + plansToUpdate + feesDue + renewals + birthdays + enquiries
+  const renewalsThisWeek = rows.filter((r) => {
+    if (r.tile !== "renewals" || r.action.kind !== "renewal") return false
+    if (!r.action.endDate) return false
+    const diff = differenceInCalendarDays(new Date(r.action.endDate + "T00:00:00"), today)
+    return diff >= 0 && diff <= 7
+  }).length
+
+  const birthdaysToday = rows.filter((r) => r.tile === "birthdays" && r.reason.includes("today")).length
+  const newEnquiries = rows.filter((r) => r.tile === "enquiries").length
+
+  const total = checkinsDue + checkinsToReview + plansToUpdate + feesDue + renewalsThisWeek + birthdaysToday + newEnquiries
   if (total === 0) {
     return NextResponse.json({ skipped: true, reason: "all_zero" })
   }
 
   const appUrl = "https://www.amankhuranafitness.com/dashboard"
 
-  // Attempt Meta Template coach_daily_summary
-  // Parameters:
-  // 1: Coach Name
-  // 2: Check-ins due count
-  // 3: Plans to update count
-  // 4: Fees due count
-  // 5: Renewals count
-  // 6: Birthdays count
-  // 7: Enquiries count
-  // 8: Dashboard URL
   const components = [
     {
       type: "body",
       parameters: [
-        { type: "text", text: coachProfile.name || "Aman" },
+        { type: "text", text: "Aman" },
         { type: "text", text: String(checkinsDue) },
+        { type: "text", text: String(checkinsToReview) },
         { type: "text", text: String(plansToUpdate) },
         { type: "text", text: String(feesDue) },
-        { type: "text", text: String(renewals) },
-        { type: "text", text: String(birthdays) },
-        { type: "text", text: String(enquiries) },
-        { type: "text", text: appUrl },
+        { type: "text", text: String(renewalsThisWeek) },
+        { type: "text", text: String(birthdaysToday) },
+        { type: "text", text: String(newEnquiries) },
       ],
     },
   ]
+
+  const counts = {
+    checkinsDue,
+    checkinsToReview,
+    plansToUpdate,
+    feesDue,
+    renewalsThisWeek,
+    birthdaysToday,
+    newEnquiries,
+  }
 
   const waConfig = getWhatsAppConfigStatus()
   if (!waConfig.configured || waConfig.dryRun) {
     return NextResponse.json({
       success: true,
       dryRun: true,
-      counts: { checkinsDue, plansToUpdate, feesDue, renewals, birthdays, enquiries },
+      counts,
     })
   }
 
   const tplRes = await sendWhatsAppTemplate(coachPhoneRaw, "coach_daily_summary", "en", components)
   if (tplRes.success && !tplRes.dryRun) {
-    return NextResponse.json({ success: true, method: "template", tplRes })
+    return NextResponse.json({ success: true, method: "template", counts, tplRes })
   }
 
   // Fallback to plain text if template is pending / unapproved
-  const freeText = `Good morning Coach Aman! ??\nHere is your daily summary for today:\n\n� Check-ins to review: ${checkinsDue}\n� Plans to update: ${plansToUpdate}\n� Pending fees: ${feesDue}\n� Upcoming renewals: ${renewals}\n� Birthdays today: ${birthdays}\n� New enquiries: ${enquiries}\n\nOpen Quick Manage: ${appUrl}\n� Team AKF`
+  const freeText = `Good morning Aman! Today at Aman Khurana Fitness:
+- ${checkinsDue} check-ins due
+- ${checkinsToReview} check-ins to review
+- ${plansToUpdate} plans to update
+- ${feesDue} fees due
+- ${renewalsThisWeek} renewals this week
+- ${birthdaysToday} birthdays
+- ${newEnquiries} new enquiries
+
+Open your app: ${appUrl}`
 
   const textRes = await sendWhatsAppText(coachPhoneRaw, freeText)
-  return NextResponse.json({ success: textRes.success, method: "text_fallback", textRes })
+  return NextResponse.json({ success: textRes.success, method: "text_fallback", counts, textRes, tplError: tplRes.error })
 }

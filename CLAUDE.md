@@ -186,3 +186,15 @@ Pending: DB CHECK on fees (needs Teja "YES-CONSTRAINT"); Aman's real photos (her
 - Coach mode (`/questionnaire?client=<id>`): Aman asked for NOTHING to be required there so he can save a half-filled form for a client; still prefills the client's name/phone and posts to `/api/coach/clients/<id>/questionnaire`.
 - Verified at 390px on the built app: 16/16 phase-1 checks, 13/13 coach+toast checks. One real public submit as "Teja Test P2" with `META_WA_TOKEN=dummy-*` (dry run proven via a temporary probe route, since deleted) and the photo upload stubbed: row `47ad5307-c73e-4e1c-925d-f14a2f0ace41` in `form_submissions`, `coach_alert_sent_at` null, no WhatsApp sent. Row left in place on purpose.
 - Mapping choices to confirm with Aman: old "Age – Date Of Birth*" became Date of Birth (Age left optional); old "current diet summary*" became the three meals (breakfast/lunch/dinner); "sides" needs 2 photos (left + right); the unstarred home-equipment question is required because his old form blocked on it.
+# Session 2026-10-16 evening — launch day (DEPLOYED, not pushed)
+
+## What's Done
+- Live = 74c83e60 (dpl_EmvTe7XBeBsN6Ly5dbeq6Fmc3dgz); before it 34e6384c. Rollback target: dpl_B8GpHBJHJ8WSyAMn7snxxL7gUgz5 (7b444ca8).
+- Followups cron no longer creates check-ins; auto_created follow-ups never message and are hidden on coach screens (`.not("auto_created","is",true)`). Coach edits set auto_created=false.
+- Coach edit/delete: plans (builder), workout day rename, PDF plan rename, follow-up note edit. Fees keep only "Edit bill".
+- Site: IHFA card visible, women's divisions text, new contest-prep cover, slider 3:2, menu word-break fix, Online Training photo = aman-online-training.webp (AI; coach is not Aman).
+- `next start` only serves public/ files that existed at start — restart after adding images.
+
+## What's Pending
+- services.html: all `.service-number` show "00" (nothing fills data-target).
+- Meta template client_message_alert (needs Teja OK); joining-form view in Aman's manual-form order; EMI option; push to GitHub.

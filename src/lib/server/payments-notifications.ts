@@ -10,7 +10,8 @@ export async function sendPaymentReminderWhatsApp(
   clientName: string,
   amount: number,
   dueDateStr: string,
-  reminderType: "1week_before" | "1day_before" | "1week_overdue"
+  reminderType: "1week_before" | "1day_before" | "1week_overdue",
+  feeToken?: string | null
 ) {
   let title = "⏰ PAYMENT REMINDER"
   let body = ""
@@ -26,8 +27,8 @@ export async function sendPaymentReminderWhatsApp(
     body = `Hi ${clientName}, your coaching fee payment of ₹${amount.toLocaleString("en-IN")} is past due date (*${dueDateStr}*). Please complete your payment.`
   }
 
-  const upiLink = generateUpiPaymentUrl(amount, clientName, "REMINDER")
-  const fullMsg = `${title}\n\n${body}\n\n📲 *Pay via UPI Link*:\n${upiLink}\n\nOr view details in portal:\n${SITE_URL}/payments`
+  const billUrl = feeToken ? `${SITE_URL}/bill/${feeToken}` : `${SITE_URL}/payments`
+  const fullMsg = `${title}\n\n${body}\n\n📄 *View your bill and pay*:\n${billUrl}\n\nThank you!\nCoach Aman`
 
   return sendWhatsAppText(phone, fullMsg)
 }

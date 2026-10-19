@@ -51,7 +51,30 @@ export async function POST(req: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // 1. Fetch client & profile
+  // 1. Verify follow-up exists, belongs to this coach, type is checkin, not done, and due_date matches
+  const { data: followup } = await admin
+    .from("followups")
+    .select("id, client_id, coach_id, type, due_date, done_at")
+    .eq("id", followupId)
+    .single()
+
+  if (!followup) {
+    return NextResponse.json({ error: "Follow-up not found" }, { status: 404 })
+  }
+  if (followup.coach_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden: not your follow-up" }, { status: 403 })
+  }
+  if (followup.type !== "checkin") {
+    return NextResponse.json({ error: "Only checkin follow-ups can have check-in reminders" }, { status: 400 })
+  }
+  if (followup.done_at) {
+    return NextResponse.json({ sent: false, reason: "already_completed" })
+  }
+  if (followup.due_date !== dueDate) {
+    return NextResponse.json({ error: "Due date does not match follow-up date" }, { status: 400 })
+  }
+
+  // 2. Fetch client & profile
   const { data: client } = await admin
     .from("clients")
     .select("id, user_id, status")
@@ -81,19 +104,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ sent: false, reason: "no_phone" })
   }
 
-  // 2. Check if a reminder for this followup has already been sent
+  // 3. Check if a reminder for this followup AND date has already been sent
   const { data: existingLogs } = await admin
     .from("reminder_log")
     .select("reminder_type")
     .eq("client_id", clientId)
-    .ilike("reminder_type", `followup_${followupId}_%`)
+    .ilike("reminder_type", `followup_${followupId}_${dueDate}_%`)
 
   const alreadySent = (existingLogs ?? []).some((r) => parseReminderLogType(r.reminder_type).succeeded)
   if (alreadySent) {
     return NextResponse.json({ sent: false, reason: "already_sent" })
   }
 
-  // 3. Send the checkin_reminder_v2 with the date
+  // 4. Send the checkin_reminder_v2 with the date
   const waRes = await sendCheckinReminder(phone, profile.name ?? "there", undefined, dueDate)
   const waStatus = waRes.success && !waRes.dryRun ? "ok" : "failed"
 
