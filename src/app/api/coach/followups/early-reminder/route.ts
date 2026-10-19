@@ -73,12 +73,16 @@ export async function POST(req: Request) {
   if (followup.due_date !== dueDate) {
     return NextResponse.json({ error: "Due date does not match follow-up date" }, { status: 400 })
   }
+  if (followup.client_id !== clientId) {
+    return NextResponse.json({ error: "Client does not match follow-up" }, { status: 400 })
+  }
 
   // 2. Fetch client & profile
   const { data: client } = await admin
     .from("clients")
     .select("id, user_id, status")
     .eq("id", clientId)
+    .eq("coach_id", user.id)
     .single()
 
   if (!client || !client.user_id) {

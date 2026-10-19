@@ -1,16 +1,25 @@
 import { createClient } from "@supabase/supabase-js"
+import { timingSafeEqual } from "crypto"
 
 export const automationSupabase = createClient(
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "",
   process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 )
 
+function sameSecret(provided: string | null | undefined, expected: string): boolean {
+  if (!provided) return false
+  const a = Buffer.from(provided, "utf8")
+  const b = Buffer.from(expected, "utf8")
+  return a.length === b.length && timingSafeEqual(a, b)
+}
+
+// Header-only (never ?secret= in the URL, which ends up in logs). Fails closed when no secret is set.
 export function isAuthorizedAutomationRequest(request: Request): boolean {
   const secrets = [process.env.AUTOMATION_SECRET, process.env.CRON_SECRET].filter(Boolean) as string[]
   if (!secrets.length) return false
-  const header = request.headers.get("x-automation-secret")
+  const header = request.headers.get("x-automation-secret") ?? request.headers.get("x-webhook-secret")
   const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")
-  return secrets.some((secret) => header === secret || bearer === secret)
+  return secrets.some((secret) => sameSecret(header, secret) || sameSecret(bearer, secret))
 }
 
 export function todayInIndia(): string {

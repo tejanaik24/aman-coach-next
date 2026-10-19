@@ -7,8 +7,16 @@ import { createClient } from "@/lib/supabase/server"
 // Why: WhatsApp (and other chat apps) open every link in a message to build a preview. If GET used
 // the token, that preview would burn it and the client would see "link expired".
 
+// Only same-site paths. Browsers treat "/\evil.com" or "/\t/evil.com" as another site, so resolve and compare origins.
 function safeNext(nextParam: string | null | undefined): string {
-  return nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/login"
+  if (!nextParam || !nextParam.startsWith("/") || /[\\\s\u0000-\u001f]/.test(nextParam)) return "/login"
+  try {
+    const base = "https://same.invalid"
+    const u = new URL(nextParam, base)
+    return u.origin === base ? u.pathname + u.search : "/login"
+  } catch {
+    return "/login"
+  }
 }
 
 function esc(v: string): string {

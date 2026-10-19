@@ -4,6 +4,18 @@ import { createClient } from "@supabase/supabase-js"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
+// push/send later POSTs to this URL from our server, so only accept real browser push services.
+const PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /(^|\.)push\.apple\.com$/, /^updates\.push\.services\.mozilla\.com$/, /(^|\.)notify\.windows\.com$/]
+function isKnownPushEndpoint(endpoint: unknown): boolean {
+  if (typeof endpoint !== "string") return false
+  try {
+    const u = new URL(endpoint)
+    return u.protocol === "https:" && PUSH_HOSTS.some((h) => h.test(u.hostname))
+  } catch {
+    return false
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization")?.replace("Bearer ", "")
@@ -18,6 +30,9 @@ export async function POST(req: Request) {
 
     const { subscription } = await req.json()
     if (!subscription) return NextResponse.json({ error: "Missing subscription" }, { status: 400 })
+    if (!isKnownPushEndpoint(subscription?.endpoint)) {
+      return NextResponse.json({ error: "Invalid subscription" }, { status: 400 })
+    }
 
     const { error: upsertErr } = await supabase.from("push_subscriptions").upsert(
       { client_id: client.id, subscription },

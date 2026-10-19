@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { withRetry } from "@/lib/db-retry"
 import { isCoachNotificationsEnabled } from "@/lib/automation-delivery"
+import { isAuthorizedAutomationRequest } from "@/lib/automation"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -26,17 +27,7 @@ export async function POST(req: Request) {
 }
 
 async function handlePendingAlerts(req: Request) {
-  const authHeader = req.headers.get("authorization")
-  const secretHeader =
-    req.headers.get("x-automation-secret") ?? req.headers.get("x-webhook-secret")
-  const secretParam = new URL(req.url).searchParams.get("secret")
-  const expectedSecret = process.env.AUTOMATION_SECRET
-
-  if (!expectedSecret) {
-    return NextResponse.json({ error: "AUTOMATION_SECRET environment variable is missing" }, { status: 500 })
-  }
-
-  if (secretHeader !== expectedSecret && secretParam !== expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+  if (!isAuthorizedAutomationRequest(req)) {
     return NextResponse.json({ error: "Unauthorized automation request" }, { status: 401 })
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import webpush from "web-push"
 import { createClient } from "@supabase/supabase-js"
+import { isAuthorizedAutomationRequest } from "@/lib/automation"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -8,10 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization")
-    const secretParam = new URL(req.url).searchParams.get("secret")
-    const expectedSecret = process.env.AUTOMATION_SECRET || process.env.CRON_SECRET
-    if (!expectedSecret || (secretParam !== expectedSecret && authHeader !== `Bearer ${expectedSecret}`)) {
+    if (!isAuthorizedAutomationRequest(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

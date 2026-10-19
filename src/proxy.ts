@@ -1,8 +1,8 @@
 import { updateSession } from "@/lib/supabase/middleware"
 import { NextResponse, type NextRequest } from "next/server"
 
-const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule", "/submissions"]
-const CLIENT_PATHS = ["/home", "/more", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding"]
+const COACH_PATHS = ["/dashboard", "/clients", "/checkins", "/plans", "/fees", "/coach/schedule", "/submissions", "/messages"]
+const CLIENT_PATHS = ["/home", "/more", "/workout", "/nutrition", "/checkin", "/progress", "/diet", "/schedule", "/onboarding", "/payments"]
 
 interface ProfileAuthData {
   role: string

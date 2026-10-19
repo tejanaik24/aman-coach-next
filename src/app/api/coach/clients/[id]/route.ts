@@ -161,12 +161,18 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     : admin.from("form_submissions").select("form_data").eq("client_id", id)
   const { data: formRows } = await formQuery
   const formFilePaths: string[] = []
+  // form_data is written by the client, so only delete files inside this client's own folder
+  // (or the public questionnaire folder), never a path pointing at someone else's files.
+  const allowedPrefixes = userId ? [`${userId}/`, "public-questionnaire/"] : ["public-questionnaire/"]
   for (const row of formRows ?? []) {
-    formFilePaths.push(...extractFilePaths(row.form_data))
+    formFilePaths.push(
+      ...extractFilePaths(row.form_data).filter(
+        (p) => !p.includes("..") && allowedPrefixes.some((prefix) => p.startsWith(prefix))
+      )
+    )
   }
   if (formFilePaths.length > 0) {
     await admin.storage.from("checkin-photos").remove(formFilePaths)
-    await admin.storage.from("public-questionnaire").remove(formFilePaths).catch(() => {})
   }
 
   // 2. ROWS

@@ -38,7 +38,8 @@ async function dispatchPasswordReset(raw: string): Promise<void> {
     let targetUserId: string | null = null
     let targetEmail: string | null = null
     let targetName = "Champion"
-    let targetPhone: string | null = digits.length === 10 ? digits : null
+    // Only ever send to the phone saved on the account, never to digits typed into the form.
+    let targetPhone: string | null = null
 
     // 1. Check profiles by phone if 10 digits provided
     if (digits.length === 10) {
@@ -52,7 +53,7 @@ async function dispatchPasswordReset(raw: string): Promise<void> {
       if (profByPhone) {
         targetUserId = profByPhone.id
         targetName = profByPhone.name || targetName
-        targetPhone = profByPhone.phone || targetPhone
+        targetPhone = profByPhone.phone || null
       }
     }
 
