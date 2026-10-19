@@ -28,7 +28,6 @@ interface BillData {
   status: "pending" | "paid" | "overdue"
   emiNo: number | null
   emiTotal: number | null
-  notes: string | null
   createdAt: string
 }
 

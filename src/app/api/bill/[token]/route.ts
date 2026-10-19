@@ -76,7 +76,6 @@ export async function GET(
         status: isPaid ? "paid" : fee.status,
         emiNo: fee.emi_no,
         emiTotal: fee.emi_total,
-        notes: fee.notes,
         createdAt: fee.created_at,
       },
     })
