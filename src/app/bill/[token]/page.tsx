@@ -142,29 +142,29 @@ export default function PublicBillPage() {
   const waConfirmUrl = `https://wa.me/${amanWaNumber}?text=${encodeURIComponent(waConfirmText)}`
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden max-w-full">
       {/* Background glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-96 bg-gradient-to-b from-[#FF6A1A]/10 to-transparent pointer-events-none" />
 
-      <main className="relative max-w-md mx-auto px-5 pt-8 pb-16 space-y-6">
+      <main className="relative w-full max-w-md min-w-0 mx-auto px-4 sm:px-5 pt-8 pb-16 space-y-5">
         {/* Header / Brand */}
         <div className="text-center space-y-2">
           <div className="size-16 rounded-2xl bg-[#141414] border border-[#262626] mx-auto p-2.5 flex items-center justify-center shadow-lg">
             <img src="/images/aman/logo.jpg" alt="Aman Khurana Fitness" className="w-full h-full object-contain rounded-lg" />
           </div>
           <h1 className="font-heading italic text-2xl font-bold tracking-tight">Aman Khurana Fitness</h1>
-          <p className="text-xs uppercase font-bold tracking-widest text-accent-orange">Elite Coaching & Nutrition</p>
+          <p className="text-xs uppercase font-bold tracking-wider text-accent-orange">One stop for all your health & fitness goals</p>
         </div>
 
         {/* Bill Status Card */}
-        <div className={`rounded-3xl p-6 border ${isPaid ? "bg-emerald-950/20 border-emerald-500/30" : "bg-[#141414] border-[#262626]"}`}>
+        <div className={`rounded-3xl p-5 sm:p-6 border ${isPaid ? "bg-emerald-950/20 border-emerald-500/30" : "bg-[#141414] border-[#262626]"}`}>
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-text-muted text-xs uppercase font-bold tracking-wider">Invoice #{bill.invoiceNumber}</p>
-              <h2 className="text-xl font-bold mt-1 text-white">{bill.clientName}</h2>
-              <p className="text-sm text-text-muted mt-0.5">{bill.packageName}</p>
+              <h2 className="text-xl font-bold mt-1 text-white break-words">{bill.clientName}</h2>
+              <p className="text-sm text-text-muted mt-0.5 break-words">{bill.packageName}</p>
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+            <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
               isPaid
                 ? "bg-emerald-500 text-black"
                 : "bg-accent-orange/15 text-accent-orange border border-accent-orange/30"
@@ -173,14 +173,14 @@ export default function PublicBillPage() {
             </span>
           </div>
 
-          <div className="mt-6 pt-5 border-t border-white/10 flex items-baseline justify-between">
-            <div>
+          <div className="mt-6 pt-5 border-t border-white/10 flex items-baseline justify-between gap-2">
+            <div className="min-w-0">
               <p className="text-xs text-text-muted font-medium">{isPaid ? "Total Paid" : "Amount Due"}</p>
-              <p className={`font-heading text-4xl font-bold mt-1 ${isPaid ? "text-emerald-400" : "text-white"}`}>
+              <p className={`font-heading text-3xl sm:text-4xl font-bold mt-1 break-words ${isPaid ? "text-emerald-400" : "text-white"}`}>
                 ₹{(isPaid ? (bill.amountPaid || bill.totalAmount) : payable).toLocaleString("en-IN")}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-xs text-text-muted font-medium">{isPaid ? "Paid On" : "Due Date"}</p>
               <p className="text-sm font-bold text-white mt-1">
                 {isPaid && bill.paidDate ? format(new Date(bill.paidDate + "T00:00:00"), "dd MMM yyyy") : dueFormatted}
@@ -232,31 +232,34 @@ export default function PublicBillPage() {
             {/* Big UPI Deep Link Button */}
             <a
               href={upiDeepLink}
-              className="w-full h-14 rounded-2xl bg-[#FF6A1A] text-black font-bold text-lg flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer hover:bg-[#ff7b33] active:scale-[0.99] transition-all"
+              className="w-full min-h-[52px] py-3 px-3 rounded-2xl bg-[#FF6A1A] text-black font-bold text-sm sm:text-base flex items-center justify-center gap-2 text-center leading-tight shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer hover:bg-[#ff7b33] active:scale-[0.99] transition-all"
             >
-              <CreditCard className="size-5" /> Pay with UPI (GPay / PhonePe / Paytm)
+              <CreditCard className="size-5 shrink-0" />
+              <span className="break-words">Pay with UPI (GPay / PhonePe / Paytm)</span>
             </a>
 
             {/* Copy UPI ID */}
             <button
               type="button"
               onClick={() => copyText(COACH_UPI_ID, true)}
-              className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 text-white font-semibold text-sm flex items-center justify-between px-4 cursor-pointer hover:bg-white/10 transition-colors"
+              className="w-full min-h-[48px] py-2 px-3 rounded-2xl bg-white/5 border border-white/10 text-white font-semibold text-xs sm:text-sm flex items-center justify-between gap-2 cursor-pointer hover:bg-white/10 transition-colors"
             >
-              <span className="text-text-muted">UPI ID: <strong className="text-white font-mono">{COACH_UPI_ID}</strong></span>
-              <span className="flex items-center gap-1.5 text-accent-orange font-bold text-xs">
-                {copiedUpi ? <><Check className="size-4" /> Copied</> : <><Copy className="size-4" /> Copy UPI ID</>}
+              <span className="text-text-muted truncate text-left">
+                UPI ID: <strong className="text-white font-mono">{COACH_UPI_ID}</strong>
+              </span>
+              <span className="shrink-0 flex items-center gap-1 text-accent-orange font-bold text-xs">
+                {copiedUpi ? <><Check className="size-3.5" /> Copied</> : <><Copy className="size-3.5" /> Copy UPI ID</>}
               </span>
             </button>
 
-            {process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID && (
+            {process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.startsWith("rzp_live_") && (
               <RazorpayCheckoutButton
                 feeId={bill.id}
                 packageName={bill.packageName}
                 clientName={bill.clientName}
                 clientPhone={bill.clientPhone ?? undefined}
                 buttonText="Pay by card / netbanking (Razorpay)"
-                className="w-full h-12 rounded-2xl bg-white/10 border border-white/20 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/15 cursor-pointer"
+                className="w-full min-h-[48px] py-2.5 px-3 rounded-2xl bg-white/10 border border-white/20 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/15 cursor-pointer"
                 onSuccess={() => {
                   setBill((prev) => (prev ? { ...prev, status: "paid" } : prev))
                 }}

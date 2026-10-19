@@ -1,12 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "motion/react"
 import { Download, X, Smartphone } from "lucide-react"
 
 export default function PwaInstallPrompt() {
+  const pathname = usePathname()
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showPrompt, setShowPrompt] = useState(false)
+
+  if (pathname?.startsWith("/bill")) return null
 
   useEffect(() => {
     // Show prompt if demo parameter is present
