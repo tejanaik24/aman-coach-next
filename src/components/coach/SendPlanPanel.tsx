@@ -30,6 +30,32 @@ interface Props {
 const BUCKET = "client-documents"
 const MAX_BYTES = 15 * 1024 * 1024
 const KIND_LABEL: Record<Kind, string> = { workout: "Workout plan", diet: "Diet plan", cycle: "Cycle plan" }
+const inWeeks = (w: number) => format(new Date(Date.now() + w * 7 * 86400000), "yyyy-MM-dd")
+
+// Aman picks the exact date he wants to be reminded to update this plan ("" = no reminder)
+function ReminderPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <p className="text-text-muted text-xs font-semibold mb-2">Remind me (only you) to update on</p>
+      <div className="flex gap-2">
+        <input
+          type="date"
+          value={value}
+          min={format(new Date(), "yyyy-MM-dd")}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 h-12 rounded-xl bg-[#1A1A1A] border border-[#333333] px-3 text-white text-base outline-none focus:border-[#C9A84C] [color-scheme:dark]"
+        />
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className={`h-12 px-3.5 rounded-xl text-xs font-bold cursor-pointer ${value ? "bg-white/10 text-white" : "bg-accent-orange text-black"}`}
+        >
+          No reminder
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function SendPlanPanel({ clientId, clientName, phone, showCycle = false }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -40,7 +66,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
   const [title, setTitle] = useState("")
   const [note, setNote] = useState("")
   const [saveTemplate, setSaveTemplate] = useState(false)
-  const [reminderWeeks, setReminderWeeks] = useState<number | null>(4) // 2 | 4 | 6 | 8 | 12 | null
+  const [reminderDate, setReminderDate] = useState(() => inWeeks(4))
   const [busy, setBusy] = useState(false)
   const [templateKind, setTemplateKind] = useState<Kind | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<Doc | null>(null)
@@ -69,15 +95,14 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     setTitle(file.name.replace(/\.[^.]+$/, ""))
     setNote("")
     setSaveTemplate(false)
-    setReminderWeeks(pickKind === "cycle" ? null : 4)
+    setReminderDate(pickKind === "cycle" ? "" : inWeeks(4))
     if (fileRef.current) fileRef.current.value = ""
   }
 
-  async function schedulePlanUpdateReminder(coachId: string, kind: Kind, weeks: number | null) {
-    if (!weeks) return
+  async function schedulePlanUpdateReminder(coachId: string, kind: Kind, dueDate: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return
     const supabase = createClient()
     const noteText = `Update ${kind} plan`
-    const dueDate = format(new Date(Date.now() + weeks * 7 * 86400000), "yyyy-MM-dd")
 
     // Check if an open plan_update for the same client and kind already exists
     const { data: existing } = await supabase
@@ -128,7 +153,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       const ins = await supabase.from("client_documents").insert(rows)
       if (ins.error) throw ins.error
 
-      await schedulePlanUpdateReminder(user.id, pending.kind, reminderWeeks)
+      await schedulePlanUpdateReminder(user.id, pending.kind, reminderDate)
 
       toast.success("Saved. Now tap WhatsApp to tell the client.")
       setPending(null)
@@ -143,7 +168,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     }
   }
 
-  async function applyTemplate(t: Doc, weeks: number | null) {
+  async function applyTemplate(t: Doc, dueDate: string) {
     setBusy(true)
     try {
       const supabase = createClient()
@@ -154,7 +179,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       })
       if (error) throw error
 
-      await schedulePlanUpdateReminder(user.id, t.kind, weeks)
+      await schedulePlanUpdateReminder(user.id, t.kind, dueDate)
 
       toast.success(`${t.title} added for ${clientName.trim()}`)
       setSelectedTemplate(null)
@@ -263,33 +288,8 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name of the plan" className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mt-2 mb-3" />
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Note for the client (optional)" className="w-full rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 py-3 text-white text-base outline-none focus:border-[#C9A84C] mb-4 resize-none" />
 
-            {/* Reminder chips */}
             <div className="mb-4">
-              <p className="text-text-muted text-xs font-semibold mb-2">Remind me to update in</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "2 weeks", value: 2 },
-                  { label: "4 weeks", value: 4 },
-                  { label: "6 weeks", value: 6 },
-                  { label: "8 weeks", value: 8 },
-                  { label: "12 weeks", value: 12 },
-                  { label: "No reminder", value: null },
-                ].map((opt) => {
-                  const sel = reminderWeeks === opt.value
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setReminderWeeks(opt.value)}
-                      className={`h-9 px-3.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                        sel ? "bg-accent-orange text-black" : "bg-white/10 text-white hover:bg-white/15"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  )
-                })}
-              </div>
+              <ReminderPicker value={reminderDate} onChange={setReminderDate} />
             </div>
 
             {pending.kind !== "cycle" ? (
@@ -313,33 +313,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
             {selectedTemplate ? (
               <div className="space-y-4">
                 <p className="text-white text-lg font-semibold">{selectedTemplate.title}</p>
-                <div>
-                  <p className="text-text-muted text-xs font-semibold mb-2">Remind me to update in</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { label: "2 weeks", value: 2 },
-                      { label: "4 weeks", value: 4 },
-                      { label: "6 weeks", value: 6 },
-                      { label: "8 weeks", value: 8 },
-                      { label: "12 weeks", value: 12 },
-                      { label: "No reminder", value: null },
-                    ].map((opt) => {
-                      const sel = reminderWeeks === opt.value
-                      return (
-                        <button
-                          key={opt.label}
-                          type="button"
-                          onClick={() => setReminderWeeks(opt.value)}
-                          className={`h-9 px-3.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                            sel ? "bg-accent-orange text-black" : "bg-white/10 text-white hover:bg-white/15"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
+                <ReminderPicker value={reminderDate} onChange={setReminderDate} />
                 <div className="grid grid-cols-2 gap-2 pt-2">
                   <button
                     type="button"
@@ -352,7 +326,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => applyTemplate(selectedTemplate, reminderWeeks)}
+                    onClick={() => applyTemplate(selectedTemplate, reminderDate)}
                     className="h-12 rounded-xl bg-accent-orange text-black font-bold text-base cursor-pointer disabled:opacity-50"
                   >
                     {busy ? "Adding…" : "Add plan"}
@@ -371,7 +345,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
                       type="button"
                       onClick={() => {
                         setSelectedTemplate(t)
-                        setReminderWeeks(4)
+                        setReminderDate(inWeeks(4))
                       }}
                       className="h-14 rounded-xl bg-[#F3EDE2] text-[#181310] font-bold text-lg px-4 text-left cursor-pointer disabled:opacity-50"
                     >

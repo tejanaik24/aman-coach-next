@@ -555,7 +555,8 @@ export default function ClientDetailPage() {
           <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 space-y-2.5">
             <p className="text-sm text-text-muted">Next follow-ups</p>
             {followups.slice(0, 5).map((f) => {
-              const fWa = waLink(phone ?? null, buildFollowupWaText(name, f.type, f.due_date, f.note))
+              // plan_update is Aman's own reminder: never offer to message the client about it
+              const fWa = f.type === "plan_update" ? null : waLink(phone ?? null, buildFollowupWaText(name, f.type, f.due_date, f.note))
               return (
                 <div key={f.id} className="flex flex-col gap-1.5 text-base py-1.5 border-b border-border-subtle/50 last:border-none">
                   <div className="flex items-center justify-between gap-2">
