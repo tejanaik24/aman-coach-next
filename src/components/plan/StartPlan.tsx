@@ -61,8 +61,8 @@ export default function StartPlan({ clientId }: { clientId: string }) {
       </div>
       {drafts.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-text-muted font-semibold">Not sent yet</p>
-          {drafts.map((p) => (
+          <p className="text-xs text-text-muted font-semibold">Not sent yet{drafts.length > 3 ? ` · latest 3 of ${drafts.length}` : ""}</p>
+          {drafts.slice(0, 3).map((p) => (
             <button key={p.id} type="button" onClick={() => router.push(`/plans/maker/${p.id}`)} className="w-full h-12 rounded-xl bg-white/5 px-4 text-left flex items-center gap-2 cursor-pointer">
               <PenLine className="size-4 text-accent-orange" />
               <span className="flex-1 truncate font-semibold">{p.title || p.kind}</span>

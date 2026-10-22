@@ -282,7 +282,7 @@ export default function QuickManagePage() {
             className="h-14 rounded-2xl px-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer border border-border-subtle"
           >
             <Send className="w-4 h-4 text-accent-orange shrink-0" />
-            <span className="truncate">Message any number</span>
+            <span className="truncate">Message a number</span>
           </button>
         </div>
 

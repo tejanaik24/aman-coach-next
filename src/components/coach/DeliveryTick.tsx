@@ -59,3 +59,4 @@ export default function DeliveryTick({ status, error, showLabel = true, classNam
     </span>
   )
 }
+

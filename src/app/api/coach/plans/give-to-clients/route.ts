@@ -171,3 +171,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err.message || "Failed to give plan to clients" }, { status: 500 })
   }
 }
+

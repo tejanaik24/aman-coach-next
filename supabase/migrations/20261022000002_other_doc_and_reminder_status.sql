@@ -35,3 +35,4 @@ CREATE POLICY "Coach reads reminder_log"
   USING (public.is_coach());
 
 COMMIT;
+

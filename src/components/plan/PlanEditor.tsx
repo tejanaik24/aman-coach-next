@@ -1057,7 +1057,7 @@ export default function PlanEditor({
             >
               Client & Measurements
             </button>
-            <Toggle
+            {d.workout && <Toggle
               on={d.showWhy !== false}
               label="Science notes"
               onClick={() =>
@@ -1065,7 +1065,7 @@ export default function PlanEditor({
                   pd.showWhy = pd.showWhy === false ? true : false
                 })
               }
-            />
+            />}
             <Toggle
               on={d.showRules}
               label="Rules pages"
