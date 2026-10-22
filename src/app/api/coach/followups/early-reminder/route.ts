@@ -123,16 +123,22 @@ export async function POST(req: Request) {
   // 4. Send the checkin_reminder_v2 with the date
   const waRes = await sendCheckinReminder(phone, profile.name ?? "there", undefined, dueDate)
   const waStatus = waRes.success && !waRes.dryRun ? "ok" : "failed"
+  const stageKey = `followup_${followupId}_${dueDate}_pre`
+  const channelSummary = `wa:${waStatus},email:skipped`
+
+  await admin.from("reminder_log").insert({
+    client_id: clientId,
+    followup_id: followupId,
+    phone,
+    message_id: waRes.messageId ?? null,
+    status: waStatus === "ok" ? "sent" : "failed",
+    error: waStatus === "ok" ? null : (waRes.error ?? "send_failed"),
+    reminder_type: `${stageKey}|${channelSummary}`,
+    sent_at: new Date().toISOString(),
+  })
 
   if (waStatus === "ok") {
-    const stageKey = `followup_${followupId}_${dueDate}_pre`
-    const channelSummary = "wa:ok,email:skipped"
-    await admin.from("reminder_log").insert({
-      client_id: clientId,
-      reminder_type: `${stageKey}|${channelSummary}`,
-      sent_at: new Date().toISOString(),
-    })
-    return NextResponse.json({ sent: true, stageKey })
+    return NextResponse.json({ sent: true, stageKey, messageId: waRes.messageId })
   }
 
   return NextResponse.json({ sent: false, error: waRes.error ?? "send_failed" })

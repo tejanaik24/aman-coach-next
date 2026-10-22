@@ -29,6 +29,7 @@ import BadgesGrid from "@/components/client/BadgesGrid"
 import { getClientBadges, type ClientBadge } from "@/lib/badges"
 import AddFollowupSheet from "@/components/coach/AddFollowupSheet"
 import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
+import DeliveryTick from "@/components/coach/DeliveryTick"
 import SendPlanPanel from "@/components/coach/SendPlanPanel"
 import EditClientSheet from "@/components/coach/EditClientSheet"
 import PaymentModal from "@/components/coach/PaymentModal"
@@ -143,7 +144,7 @@ export default function ClientDetailPage() {
   const [selectedFormId, setSelectedFormId] = useState("")
   const [attachingForm, setAttachingForm] = useState(false)
 
-  const [reminderLogs, setReminderLogs] = useState<{ id: string; reminder_type: string; sent_at: string; status: string }[]>([])
+  const [reminderLogs, setReminderLogs] = useState<{ id: string; reminder_type: string; sent_at: string; status: string; error?: string | null; followup_id?: string | null }[]>([])
   const [allFollowups, setAllFollowups] = useState<{ id: string; type: string; due_date: string; done_at: string | null; note: string | null }[]>([])
 
   const actionsRef = useStaggerReveal<HTMLDivElement>([isLoading])
@@ -160,7 +161,7 @@ export default function ClientDetailPage() {
       supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).not("auto_created", "is", true).order("due_date").limit(5),
       supabase.from("form_submissions").select("id, form_type, submitted_at").eq("client_id", id).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }),
       supabase.from("form_submissions").select("id, form_type, submitted_at, sender:form_data->>q1_name").is("client_id", null).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }).limit(30),
-      supabase.from("reminder_log").select("id, reminder_type, sent_at, status").eq("client_id", id).order("sent_at", { ascending: false }).limit(50),
+      supabase.from("reminder_log").select("id, reminder_type, sent_at, status, error, followup_id").eq("client_id", id).order("sent_at", { ascending: false }).limit(50),
       supabase.from("followups").select("id, type, due_date, done_at, note").eq("client_id", id).order("due_date", { ascending: false }).limit(50),
     ])
 
@@ -180,7 +181,7 @@ export default function ClientDetailPage() {
     if (badges.status === "fulfilled") setClientBadges(badges.value)
     if (r5.status === "fulfilled") setFollowups(r5.value.data ?? [])
     if (formsRes.status === "fulfilled") setJoiningForms((formsRes.value.data ?? []) as { id: string; form_type: string; submitted_at: string }[])
-    if (remLogRes.status === "fulfilled") setReminderLogs((remLogRes.value.data ?? []) as { id: string; reminder_type: string; sent_at: string; status: string }[])
+    if (remLogRes.status === "fulfilled") setReminderLogs((remLogRes.value.data ?? []) as { id: string; reminder_type: string; sent_at: string; status: string; error?: string | null; followup_id?: string | null }[])
     if (allFuRes.status === "fulfilled") setAllFollowups((allFuRes.value.data ?? []) as { id: string; type: string; due_date: string; done_at: string | null; note: string | null }[])
     if (unattachedRes.status === "fulfilled") {
       const list = ((unattachedRes.value.data ?? []) as unknown as { id: string; form_type: string; submitted_at: string; sender: string | null }[]).map((u) => ({
@@ -557,12 +558,18 @@ export default function ClientDetailPage() {
             {followups.slice(0, 5).map((f) => {
               // plan_update is Aman's own reminder: never offer to message the client about it
               const fWa = f.type === "plan_update" ? null : waLink(phone ?? null, buildFollowupWaText(name, f.type, f.due_date, f.note))
+              const matchLog = reminderLogs.find((rl) => rl.followup_id === f.id || rl.reminder_type.includes(f.id) || (f.due_date && rl.reminder_type.includes(f.due_date)))
               return (
                 <div key={f.id} className="flex flex-col gap-1.5 text-base py-1.5 border-b border-border-subtle/50 last:border-none">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 pr-2">
+                    <div className="min-w-0 pr-2 flex items-center gap-2 flex-wrap">
                       <span className="font-semibold">{format(new Date(f.due_date + "T00:00:00"), "d MMM")}</span>
                       <span className="text-text-muted"> · {FOLLOWUP_LABEL[f.type] ?? "Follow-up"}{f.note ? ` · ${f.note}` : ""}</span>
+                      {matchLog && (
+                        <span className="inline-flex items-center ml-1">
+                          <DeliveryTick status={matchLog.status} error={matchLog.error} />
+                        </span>
+                      )}
                     </div>
                     {fWa && (
                       <a
@@ -1160,7 +1167,7 @@ export default function ClientDetailPage() {
                 </div>
 
                 {(() => {
-                  type HistoryItem = { id: string; date: string; title: string; subtitle?: string; badge: string; color: string }
+                  type HistoryItem = { id: string; date: string; title: string; subtitle?: string | null; badge: string; color: string; status?: string | null; error?: string | null }
                   const items: HistoryItem[] = []
 
                   for (const f of fees) {
@@ -1237,13 +1244,16 @@ export default function ClientDetailPage() {
                     else if (rawType.includes("payment")) friendly = "Payment reminder"
                     else if (rawType.includes("renewal")) friendly = "Renewal reminder"
                     else if (rawType.includes("plan_update")) friendly = "Plan update reminder"
+                    else if (rawType.includes("direct_message")) friendly = "Direct message"
                     items.push({
                       id: `rl-${rl.id}`,
                       date: rl.sent_at ? rl.sent_at.slice(0, 10) : "",
-                      title: `WhatsApp sent: ${friendly}`,
-                      subtitle: `Status: ${rl.status || "delivered"}`,
+                      title: `WhatsApp: ${friendly}`,
+                      subtitle: rl.status === "failed" && rl.error ? `Failed: ${rl.error}` : null,
+                      status: rl.status,
+                      error: rl.error,
                       badge: "WhatsApp",
-                      color: "bg-[#25D366]/15 text-[#128C7E] border-[#25D366]/30",
+                      color: rl.status === "failed" ? "bg-red-500/15 text-red-500 border-red-500/30" : "bg-[#25D366]/15 text-[#128C7E] border-[#25D366]/30",
                     })
                   }
 
@@ -1268,6 +1278,7 @@ export default function ClientDetailPage() {
                                 {it.badge}
                               </span>
                               <p className="text-xs font-bold text-[#181310] truncate">{it.title}</p>
+                              {it.status && <DeliveryTick status={it.status || undefined} error={it.error || undefined} />}
                             </div>
                             {it.subtitle && <p className="text-[#8A7F70] text-[11px] mt-1 line-clamp-1">{it.subtitle}</p>}
                           </div>

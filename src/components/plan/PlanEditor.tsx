@@ -16,6 +16,9 @@ import {
   Play,
   Moon,
   ChevronDown,
+  ChevronUp,
+  Utensils,
+  Search,
   Layers,
   Copy,
   Trash2,
@@ -52,6 +55,8 @@ import {
   type Action,
 } from "./sheets"
 import SendSheet from "./SendSheet"
+import QuickFoodPickerSheet from "./QuickFoodPickerSheet"
+import QuantityChips from "./QuantityChips"
 import exerciseDb from "@/lib/plan/exercise-db.json"
 
 type Open =
@@ -64,6 +69,8 @@ type Open =
   | { k: "group"; day: string; groupId: string }
   | { k: "quickday"; day: string }
   | { k: "add_menu"; day: string }
+  | { k: "diet_add_menu"; plan: string }
+  | { k: "food_picker"; plan: string; mealId: string }
   | { k: "actions"; title: string; actions: Action[] }
   | { k: "header" }
   | { k: "send" }
@@ -94,6 +101,8 @@ export default function PlanEditor({
   const [tab, setTab] = useState(0) // diet plan tab
   const [activeDayIndex, setActiveDayIndex] = useState(0)
   const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({})
+  const [collapsedMeals, setCollapsedMeals] = useState<Record<string, boolean>>({})
+  const [activeMealId, setActiveMealId] = useState<string | null>(null)
   const [swipedRowId, setSwipedRowId] = useState<string | null>(null)
   const [hideHint, setHideHint] = useState(false)
   const first = useRef(true)
@@ -663,6 +672,65 @@ export default function PlanEditor({
   const plans = d.diet?.plans ?? []
   const plan = plans[Math.min(tab, plans.length - 1)]
   const findPlan = (pd: PlanDocData, id: string) => pd.diet!.plans.find((x) => x.id === id)!
+
+  const toggleMealCollapse = (mealId: string) => {
+    setCollapsedMeals((prev) => ({ ...prev, [mealId]: !prev[mealId] }))
+  }
+
+  const scrollToMeal = (mealId: string) => {
+    setActiveMealId(mealId)
+    setCollapsedMeals((prev) => ({ ...prev, [mealId]: false }))
+    const el = document.getElementById(`meal-card-${mealId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
+
+  const addMeal = () => {
+    if (!plan) return
+    const id = uid()
+    const count = plan.rows.filter((x) => x.type === "meal" && /^MEAL\s*\d/i.test(x.label)).length
+    data((pd) => {
+      findPlan(pd, plan.id).rows.push({
+        id,
+        type: "meal",
+        label: `MEAL ${count + 1}`,
+        sub: "",
+        option: "",
+        items: [],
+        supplements: [],
+      })
+    })
+    setActiveMealId(id)
+    setCollapsedMeals((prev) => ({ ...prev, [id]: false }))
+  }
+
+  const duplicateMealAsOption = (p: DietPlan, r: DietRow, i: number) => {
+    data((pd) => {
+      const rows = findPlan(pd, p.id).rows
+      const opts = rows.filter((x) => x.type === "meal" && x.label === r.label && x.option).length || 1
+      const next = opts + 1
+      const copy: DietRow = { ...structuredClone(r), id: uid(), option: `Option ${next}` }
+      const orText = `*OR (Either Complete ${Array.from({ length: next }, (_, k) => `Option ${k + 1}`).join(" OR ")})*`
+      if (!r.option) rows[i] = { ...rows[i], option: "Option 1" }
+      let at = i + 1
+      while (
+        at < rows.length &&
+        (rows[at].type === "banner"
+          ? /^\*?OR\b/i.test(plain(rows[at].label))
+          : rows[at].label === r.label)
+      ) {
+        at++
+      }
+      rows.splice(
+        at,
+        0,
+        { id: uid(), type: "banner", label: orText, sub: "", option: "", items: [], supplements: [] },
+        copy,
+      )
+    })
+    toast.success("Option added")
+  }
   const mealActions = (p: DietPlan, r: DietRow, i: number): Action[] => [
     ...(r.type === "meal"
       ? [
@@ -849,6 +917,39 @@ export default function PlanEditor({
               className="h-11 min-h-[44px] px-3.5 rounded-full bg-white/10 text-white font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
             >
               <Plus className="size-3.5" /> Day
+            </button>
+          </div>
+        )}
+
+        {/* DIET MEAL NAVIGATION STRIP (sticky below top bar) */}
+        {d.diet && plan && (
+          <div className="sticky top-[69px] z-30 -mx-4 px-4 py-2 bg-bg-primary/95 backdrop-blur-md border-b border-border-subtle/70 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {plan.rows
+              .filter((r) => r.type === "meal")
+              .map((m, mi) => {
+                const active = activeMealId === m.id
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => scrollToMeal(m.id)}
+                    className={`h-11 min-h-[44px] px-4 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                      active
+                        ? "bg-accent-orange text-black shadow-md scale-105"
+                        : "bg-white/5 text-white/80 border border-border-subtle hover:bg-white/10"
+                    }`}
+                  >
+                    {plain(m.label) || `M${mi + 1}`}
+                    {m.option ? ` (${m.option})` : ""}
+                  </button>
+                )
+              })}
+            <button
+              type="button"
+              onClick={addMeal}
+              className="h-11 min-h-[44px] px-3.5 rounded-full bg-white/10 text-white font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <Plus className="size-3.5" /> Meal
             </button>
           </div>
         )}
@@ -1424,8 +1525,9 @@ export default function PlanEditor({
             </div>
 
             {plan && (
-              <section className="rounded-3xl bg-bg-card border border-border-subtle overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-3.5 bg-white/[0.02]">
+              <div className="space-y-4">
+                {/* Diet Plan Title Header */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-bg-card border border-border-subtle rounded-2xl">
                   <input
                     value={plan.title}
                     onChange={(e) =>
@@ -1434,6 +1536,7 @@ export default function PlanEditor({
                       })
                     }
                     className="min-w-0 flex-1 bg-transparent font-heading italic text-xl outline-none"
+                    placeholder="DIET PLAN TITLE"
                   />
                   <button
                     type="button"
@@ -1450,55 +1553,76 @@ export default function PlanEditor({
                     <MoreHorizontal className="size-5" />
                   </button>
                 </div>
-                <div className="divide-y divide-border-subtle border-t border-border-subtle">
-                  {plan.rows.map((r, ri) =>
-                    r.type === "banner" ? (
-                      <div key={r.id} className="flex items-center bg-danger/[0.07]">
+
+                {/* List of Rows: Foldable Meal Cards and Banners */}
+                {plan.rows.map((r, ri) => {
+                  if (r.type === "banner") {
+                    return (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between rounded-2xl bg-danger/[0.08] border border-danger/30 overflow-hidden"
+                      >
                         <button
                           type="button"
                           onClick={() => setOpen({ k: "dbanner", plan: plan.id, row: r.id })}
-                          className="flex-1 text-left px-4 py-3.5 text-danger font-semibold text-sm cursor-pointer"
+                          className="flex-1 text-left px-4 py-3.5 text-danger font-bold text-sm cursor-pointer"
                         >
-                          {plain(r.label) || "Red line"}
+                          {plain(r.label) || "Red line / Notice (tap to edit)"}
                         </button>
                         <More
                           onClick={() =>
                             setOpen({
                               k: "actions",
-                              title: plain(r.label),
+                              title: plain(r.label) || "Red line",
                               actions: mealActions(plan, r, ri),
                             })
                           }
                         />
                       </div>
-                    ) : (
-                      <div key={r.id} className="flex items-stretch">
+                    )
+                  }
+
+                  const isCollapsed = collapsedMeals[r.id] ?? false
+
+                  return (
+                    <section
+                      key={r.id}
+                      id={`meal-card-${r.id}`}
+                      className="rounded-3xl bg-bg-card border border-border-subtle overflow-hidden transition-all shadow-sm"
+                    >
+                      {/* Meal Card Header (Tap to fold/unfold) */}
+                      <div className="flex items-center justify-between gap-2 px-4 py-3.5 bg-white/[0.02]">
                         <button
                           type="button"
-                          onClick={() => setOpen({ k: "meal", plan: plan.id, row: r.id })}
-                          className="flex-1 min-w-0 text-left px-4 py-3.5 cursor-pointer"
+                          onClick={() => toggleMealCollapse(r.id)}
+                          className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
                         >
-                          <span className="flex items-baseline gap-2 flex-wrap">
-                            <span className="font-bold text-base">{r.label || "Meal"}</span>
-                            {r.sub && <span className="text-text-muted text-sm italic">{r.sub}</span>}
-                            {r.option && <span className="text-danger text-xs font-bold">{r.option}</span>}
-                            {changedIds.has(r.id) && (
-                              <span className="text-danger text-xs font-bold">changed</span>
+                          <div className="size-8 grid place-items-center rounded-xl bg-white/5 text-accent-orange shrink-0">
+                            {isCollapsed ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <span className="font-bold text-base text-white">{r.label || "Meal"}</span>
+                              {r.sub && <span className="text-text-muted text-xs italic">{r.sub}</span>}
+                              {r.option && (
+                                <span className="text-accent-orange text-xs font-bold px-2 py-0.5 rounded-full bg-accent-orange/15 border border-accent-orange/30">
+                                  {r.option}
+                                </span>
+                              )}
+                              {changedIds.has(r.id) && (
+                                <span className="text-danger text-xs font-bold">changed</span>
+                              )}
+                            </div>
+                            {isCollapsed && (
+                              <p className="text-xs text-text-muted truncate mt-0.5">
+                                {r.items.length > 0
+                                  ? r.items.map((it) => plain(it.text)).join(" · ")
+                                  : "No foods added yet"}
+                              </p>
                             )}
-                          </span>
-                          <span className="block mt-1.5 space-y-1">
-                            {r.items.map((it, k) => (
-                              <span key={k} className="block text-sm text-white/80 leading-snug">
-                                • {plain(it.text)}
-                              </span>
-                            ))}
-                            {r.supplements.length > 0 && (
-                              <span className="block text-xs text-accent-orange mt-1">
-                                + {r.supplements.map((x) => plain(x.text)).join(" · ")}
-                              </span>
-                            )}
-                          </span>
+                          </div>
                         </button>
+
                         <More
                           onClick={() =>
                             setOpen({
@@ -1509,31 +1633,216 @@ export default function PlanEditor({
                           }
                         />
                       </div>
-                    ),
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2 p-3 border-t border-border-subtle">
+
+                      {/* Meal Card Body (When unfolded) */}
+                      {!isCollapsed && (
+                        <div className="p-4 space-y-4 border-t border-border-subtle bg-black/10">
+                          {/* Meal Label & Subtitle Input */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label>Meal Name</Label>
+                              <input
+                                value={r.label}
+                                onChange={(e) =>
+                                  data((pd) => {
+                                    const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                    if (row) row.label = e.target.value
+                                  })
+                                }
+                                placeholder="MEAL 1"
+                                className={`${inputCls} h-11 text-sm font-semibold`}
+                              />
+                            </div>
+                            <div>
+                              <Label>Time / Note</Label>
+                              <input
+                                value={r.sub}
+                                onChange={(e) =>
+                                  data((pd) => {
+                                    const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                    if (row) row.sub = e.target.value
+                                  })
+                                }
+                                placeholder="Breakfast / 9:00 AM"
+                                className={`${inputCls} h-11 text-sm`}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Foods List */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
+                                Foods ({r.items.length})
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setOpen({ k: "food_picker", plan: plan.id, mealId: r.id })}
+                                className="text-xs font-bold text-accent-orange hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Search className="size-3.5" /> Pick from library
+                              </button>
+                            </div>
+
+                            {r.items.length === 0 && (
+                              <p className="text-xs text-text-muted py-2 italic text-center">
+                                No foods added yet. Tap "Pick Food" below to choose from Aman's library.
+                              </p>
+                            )}
+
+                            {r.items.map((it, itemIdx) => (
+                              <div
+                                key={itemIdx}
+                                className="p-3 rounded-2xl bg-white/[0.03] border border-border-subtle/80 space-y-2.5"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <textarea
+                                    value={it.text}
+                                    onChange={(e) =>
+                                      data((pd) => {
+                                        const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                        if (row && row.items[itemIdx]) row.items[itemIdx].text = e.target.value
+                                      })
+                                    }
+                                    rows={Math.min(3, Math.max(1, Math.ceil(it.text.length / 32)))}
+                                    placeholder="e.g. 150g Chicken Breast"
+                                    className={`${inputCls} py-2 text-sm leading-snug flex-1 resize-none`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      data((pd) => {
+                                        const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                        if (row) row.items.splice(itemIdx, 1)
+                                      })
+                                    }
+                                    aria-label="Remove food"
+                                    className="size-10 min-h-[40px] grid place-items-center rounded-xl bg-danger/10 text-danger shrink-0 cursor-pointer"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </button>
+                                </div>
+
+                                {/* Quantity Stepper Chips */}
+                                <QuantityChips
+                                  text={it.text}
+                                  onChange={(newText) =>
+                                    data((pd) => {
+                                      const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                      if (row && row.items[itemIdx]) row.items[itemIdx].text = newText
+                                    })
+                                  }
+                                />
+                              </div>
+                            ))}
+
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => setOpen({ k: "food_picker", plan: plan.id, mealId: r.id })}
+                                className="flex-1 h-12 min-h-[48px] rounded-xl bg-accent-orange/15 text-accent-orange font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-transform border border-accent-orange/30"
+                              >
+                                <Utensils className="size-4" /> Pick Food
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  data((pd) => {
+                                    const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                    if (row) row.items.push({ text: "" })
+                                  })
+                                }
+                                className="h-12 min-h-[48px] px-4 rounded-xl bg-white/5 text-white/80 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-transform hover:bg-white/10 border border-white/10"
+                              >
+                                <Plus className="size-4" /> Type New
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Supplements Section (collapsible) */}
+                          <details className="pt-2 border-t border-border-subtle/50 group/sup">
+                            <summary className="text-xs font-semibold text-text-muted flex items-center justify-between cursor-pointer list-none py-1">
+                              <span>Supplements ({r.supplements.length})</span>
+                              <Plus className="size-3.5 text-accent-orange" />
+                            </summary>
+                            <div className="pt-2 space-y-2">
+                              {r.supplements.map((sup, sIdx) => (
+                                <div key={sIdx} className="flex items-center gap-2">
+                                  <input
+                                    value={sup.text}
+                                    onChange={(e) =>
+                                      data((pd) => {
+                                        const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                        if (row && row.supplements[sIdx]) row.supplements[sIdx].text = e.target.value
+                                      })
+                                    }
+                                    className={`${inputCls} h-9 text-xs flex-1`}
+                                    placeholder="e.g. 1 Multivitamin"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      data((pd) => {
+                                        const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                        if (row) row.supplements.splice(sIdx, 1)
+                                      })
+                                    }
+                                    className="size-9 grid place-items-center rounded-lg bg-danger/10 text-danger shrink-0 cursor-pointer"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  data((pd) => {
+                                    const row = findPlan(pd, plan.id).rows.find((x) => x.id === r.id)
+                                    if (row) row.supplements.push({ text: "" })
+                                  })
+                                }
+                                className="h-9 px-3 rounded-lg bg-white/5 text-xs text-white/80 font-medium flex items-center gap-1 cursor-pointer"
+                              >
+                                <Plus className="size-3" /> Add supplement
+                              </button>
+                            </div>
+                          </details>
+
+                          {/* 1-Tap Option Action */}
+                          <div className="pt-2 border-t border-border-subtle/50 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => duplicateMealAsOption(plan, r, ri)}
+                              className="text-xs font-bold text-accent-orange hover:underline flex items-center gap-1 cursor-pointer py-1.5"
+                            >
+                              <Copy className="size-3.5" /> Add another option of this meal
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpen({
+                                  k: "actions",
+                                  title: r.label || "Meal",
+                                  actions: mealActions(plan, r, ri),
+                                })
+                              }
+                              className="text-xs text-text-muted hover:text-white flex items-center gap-1 cursor-pointer py-1.5"
+                            >
+                              More options <ChevronDown className="size-3" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </section>
+                  )
+                })}
+
+                {/* Bottom Add Buttons for Diet */}
+                <div className="grid grid-cols-2 gap-2 pt-2">
                   <AddBtn
                     label="Meal"
                     primary
-                    onClick={() => {
-                      const id = uid()
-                      const count = plan.rows.filter(
-                        (x) => x.type === "meal" && /^MEAL\s*\d/i.test(x.label),
-                      ).length
-                      data((pd) => {
-                        findPlan(pd, plan.id).rows.push({
-                          id,
-                          type: "meal",
-                          label: `MEAL ${count + 1}`,
-                          sub: "",
-                          option: "",
-                          items: [],
-                          supplements: [],
-                        })
-                      })
-                      setOpen({ k: "meal", plan: plan.id, row: id })
-                    }}
+                    onClick={addMeal}
                   />
                   <AddBtn
                     label="Red line"
@@ -1554,7 +1863,7 @@ export default function PlanEditor({
                     }}
                   />
                 </div>
-              </section>
+              </div>
             )}
           </div>
         )}
@@ -1638,7 +1947,9 @@ export default function PlanEditor({
           <button
             type="button"
             onClick={() => {
-              if (activeDay) {
+              if (d.diet && plan) {
+                setOpen({ k: "diet_add_menu", plan: plan.id })
+              } else if (activeDay) {
                 setOpen({ k: "add_menu", day: activeDay.id })
               }
             }}
@@ -1924,6 +2235,84 @@ export default function PlanEditor({
               setOpen(null)
               toast.success(`${items.length} added`)
             }
+          }}
+        />
+      )}
+
+      {/* Diet Add Menu Sheet */}
+      {open?.k === "diet_add_menu" && plan && (
+        <ActionSheet
+          title="Add to Diet"
+          onClose={() => setOpen(null)}
+          actions={[
+            {
+              label: "+ Pick Food from Library",
+              run: () => {
+                const meals = plan.rows.filter((r) => r.type === "meal")
+                if (meals.length > 0) {
+                  const target =
+                    activeMealId && meals.some((m) => m.id === activeMealId)
+                      ? activeMealId
+                      : meals[0].id
+                  setOpen({ k: "food_picker", plan: plan.id, mealId: target })
+                } else {
+                  const id = uid()
+                  data((pd) => {
+                    findPlan(pd, plan.id).rows.push({
+                      id,
+                      type: "meal",
+                      label: "MEAL 1",
+                      sub: "",
+                      option: "",
+                      items: [],
+                      supplements: [],
+                    })
+                  })
+                  setOpen({ k: "food_picker", plan: plan.id, mealId: id })
+                }
+              },
+            },
+            {
+              label: "+ New Meal (e.g. MEAL 2)",
+              run: () => addMeal(),
+            },
+            {
+              label: "+ Red Line / Notice",
+              run: () => {
+                const id = uid()
+                data((pd) => {
+                  findPlan(pd, plan.id).rows.push({
+                    id,
+                    type: "banner",
+                    label: "",
+                    sub: "",
+                    option: "",
+                    items: [],
+                    supplements: [],
+                  })
+                })
+                setOpen({ k: "dbanner", plan: plan.id, row: id })
+              },
+            },
+          ]}
+        />
+      )}
+
+      {/* Quick Food Picker Sheet */}
+      {open?.k === "food_picker" && (
+        <QuickFoodPickerSheet
+          isOpen={true}
+          library={library}
+          onClose={() => setOpen(null)}
+          onPickFood={(foodText) => {
+            data((pd) => {
+              const p = findPlan(pd, open.plan)
+              const m = p.rows.find((r) => r.id === open.mealId)
+              if (m) {
+                m.items.push({ text: foodText })
+              }
+            })
+            toast.success("Food added")
           }}
         />
       )}

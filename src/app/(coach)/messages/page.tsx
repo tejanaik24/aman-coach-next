@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
-import { ArrowLeft, MessageCircle, RefreshCw } from "lucide-react"
+import { ArrowLeft, MessageCircle, RefreshCw, Send } from "lucide-react"
+import MessageAnyNumberModal from "@/components/coach/MessageAnyNumberModal"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
@@ -34,6 +35,7 @@ export default function CoachMessagesPage() {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [onlyFailed, setOnlyFailed] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [isMessageAnyOpen, setIsMessageAnyOpen] = useState(false)
 
   async function load() {
     if (!user?.id) return
@@ -97,6 +99,14 @@ export default function CoachMessagesPage() {
           <p className="text-text-muted text-sm mt-1">Everything clients sent to the business WhatsApp</p>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setIsMessageAnyOpen(true)}
+        className="w-full h-13 rounded-2xl bg-accent-orange text-black font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-accent-orange/20"
+      >
+        <Send className="size-4" /> Message any number
+      </button>
 
       <div className="flex gap-2">
         <button type="button" onClick={() => setOnlyFailed(false)} className={`h-10 px-4 rounded-full text-sm font-semibold cursor-pointer ${!onlyFailed ? "bg-accent-orange text-black" : "bg-white/5 text-text-muted"}`}>
@@ -166,6 +176,7 @@ export default function CoachMessagesPage() {
           )
         })
       )}
+      <MessageAnyNumberModal isOpen={isMessageAnyOpen} onClose={() => setIsMessageAnyOpen(false)} onSent={load} />
     </main>
   )
 }

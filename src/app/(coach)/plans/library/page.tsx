@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { format } from "date-fns"
-import { ArrowLeft, Plus, Search, Trash2, Pencil } from "lucide-react"
+import { ArrowLeft, Plus, Search, Trash2, Pencil, Users } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { createPlan, ensureStarterTemplates, loadLibrary } from "@/lib/plan/store"
 import { plain, type LibraryItem, type LibraryKind, type PlanKind } from "@/lib/plan/types"
 import { Sheet, Label, inputCls } from "@/components/plan/parts"
 import { RowSheet } from "@/components/plan/sheets"
+import GiveToClientsModal from "@/components/coach/GiveToClientsModal"
 
 type Tab = "templates" | LibraryKind
 const TABS: { k: Tab; label: string }[] = [
@@ -30,6 +31,7 @@ export default function PlanLibraryPage() {
   const [tpls, setTpls] = useState<Tpl[]>([])
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<LibraryItem | null>(null)
+  const [giveTarget, setGiveTarget] = useState<Tpl | null>(null)
 
   const load = useCallback(async () => {
     await ensureStarterTemplates().catch(() => {})
@@ -110,6 +112,13 @@ export default function PlanLibraryPage() {
                 <button type="button" onClick={() => renameTpl(t)} className="h-11 rounded-xl bg-white/10 font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer"><Pencil className="size-4" /> Rename</button>
                 <button type="button" onClick={() => removeTpl(t)} className="h-11 rounded-xl bg-danger/10 text-danger font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer"><Trash2 className="size-4" /> Delete</button>
               </div>
+              <button
+                type="button"
+                onClick={() => setGiveTarget(t)}
+                className="w-full h-11 mt-2 rounded-xl bg-accent-orange/15 border border-accent-orange/40 text-accent-orange font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Users className="size-4" /> Give to clients
+              </button>
             </div>
           ))}
         </div>
@@ -148,19 +157,27 @@ export default function PlanLibraryPage() {
       {editing && editing.kind !== "exercise" && editing.kind !== "warmup" && (
         <TextItemSheet item={editing} onClose={() => setEditing(null)} onSave={(name) => { if (name.trim()) saveItem({ ...editing, name }); setEditing(null) }} />
       )}
+
+      {giveTarget && (
+        <GiveToClientsModal
+          isOpen={true}
+          onClose={() => setGiveTarget(null)}
+          planId={giveTarget.id}
+          planTitle={giveTarget.title}
+          planType="maker"
+          kind={giveTarget.kind}
+        />
+      )}
     </div>
   )
 }
 
 function TextItemSheet({ item, onSave, onClose }: { item: LibraryItem; onSave: (n: string) => void; onClose: () => void }) {
   const [name, setName] = useState(item.name)
-  const label = TABS.find((t) => t.k === item.kind)?.label ?? ""
   return (
-    <Sheet title={item.id ? `Edit ${label.toLowerCase()}` : `New ${label.toLowerCase()}`} onClose={onClose} footer={
-      <button type="button" onClick={() => onSave(name)} className="w-full h-14 rounded-2xl bg-accent-orange text-black font-bold text-lg cursor-pointer">Save</button>
-    }>
-      <Label hint="*stars* = red · [name](link) = tap-to-buy link">Text</Label>
-      <textarea autoFocus value={name} onChange={(e) => setName(e.target.value)} rows={5} className={`${inputCls} py-3 resize-none`} />
+    <Sheet title={item.id ? "Edit item" : "New item"} onClose={onClose} footer={<button type="button" onClick={() => onSave(name)} className="w-full h-12 rounded-xl bg-accent-orange text-black font-bold text-sm cursor-pointer">Save</button>}>
+      <Label>Name</Label>
+      <input value={name} onChange={(e) => setName(e.target.value)} autoFocus className={`${inputCls} h-12`} />
     </Sheet>
   )
 }

@@ -7,6 +7,7 @@ export default function DietLayout({ children }: { children: React.ReactNode }) 
     <div className="[&:has([data-plan-docs])_[data-plan-empty]]:hidden">
       <div className="pt-6">
         <PlanDocuments kind="diet" />
+        <PlanDocuments kind="other" />
       </div>
       {children}
     </div>

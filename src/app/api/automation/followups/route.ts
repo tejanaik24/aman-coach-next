@@ -357,12 +357,17 @@ async function run(request: Request) {
       continue
     }
 
+    let waMsgId: string | null = null
+    let waErr: string | null = null
+
     if (merged) {
       // nothing to send
     } else if (approvedTemplate === "checkin_reminder") {
       if (phone) {
         const waRes = await sendCheckinReminder(phone, clientName, undefined, f.due_date)
         waStatus = waRes.success && !waRes.dryRun ? "ok" : "failed"
+        waMsgId = waRes.messageId ?? null
+        waErr = waRes.error ?? null
       }
       if (waStatus !== "ok" && realEmail) {
         const emailRes = await sendFollowupReminderEmail(realEmail, clientName, f.type, f.due_date, f.note)
@@ -374,6 +379,8 @@ async function run(request: Request) {
       if (phone) {
         const waRes = await sendWhatsAppText(phone, buildFollowupWaText(clientName, f.type, f.due_date, f.note))
         waStatus = waRes.success && !waRes.dryRun ? "ok" : "failed"
+        waMsgId = waRes.messageId ?? null
+        waErr = waRes.error ?? null
       }
       if (realEmail) {
         const emailRes = await sendFollowupReminderEmail(realEmail, clientName, f.type, f.due_date, f.note)
@@ -390,6 +397,11 @@ async function run(request: Request) {
     if (sendSucceeded && !dryRun) {
       await db.from("reminder_log").insert({
         client_id: f.client_id,
+        followup_id: f.id,
+        phone: phone || null,
+        message_id: waMsgId,
+        status: waStatus === "ok" ? "sent" : "failed",
+        error: waStatus === "ok" ? null : waErr,
         reminder_type: logReminderType,
         sent_at: simulatedSentAt,
       })

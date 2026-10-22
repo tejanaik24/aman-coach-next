@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
-import { Dumbbell, Salad, FileText, MessageCircle, Upload, Bookmark, Trash2, RefreshCw } from "lucide-react"
+import { Dumbbell, Salad, FileText, MessageCircle, Upload, Bookmark, Trash2, RefreshCw, Pencil, Users } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { waLink } from "@/lib/quick-manage"
 import { openUrl } from "@/lib/utils"
 import { uploadPlanFile, schedulePlanUpdateReminder } from "@/lib/plan/send"
 import StartPlan from "@/components/plan/StartPlan"
+import GiveToClientsModal from "@/components/coach/GiveToClientsModal"
 
-type Kind = "workout" | "diet" | "cycle"
+type Kind = "workout" | "diet" | "cycle" | "other"
 
 interface Doc {
   id: string
@@ -30,7 +31,12 @@ interface Props {
 }
 
 const MAX_BYTES = 15 * 1024 * 1024
-const KIND_LABEL: Record<Kind, string> = { workout: "Workout plan", diet: "Diet plan", cycle: "Cycle plan" }
+const KIND_LABEL: Record<Kind, string> = {
+  workout: "Workout plan",
+  diet: "Diet plan",
+  cycle: "Cycle plan",
+  other: "Other PDF",
+}
 export const inWeeks = (w: number) => format(new Date(Date.now() + w * 7 * 86400000), "yyyy-MM-dd")
 
 // Aman picks the exact date he wants to be reminded to update this plan ("" = no reminder)
@@ -71,6 +77,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
   const [busy, setBusy] = useState(false)
   const [templateKind, setTemplateKind] = useState<Kind | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<Doc | null>(null)
+  const [giveTarget, setGiveTarget] = useState<Doc | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -121,10 +128,8 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       setPending(null)
       load()
     } catch (e) {
-      // Supabase errors are plain objects with a message, not Error instances
       const m = typeof e === "object" && e !== null && "message" in e ? String((e as { message: unknown }).message) : ""
-      // The cycle slot needs a one-line database change; never show the raw database error to Aman.
-      toast.error(m.includes("client_documents_kind_check") ? "Cycle PDF is not switched on yet. Please tell Teja." : m || "Upload failed. Try again.")
+      toast.error(m.includes("client_documents_kind_check") ? "This PDF kind is not allowed by database check." : m || "Upload failed. Try again.")
     } finally {
       setBusy(false)
     }
@@ -147,7 +152,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       setSelectedTemplate(null)
       setTemplateKind(null)
       load()
-    } catch (err) {
+    } catch {
       toast.error("Could not add. Try again.")
     } finally {
       setBusy(false)
@@ -161,6 +166,18 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     openUrl(data.url)
   }
 
+  async function renameDoc(d: Doc) {
+    const next = window.prompt("Heading for this document", d.title)
+    if (next === null) return
+    const newTitle = next.trim()
+    if (!newTitle) { toast.error("Please enter a heading"); return }
+    const supabase = createClient()
+    const { error } = await supabase.from("client_documents").update({ title: newTitle }).eq("id", d.id)
+    if (error) { toast.error("Could not update heading. Try again."); return }
+    setDocs((ds) => ds.map((x) => (x.id === d.id ? { ...x, title: newTitle } : x)))
+    toast.success("Heading updated")
+  }
+
   // Removes the plan from this client only. The file stays: saved templates can share it.
   async function remove(d: Doc) {
     if (!window.confirm(`Delete "${d.title}" for ${clientName.trim()}? They will no longer see it in the app.`)) return
@@ -168,12 +185,17 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     const { error } = await supabase.from("client_documents").delete().eq("id", d.id)
     if (error) { toast.error("Could not delete. Try again."); return }
     setDocs((ds) => ds.filter((x) => x.id !== d.id))
-    toast.success("Plan deleted")
+    toast.success("Document deleted")
   }
 
   const first = clientName.trim()
-  const msg = (d: Doc) =>
-    `Hi ${first}, your ${d.kind} plan "${d.title}" is ready 💪 Open it in your app: ${typeof window !== "undefined" ? window.location.origin : ""}/${d.kind === "diet" ? "diet" : "workout"}`
+  const msg = (d: Doc) => {
+    const base = typeof window !== "undefined" ? window.location.origin : ""
+    if (d.kind === "other") {
+      return `Hi ${first}, "${d.title}" is ready 💪 Open it in your app: ${base}/workout`
+    }
+    return `Hi ${first}, your ${d.kind} plan "${d.title}" is ready 💪 Open it in your app: ${base}/${d.kind === "diet" ? "diet" : "workout"}`
+  }
 
   return (
     <div className="space-y-4">
@@ -194,8 +216,15 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
             <RefreshCw className="size-5 text-accent-orange" /> Send cycle PDF
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => choose("other")}
+          className="col-span-2 h-16 rounded-2xl bg-white/10 border border-white/20 text-white font-semibold text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-white/15"
+        >
+          <FileText className="size-5 text-[#C9A84C]" /> Attach other PDF
+        </button>
       </div>
-      <p className="text-text-muted text-sm">Pick a PDF (or a photo of the plan) from your phone.</p>
+      <p className="text-text-muted text-sm">Pick a PDF (or a photo of the plan or guide) from your phone.</p>
 
       {templates.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
@@ -210,7 +239,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       {/* Plans already sent to this client */}
       <div className="space-y-3">
         {docs.length === 0 ? (
-          <p className="text-text-muted text-base">No plans sent yet.</p>
+          <p className="text-text-muted text-base">No plans or documents sent yet.</p>
         ) : (
           docs.map((d) => {
             const wa = waLink(phone ?? null, msg(d))
@@ -218,7 +247,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
               <div key={d.id} className="rounded-2xl bg-bg-card border border-border-subtle p-4">
                 <div className="flex items-start gap-3">
                   <FileText className="size-6 text-accent-orange shrink-0 mt-0.5" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-lg font-semibold leading-tight">{d.title}</p>
                     <p className="text-text-muted text-sm mt-0.5">{KIND_LABEL[d.kind]} · {format(new Date(d.created_at), "d MMM yyyy")}</p>
                     {d.note && <p className="text-text-muted text-base mt-1 whitespace-pre-line">{d.note}</p>}
@@ -234,8 +263,28 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
                   )}
                   <button type="button" onClick={() => open(d.id)} className="h-12 rounded-xl bg-white/10 text-white font-bold text-base cursor-pointer">Open</button>
                 </div>
-                <button type="button" onClick={() => remove(d)} className="w-full h-11 mt-2 rounded-xl border border-danger/40 text-danger font-semibold text-base flex items-center justify-center gap-2 cursor-pointer">
-                  <Trash2 className="size-4" /> Delete
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => renameDoc(d)}
+                    className="h-11 rounded-xl bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Pencil className="size-3.5" /> Edit heading
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(d)}
+                    className="h-11 rounded-xl border border-danger/40 text-danger font-semibold text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="size-3.5" /> Delete
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGiveTarget(d)}
+                  className="w-full h-11 mt-2 rounded-xl bg-accent-orange/15 border border-accent-orange/40 text-accent-orange font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Users className="size-4" /> Give to other clients
                 </button>
               </div>
             )
@@ -250,8 +299,19 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
             <p className="text-text-muted text-sm">{clientName}</p>
             <h3 className="font-heading italic text-2xl mb-4">{KIND_LABEL[pending.kind]}</h3>
             <p className="text-sm text-text-muted mb-1">File: {pending.file.name}</p>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name of the plan" className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mt-2 mb-3" />
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Note for the client (optional)" className="w-full rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 py-3 text-white text-base outline-none focus:border-[#C9A84C] mb-4 resize-none" />
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={pending.kind === "other" ? "Heading (e.g. Blood test guide, Posing routine)" : "Name of the plan"}
+              className="w-full h-14 rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 text-white text-base outline-none focus:border-[#C9A84C] mt-2 mb-3"
+            />
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              placeholder="Note for the client (optional)"
+              className="w-full rounded-2xl bg-[#1A1A1A] border border-[#333333] px-4 py-3 text-white text-base outline-none focus:border-[#C9A84C] mb-4 resize-none"
+            />
 
             <div className="mb-4">
               <ReminderPicker value={reminderDate} onChange={setReminderDate} />
@@ -322,6 +382,17 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
             )}
           </div>
         </div>
+      )}
+
+      {giveTarget && (
+        <GiveToClientsModal
+          isOpen={true}
+          onClose={() => setGiveTarget(null)}
+          planId={giveTarget.id}
+          planTitle={giveTarget.title}
+          planType="pdf"
+          kind={giveTarget.kind}
+        />
       )}
     </div>
   )

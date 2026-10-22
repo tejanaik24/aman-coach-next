@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
-import { Dumbbell, Salad, FileText, Upload, Trash2, Pencil } from "lucide-react"
+import { Dumbbell, Salad, FileText, Upload, Trash2, Pencil, Users } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { openUrl } from "@/lib/utils"
+import GiveToClientsModal from "@/components/coach/GiveToClientsModal"
 
 type Kind = "workout" | "diet"
 
@@ -30,6 +31,7 @@ export default function PlansLibraryPage() {
   const [pending, setPending] = useState<{ file: File; kind: Kind } | null>(null)
   const [title, setTitle] = useState("")
   const [busy, setBusy] = useState(false)
+  const [giveTarget, setGiveTarget] = useState<{ id: string; title: string; kind: Kind } | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -165,6 +167,13 @@ export default function PlansLibraryPage() {
                       <Trash2 className="size-4" /> Remove
                     </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setGiveTarget({ id: t.id, title: t.title, kind: t.kind })}
+                    className="w-full h-12 mt-2 rounded-xl bg-accent-orange/15 border border-accent-orange/40 text-accent-orange font-bold text-base flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Users className="size-4" /> Give to clients
+                  </button>
                 </div>
               ))
             )}
@@ -187,6 +196,17 @@ export default function PlansLibraryPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {giveTarget && (
+        <GiveToClientsModal
+          isOpen={true}
+          onClose={() => setGiveTarget(null)}
+          planId={giveTarget.id}
+          planTitle={giveTarget.title}
+          planType="pdf"
+          kind={giveTarget.kind}
+        />
       )}
     </div>
   )

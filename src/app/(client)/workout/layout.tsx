@@ -8,6 +8,7 @@ export default function WorkoutLayout({ children }: { children: React.ReactNode 
       <div className="pt-6">
         <PlanDocuments kind="workout" />
         <PlanDocuments kind="cycle" />
+        <PlanDocuments kind="other" />
       </div>
       {children}
     </div>

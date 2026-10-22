@@ -198,3 +198,21 @@ Pending: DB CHECK on fees (needs Teja "YES-CONSTRAINT"); Aman's real photos (her
 ## What's Pending
 - services.html: all `.service-number` show "00" (nothing fills data-target).
 - Meta template client_message_alert (needs Teja OK); joining-form view in Aman's manual-form order; EMI option; push to GitHub.
+
+## 2026-10-19 — FINAL round before handover (LIVE, commits f9e44a65..bab4fb2d, not pushed)
+### What's Done
+- Check-in reminder: sent immediately when date is <=2 days away; one reminder per follow-up + date.
+- "Plans to update" tile + reminder chips when sending a plan (followups.type plan_update).
+- Public bill page /bill/[token] (fees.token; server reads with service role, NO anon policy) + short WhatsApp bill text.
+- EMI per client (clients.emi_allowed; fees.emi_group/emi_no/emi_total).
+- Morning summary cron /api/automation/coach-summary (09:15 IST), Renew button, History tab, services numbers 01-11.
+- Removed dev-session backdoor route; dropped the public fees RLS policy that leaked all bills.
+### What's Pending
+- Meta templates coach_daily_summary + coach_broadcast_update (Teja submits).
+- From Aman: Online Training real photo, Razorpay LIVE keys (prod has test keys, button hidden), confirm bill due = package start date.
+- Push to GitHub when Teja says.
+
+## 2026-10-19 night — security sweep (LIVE)
+- Code (e0e77f05): safe login redirects, header-only timing-safe automation secrets, ownership checks, push endpoint allowlist, /messages + /payments behind login.
+- DB (migrations 20261019000004 + 20261019000005, applied on VPS): role locked, signup = client only, RLS on all 27 tables, tightened inserts, profiles column-level update (name, notifications_enabled, must_reset_password).
+- Open (low): in-memory rate limits on public forms/forgot-password; no CAPTCHA.

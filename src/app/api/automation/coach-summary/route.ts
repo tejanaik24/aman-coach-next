@@ -117,6 +117,14 @@ export async function GET(request: Request) {
 
   const tplRes = await sendWhatsAppTemplate(coachPhoneRaw, "coach_daily_summary", "en", components)
   if (tplRes.success && !tplRes.dryRun) {
+    await db.from("reminder_log").insert({
+      client_id: null,
+      phone: coachPhoneRaw,
+      reminder_type: "coach_summary",
+      message_id: tplRes.messageId ?? null,
+      status: "sent",
+      sent_at: new Date().toISOString(),
+    })
     return NextResponse.json({ success: true, method: "template", counts, tplRes })
   }
 
@@ -133,5 +141,25 @@ export async function GET(request: Request) {
 Open your app: ${appUrl}`
 
   const textRes = await sendWhatsAppText(coachPhoneRaw, freeText)
-  return NextResponse.json({ success: textRes.success, method: "text_fallback", counts, textRes, tplError: tplRes.error })
+  const ok = Boolean(textRes.success && !textRes.dryRun)
+
+  await db.from("reminder_log").insert({
+    client_id: null,
+    phone: coachPhoneRaw,
+    reminder_type: "coach_summary",
+    message_id: ok ? (textRes.messageId ?? null) : null,
+    status: ok ? "sent" : "failed",
+    error: ok
+      ? null
+      : `Template: ${tplRes.error || "coach_daily_summary awaiting approval"}; Text fallback: ${textRes.error || "24h window closed"}`,
+    sent_at: new Date().toISOString(),
+  })
+
+  return NextResponse.json({
+    success: ok,
+    method: "text_fallback",
+    counts,
+    textRes,
+    tplError: tplRes.error,
+  })
 }

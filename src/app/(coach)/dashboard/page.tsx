@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Plus, Check, MessageCircle } from "lucide-react"
+import { Plus, Check, MessageCircle, Send, Bell } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
 import BroadcastModal from "@/components/coach/BroadcastModal"
+import MessageAnyNumberModal from "@/components/coach/MessageAnyNumberModal"
 import ProfileMenu from "@/components/shared/ProfileMenu"
 import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import { markInvoicePaid } from "@/lib/payments"
@@ -51,6 +52,9 @@ export default function QuickManagePage() {
   const [busy, setBusy] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
+  const [isMessageAnyOpen, setIsMessageAnyOpen] = useState(false)
+  const [reminderStats, setReminderStats] = useState({ delivered: 0, read: 0, failed: 0, sent: 0 })
+  const [todayFailedLogs, setTodayFailedLogs] = useState<{ id: string; reminder_type: string; error: string | null; phone: string | null }[]>([])
 
   useEffect(() => {
     createClient()
@@ -261,16 +265,59 @@ export default function QuickManagePage() {
           onNameUpdated={setCoachName}
         />
 
-        <button
-          type="button"
-          onClick={() => router.push("/messages")}
-          className={`w-full h-14 rounded-2xl px-4 flex items-center justify-between cursor-pointer ${unreadMsgs > 0 ? "bg-[#25D366] text-black" : "bg-white/5 text-text-muted"}`}
-        >
-          <span className="flex items-center gap-2 font-semibold text-base">
-            <MessageCircle className="w-5 h-5" /> WhatsApp messages
-          </span>
-          <span className="font-bold tabular-nums">{unreadMsgs > 0 ? `${unreadMsgs} new` : "Open"}</span>
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/messages")}
+            className={`h-14 rounded-2xl px-3.5 flex items-center justify-between cursor-pointer ${unreadMsgs > 0 ? "bg-[#25D366] text-black" : "bg-white/5 text-text-muted border border-border-subtle"}`}
+          >
+            <span className="flex items-center gap-1.5 font-semibold text-sm truncate">
+              <MessageCircle className="w-4 h-4 shrink-0" /> Messages
+            </span>
+            <span className="font-bold tabular-nums text-xs">{unreadMsgs > 0 ? `${unreadMsgs} new` : "Open"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsMessageAnyOpen(true)}
+            className="h-14 rounded-2xl px-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer border border-border-subtle"
+          >
+            <Send className="w-4 h-4 text-accent-orange shrink-0" />
+            <span className="truncate">Message any number</span>
+          </button>
+        </div>
+
+        {/* Reminders today card */}
+        <div className="rounded-2xl bg-bg-card border border-border-subtle p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase tracking-wider text-text-muted font-bold flex items-center gap-1.5">
+              <Bell className="size-3.5 text-accent-orange" /> Reminders today
+            </p>
+            <span className="text-xs text-text-muted font-medium">WhatsApp</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-xl bg-white/5 p-2">
+              <p className="text-xl font-bold font-heading text-emerald-400 tabular-nums">{reminderStats.delivered}</p>
+              <p className="text-[11px] text-text-muted font-medium">Delivered ✓✓</p>
+            </div>
+            <div className="rounded-xl bg-white/5 p-2">
+              <p className="text-xl font-bold font-heading text-[#53bdeb] tabular-nums">{reminderStats.read}</p>
+              <p className="text-[11px] text-text-muted font-medium">Read ✓✓</p>
+            </div>
+            <div className={`rounded-xl p-2 ${reminderStats.failed > 0 ? "bg-red-500/15 border border-red-500/30 text-red-400" : "bg-white/5 text-text-muted"}`}>
+              <p className={`text-xl font-bold font-heading tabular-nums ${reminderStats.failed > 0 ? "text-red-400" : "text-text-muted"}`}>{reminderStats.failed}</p>
+              <p className="text-[11px] font-medium">Failed ✕</p>
+            </div>
+          </div>
+          {todayFailedLogs.length > 0 && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-2.5 space-y-1">
+              {todayFailedLogs.map((fl) => (
+                <p key={fl.id} className="text-xs text-red-300 leading-snug">
+                  • {fl.reminder_type.includes("coach_summary") ? "Morning 9:15 summary" : fl.phone || "Reminder"}: {fl.error || "Delivery failed"}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Tiles */}
         {rows === null ? (
@@ -442,6 +489,7 @@ export default function QuickManagePage() {
 
       <AddClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={load} />
       <BroadcastModal isOpen={isBroadcastOpen} onClose={() => setIsBroadcastOpen(false)} />
+      <MessageAnyNumberModal isOpen={isMessageAnyOpen} onClose={() => setIsMessageAnyOpen(false)} onSent={load} />
 
       {/* Follow-up result sheet: one tap logs the outcome */}
       {dateRow && (

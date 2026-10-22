@@ -138,12 +138,54 @@ export async function applyDeliveryStatus(
   status: string,
   errors: unknown,
 ) {
+  // 1. Check reminder_log (outgoing reminders, followups, summaries, direct messages)
+  try {
+    const { data: remData } = await db
+      .from("reminder_log")
+      .select("id, status")
+      .eq("message_id", wamid)
+      .maybeSingle()
+
+    if (remData) {
+      const remRank: Record<string, number> = { failed: -1, sent: 1, delivered: 2, read: 3 }
+      const cur = remRank[remData.status || "sent"] ?? 0
+      const nxt = remRank[status] ?? 0
+
+      if (status === "failed") {
+        const firstErr = Array.isArray(errors) ? errors[0] : errors
+        const why =
+          (firstErr as { title?: string; message?: string })?.title ||
+          (firstErr as { title?: string; message?: string })?.message ||
+          "Delivery failed"
+        await db
+          .from("reminder_log")
+          .update({
+            status: "failed",
+            error: String(why).slice(0, 500),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", remData.id)
+      } else if (nxt >= cur) {
+        await db
+          .from("reminder_log")
+          .update({
+            status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", remData.id)
+      }
+    }
+  } catch (err) {
+    console.error("[applyDeliveryStatus] reminder_log update failed:", err)
+  }
+
+  // 2. Check inbound forward to coach
   const { data } = await db.from("whatsapp_inbound").select("*").eq("forward_wamid", wamid).maybeSingle()
   if (!data) return
   const row = data as InboundRow
 
   if (status === "sent" || status === "delivered" || status === "read") {
-    if (RANK[status] > RANK[row.forward_status]) await save(db, row.id, { forward_status: status })
+    if (RANK[status as ForwardStatus] > RANK[row.forward_status]) await save(db, row.id, { forward_status: status as ForwardStatus })
     return
   }
   if (status !== "failed" || row.forward_status === "delivered" || row.forward_status === "read") return
