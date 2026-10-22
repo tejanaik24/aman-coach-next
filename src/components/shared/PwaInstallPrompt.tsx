@@ -54,7 +54,7 @@ export default function PwaInstallPrompt() {
     setDeferredPrompt(null)
   }
 
-  if (pathname?.startsWith("/bill") || pathname?.startsWith("/plans/maker")) return null
+  if (pathname?.startsWith("/bill") || pathname === "/pay" || pathname?.startsWith("/plans/maker")) return null
 
   return (
     <AnimatePresence>
