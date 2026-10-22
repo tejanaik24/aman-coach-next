@@ -75,21 +75,27 @@ export async function POST(request: Request) {
     let usedMethod: "text" | "template" = "text"
 
     if (within24h) {
-      // Free text is allowed within 24h of inbound message
+      // Free text is allowed within 24h of inbound message: goes exactly as Aman typed it
       sendRes = await sendWhatsAppText(cleanPhone, message)
       usedMethod = "text"
     } else {
-      // Outside 24h window: Must send via Meta approved template coach_broadcast_update
+      // Outside 24h Meta needs a template. akf_team_message = "Message from Team AKF: {text}" (no name, no coach
+      // signature, as Aman asked 23 Oct). Old coach_broadcast_update stays as backup until Meta approves it.
       usedMethod = "template"
-      sendRes = await sendWhatsAppTemplate(cleanPhone, "coach_broadcast_update", "en", [
-        {
-          type: "body",
-          parameters: [
-            { type: "text", text: recipientName },
-            { type: "text", text: message },
-          ],
-        },
+      sendRes = await sendWhatsAppTemplate(cleanPhone, "akf_team_message", "en", [
+        { type: "body", parameters: [{ type: "text", text: message }] },
       ])
+      if (!sendRes.success) {
+        sendRes = await sendWhatsAppTemplate(cleanPhone, "coach_broadcast_update", "en", [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: recipientName },
+              { type: "text", text: message },
+            ],
+          },
+        ])
+      }
 
       // If template send failed (e.g. unapproved or recipient error), also try text as secondary attempt
       if (!sendRes.success || sendRes.dryRun) {

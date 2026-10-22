@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Plus, Check, MessageCircle, Send, Bell } from "lucide-react"
+import { Plus, Check, MessageCircle, Send, Bell, IndianRupee } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
 import AddClientModal from "@/components/coach/AddClientModal"
 import BroadcastModal from "@/components/coach/BroadcastModal"
 import MessageAnyNumberModal from "@/components/coach/MessageAnyNumberModal"
+import PaymentLinkModal from "@/components/coach/PaymentLinkModal"
 import ProfileMenu from "@/components/shared/ProfileMenu"
 import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import { markInvoicePaid } from "@/lib/payments"
@@ -53,6 +54,7 @@ export default function QuickManagePage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [unreadMsgs, setUnreadMsgs] = useState(0)
   const [isMessageAnyOpen, setIsMessageAnyOpen] = useState(false)
+  const [isPayLinkOpen, setIsPayLinkOpen] = useState(false)
   const [reminderStats, setReminderStats] = useState({ delivered: 0, read: 0, failed: 0, sent: 0 })
   const [todayFailedLogs, setTodayFailedLogs] = useState<{ id: string; reminder_type: string; error: string | null; phone: string | null }[]>([])
 
@@ -284,6 +286,13 @@ export default function QuickManagePage() {
             <Send className="w-4 h-4 text-accent-orange shrink-0" />
             <span className="truncate">Message a number</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setIsPayLinkOpen(true)}
+            className="col-span-2 h-14 rounded-2xl px-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer border border-border-subtle"
+          >
+            <IndianRupee className="w-4 h-4 text-accent-orange shrink-0" /> Payment link for a new client
+          </button>
         </div>
 
         {/* Reminders today card */}
@@ -490,6 +499,7 @@ export default function QuickManagePage() {
       <AddClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={load} />
       <BroadcastModal isOpen={isBroadcastOpen} onClose={() => setIsBroadcastOpen(false)} />
       <MessageAnyNumberModal isOpen={isMessageAnyOpen} onClose={() => setIsMessageAnyOpen(false)} onSent={load} />
+      <PaymentLinkModal isOpen={isPayLinkOpen} onClose={() => setIsPayLinkOpen(false)} />
 
       {/* Follow-up result sheet: one tap logs the outcome */}
       {dateRow && (
