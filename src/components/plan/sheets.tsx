@@ -306,7 +306,7 @@ export function RowSheet({
 
           {/* Rest Chips */}
           <div>
-            <Label hint="rest between sets">Rest between sets</Label>
+            <Label>Rest between sets</Label>
             <ChipSelect
               value={r.restSec ?? 60}
               options={[
@@ -348,7 +348,7 @@ export function RowSheet({
       {r.kind === "cardio" && (
         <div className="space-y-4">
           <div>
-            <Label hint="choose machine">Machine</Label>
+            <Label>Machine</Label>
             <ChipSelect
               value={r.cardioMachine ?? "Incline walk"}
               options={[
@@ -365,7 +365,7 @@ export function RowSheet({
           {/* Steppers: Minutes & Resting HR */}
           <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-white/[0.03] border border-border-subtle">
             <div>
-              <Label hint="duration">Minutes</Label>
+              <Label>Minutes</Label>
               <Stepper
                 value={r.cardioMinutes ?? 10}
                 min={5}
@@ -376,7 +376,7 @@ export function RowSheet({
               />
             </div>
             <div>
-              <Label hint="for Karvonen">Resting HR</Label>
+              <Label hint="pulse at rest">Resting heart rate</Label>
               <Stepper
                 value={r.cardioRestHr ?? 60}
                 min={40}
@@ -390,7 +390,7 @@ export function RowSheet({
 
           {/* Intensity Zone Chips */}
           <div>
-            <Label hint="intensity level">How hard (zone)</Label>
+            <Label>How hard (zone)</Label>
             <ChipSelect
               value={r.cardioZone ?? "Z2"}
               options={[

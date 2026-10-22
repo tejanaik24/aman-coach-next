@@ -1030,30 +1030,27 @@ export default function PlanEditor({
                   className="rounded-3xl bg-bg-card border border-border-subtle overflow-hidden transition-all shadow-sm"
                 >
                   {/* Day Header */}
-                  <div className="flex items-center gap-2 px-4 py-3.5 bg-white/[0.02] border-b border-border-subtle/70">
-                    {day.rest ? (
-                      <Moon className="size-5 text-accent-orange shrink-0" />
-                    ) : (
-                      <span className="size-7 rounded-full bg-accent-orange/20 text-accent-orange text-xs font-bold grid place-items-center shrink-0">
-                        D{di + 1}
-                      </span>
-                    )}
-
-                    <input
-                      value={day.title}
-                      onChange={(e) =>
-                        data((pd) => {
-                          findDay(pd, day.id).title = e.target.value
-                        })
-                      }
-                      className="min-w-0 flex-1 bg-transparent font-heading italic text-xl outline-none font-semibold"
-                    />
-
-                    {/* Exercise count badge */}
+                  <div className="px-4 pt-3.5 pb-2.5 bg-white/[0.02] border-b border-border-subtle/70">
+                    {/* line 1: full-width title so it never gets cut */}
+                    <div className="flex items-start gap-2">
+                      {day.rest && <Moon className="size-5 text-accent-orange shrink-0 mt-1.5" />}
+                      <textarea
+                        value={day.title}
+                        rows={day.title.length > 24 ? 2 : 1}
+                        onChange={(e) =>
+                          data((pd) => {
+                            findDay(pd, day.id).title = e.target.value.replace(/\n/g, " ")
+                          })
+                        }
+                        className="min-w-0 flex-1 bg-transparent font-heading italic text-xl leading-snug outline-none font-semibold resize-none"
+                      />
+                    </div>
+                    {/* line 2: count + fold + menu */}
+                    <div className="flex items-center justify-end gap-2 mt-1">
                     <button
                       type="button"
                       onClick={() => toggleDayCollapse(day.id)}
-                      className="text-xs text-text-muted px-2.5 py-1 rounded-full bg-white/5 hover:text-white cursor-pointer"
+                      className="mr-auto text-xs text-text-muted px-2.5 py-1 rounded-full bg-white/5 hover:text-white cursor-pointer"
                     >
                       {day.rows.length} {day.rows.length === 1 ? "item" : "items"}
                     </button>
@@ -1087,6 +1084,7 @@ export default function PlanEditor({
                     >
                       <MoreHorizontal className="size-5" />
                     </button>
+                    </div>
                   </div>
 
                   {/* Day Rows (when not collapsed and not rest) */}
@@ -1634,8 +1632,8 @@ export default function PlanEditor({
 
       {/* ================= SINGLE STICKY BOTTOM BAR ================= */}
       {/* Phone thumb-zone: [+ Add] [Superset] [PDF] [Send] */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#121212]/95 backdrop-blur-xl border-t border-border-subtle/80 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl">
-        <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto z-50 bg-[#121212]/95 backdrop-blur-xl border-t border-border-subtle/80 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl">
+        <div className="px-3 py-2 flex items-center justify-between gap-2">
           {/* + Add Button */}
           <button
             type="button"

@@ -160,7 +160,7 @@ const s = StyleSheet.create({
     paddingTop: 3,
     marginRight: 7,
   },
-  exName: { fontWeight: 700, fontSize: 10.5, flex: 1 },
+  exName: { fontWeight: 700, fontSize: 10.5 },
   pill: {
     borderWidth: 0.8,
     borderColor: C.link,
@@ -598,26 +598,14 @@ function Day({
                   ]}
                   wrap={false}
                 >
-                  <View style={{ flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 8 }}>
-                    <Text
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 8,
-                        color: C.orange,
-                        letterSpacing: 0.8,
-                        marginRight: 6,
-                      }}
-                    >
-                      {groupTypeName} {letter}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: 700, fontSize: 8, color: C.orange, letterSpacing: 0.8 }}>
+                      {groupTypeName} {letter} · REST {groupInfo?.restAfterSec ?? 90}s AFTER THE ROUND
                     </Text>
-                    <Text style={{ fontSize: 8, color: C.soft, fontStyle: "italic" }}>
-                      {groupInfo?.note ||
-                        "Perform consecutively with minimal or zero rest between movements."}
+                    <Text style={{ fontSize: 8, color: C.soft, fontStyle: "italic", marginTop: 2 }}>
+                      {groupInfo?.note || "Perform consecutively with minimal or zero rest between movements."}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 8, fontWeight: 700, color: C.orange }}>
-                    Rest {groupInfo?.restAfterSec ?? 90}s after round
-                  </Text>
                 </View>
               )}
             </View>
