@@ -1,0 +1,3545 @@
+{
+  "draft": true,
+  "exercises": [
+    {
+      "name": "Low Inclined Dumbbell Chest Press",
+      "muscle": "Chest",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Targets the clavicular head (upper chest) at a 15-30 degree incline while reducing anterior shoulder impingement.",
+      "cues": [
+        "Keep shoulder blades retracted and depressed",
+        "Lower dumbbells with elbows at roughly 45-60 degrees",
+        "Drive up and slightly inward without clacking dumbbells"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/AITh6aqGsis?si=8AEEc9MLq-EeUVi9"
+        }
+      ]
+    },
+    {
+      "name": "Flat Barbell Bench Press",
+      "muscle": "Chest",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "6-8",
+        "restSec": 120
+      },
+      "why": "Primary compound movement for mid-sternal pectoralis major mass, engaging triceps and anterior deltoids.",
+      "cues": [
+        "Plant feet firmly on the floor and arch upper back slightly",
+        "Touch lower chest with control before driving upward",
+        "Keep wrists stacked directly over forearms"
+      ],
+      "links": []
+    },
+    {
+      "name": "Flat Dumbbell Press",
+      "muscle": "Chest",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Allows convergent pressing path and deeper stretch at the bottom than a fixed barbell.",
+      "cues": [
+        "Lower dumbbells with elbows at 45 degrees",
+        "Feel stretch across pecs before pressing",
+        "Squeeze pecs at lockout"
+      ],
+      "links": []
+    },
+    {
+      "name": "Incline Barbell Bench Press",
+      "muscle": "Chest",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 120
+      },
+      "why": "Biases upper pectoralis fibers and anterior delts with progressive barbell overload.",
+      "cues": [
+        "Set bench angle to 30 degrees",
+        "Lower bar smoothly to upper collarbone line",
+        "Drive up and back towards eye line"
+      ],
+      "links": []
+    },
+    {
+      "name": "Seated Back Supported Cable Fly",
+      "muscle": "Chest",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Maintains constant tension at peak contraction where free weights lose resistance.",
+      "cues": [
+        "Keep chest up and shoulders pinned to back support",
+        "Think of hugging a wide tree with soft elbows",
+        "Squeeze pecs for 1 second at full closure"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/s_qmxOv5cLw?si=58ICwXtmPd7rEzEr"
+        },
+        {
+          "label": "Reference 2",
+          "url": "https://youtube.com/shorts/SE3FR_LqaW8?si=6-aUU78nbOLP4qQu"
+        }
+      ]
+    },
+    {
+      "name": "Standing Cable Crossover (High to Low)",
+      "muscle": "Chest",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Biases the sternocostal and abdominal heads (lower chest) following the natural fiber angle.",
+      "cues": [
+        "Stagger stance with slight forward torso lean",
+        "Bring hands together down towards hip crease",
+        "Control eccentric return without letting shoulders roll forward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Cable Crossover (Low to High)",
+      "muscle": "Chest",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Biases upper chest fibers in an upward diagonal sweep with steady cable resistance.",
+      "cues": [
+        "Set pulleys at lowest peg",
+        "Sweep hands upward and inward to chest height",
+        "Focus on upper chest contraction at the apex"
+      ],
+      "links": []
+    },
+    {
+      "name": "Pec Deck / Machine Fly",
+      "muscle": "Chest",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Fixed mechanical path provides pure horizontal adduction with zero stabilizer fatigue.",
+      "cues": [
+        "Adjust seat so handles align with mid-chest",
+        "Keep elbows slightly bent and shoulders down",
+        "Pause briefly when pads touch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Chest Press Machine",
+      "muscle": "Chest",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Safe, high-threshold motor unit recruitment for pecs without balancing free weights.",
+      "cues": [
+        "Set seat height so handles cross mid-nipple line",
+        "Keep shoulder blades pressed back against pad",
+        "Press smoothly without locking elbows hard"
+      ],
+      "links": []
+    },
+    {
+      "name": "Knuckled Push Ups (Bodyweight)",
+      "muscle": "Chest",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Neutral wrist orientation relieves wrist strain while building chest, shoulder and core stability.",
+      "cues": [
+        "Form fists on floor directly under shoulders",
+        "Maintain straight rigid plank posture",
+        "Lower chest smoothly to 1 inch off the floor"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtu.be/y-Wt8Dinqvw?si=D_YUc3YununNr77_"
+        }
+      ]
+    },
+    {
+      "name": "Standard Push Ups",
+      "muscle": "Chest",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "15-20",
+        "restSec": 60
+      },
+      "why": "Foundational closed-chain pressing exercise building chest endurance and serratus anterior function.",
+      "cues": [
+        "Hands shoulder-width apart",
+        "Core tight, glutes engaged",
+        "Elbows track at 45 degrees back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Decline Dumbbell Press",
+      "muscle": "Chest",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Emphasizes lower sternal chest fibers with minimal shoulder joint stress.",
+      "cues": [
+        "Secure shins under decline bench pads",
+        "Lower weights with control to lower chest",
+        "Press upward in a smooth convergent arc"
+      ],
+      "links": []
+    },
+    {
+      "name": "Incline Dumbbell Fly",
+      "muscle": "Chest",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Deep loaded stretch on the clavicular pec fibers at the bottom of the movement.",
+      "cues": [
+        "Maintain 15-20 degree bend in elbows throughout",
+        "Open arms wide until comfortable stretch",
+        "Bring dumbbells together focusing on upper chest"
+      ],
+      "links": []
+    },
+    {
+      "name": "Chest Dips (Bodyweight or Assisted)",
+      "muscle": "Chest",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Forward lean maximizes lower chest recruitment with high motor unit activation.",
+      "cues": [
+        "Lean torso 30 degrees forward and tuck chin",
+        "Allow elbows to flare slightly outward",
+        "Lower until upper arms are parallel to floor"
+      ],
+      "links": []
+    },
+    {
+      "name": "Incline Smith Machine Press",
+      "muscle": "Chest",
+      "equipment": "Smith Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Guided track allows safe overload to absolute muscular failure on upper chest.",
+      "cues": [
+        "Align bench so bar lowers to upper chest",
+        "Drive elbows straight up through the guided track",
+        "Control 3-second negative each rep"
+      ],
+      "links": []
+    },
+    {
+      "name": "Single Arm Cable Chest Press",
+      "muscle": "Chest",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Unilateral pressing challenges pecs with rotational core anti-extension stability.",
+      "cues": [
+        "Staggered athletic stance with cable at chest height",
+        "Press forward with punch-like control",
+        "Keep hips and shoulders square forward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Floor Press (Dumbbell or Barbell)",
+      "muscle": "Chest",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Floor stop eliminates hyper-extension of shoulder capsule while building tricep and mid-chest power.",
+      "cues": [
+        "Lie flat on floor with knees bent",
+        "Lower elbows until triceps kiss floor softly",
+        "Pause for a beat before pressing up"
+      ],
+      "links": []
+    },
+    {
+      "name": "Neutral Grip Dumbbell Press",
+      "muscle": "Chest",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Palms-facing grip creates a shoulder-friendly pressing angle for trainees with impingement.",
+      "cues": [
+        "Keep palms facing each other throughout",
+        "Tuck elbows closer to ribs",
+        "Drive straight up without flaring"
+      ],
+      "links": []
+    },
+    {
+      "name": "Front lat / Upper Back Pulldown",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 90
+      },
+      "why": "Builds back width and thickness by pulling through the coronal plane into lat insertion.",
+      "cues": [
+        "Grip slightly wider than shoulders",
+        "Drive elbows down and back towards back pockets",
+        "Avoid excessive torso swinging"
+      ],
+      "links": [
+        {
+          "label": "Technique Reference",
+          "url": "https://youtube.com/shorts/XmPzKe5CqHQ?si=diI7TcS-UOl_JG_M"
+        },
+        {
+          "label": "Handle/Attachment Reference",
+          "url": "https://youtu.be/2hi6fefDIKk?si=e2AdPxTUKSUCxp48"
+        }
+      ]
+    },
+    {
+      "name": "Bodyweight Pull Ups (Pronated)",
+      "muscle": "Back",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "max",
+        "restSec": 120
+      },
+      "why": "Gold standard vertical pull engaging lats, teres major, lower traps, and core stability.",
+      "cues": [
+        "Start from dead hang with active shoulders",
+        "Pull chest toward bar by driving elbows down",
+        "Lower under strict control without kipping"
+      ],
+      "links": []
+    },
+    {
+      "name": "One Arm Dumbbell Rows (Lats s/s Upper Back focused)",
+      "muscle": "Back",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Unilateral row corrects muscular imbalances and allows deep lat stretch and squeeze.",
+      "cues": [
+        "Hinge torso parallel to bench or hip hinge",
+        "Pull dumbbell towards hip crease keeping arm close",
+        "Hold contraction at the top for 1 count"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://www.instagram.com/reel/Co4-w1ogqbr/?igsh=YXBna2JsNzNicjhj"
+        }
+      ]
+    },
+    {
+      "name": "Seated Cable Row (Neutral Grip)",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Develops mid-back thickness (rhomboids, middle traps) with stable foot bracing.",
+      "cues": [
+        "Sit upright with slight natural spine arch",
+        "Lead with elbows and retract scapulae",
+        "Squeeze mid-back without leaning backward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Barbell Bent Over Row",
+      "muscle": "Back",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 120
+      },
+      "why": "Heavy compound builder for spinal erectors, lats, traps, and posterior chain.",
+      "cues": [
+        "Hinge hips back at 45 degree torso angle",
+        "Pull bar smoothly into belly button",
+        "Maintain neutral spine without rounding lumbar"
+      ],
+      "links": []
+    },
+    {
+      "name": "Chest Supported T-Bar Row",
+      "muscle": "Back",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Isolates back musculature while fully eliminating lower back spinal fatigue.",
+      "cues": [
+        "Pin chest to pad and keep chin neutral",
+        "Drive elbows back high for upper back or low for lats",
+        "Pause 1 second at full squeeze"
+      ],
+      "links": []
+    },
+    {
+      "name": "Close Grip Lat Pulldown (V-Bar)",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Neutral wrist orientation provides a deep stretch on outer lats with reduced elbow torque.",
+      "cues": [
+        "Lean back slightly 10-15 degrees",
+        "Pull attachment to upper chest",
+        "Let arms extend fully at top for deep stretch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Single Arm Lat Pulldown (Kneeling or Seated)",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Aligns the line of pull directly with individual lat fibers for maximum contraction.",
+      "cues": [
+        "Reach high to feel full stretch on side of ribcage",
+        "Drive elbow directly down to hip bone",
+        "Keep torso steady without twisting excessively"
+      ],
+      "links": []
+    },
+    {
+      "name": "Straight Arm Cable Pullover",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Isolates lats without bicep involvement through pure shoulder extension.",
+      "cues": [
+        "Soft bend in elbows locked in place",
+        "Hinge slightly at hips and sweep hands down to thighs",
+        "Feel lats contract hard at the bottom"
+      ],
+      "links": []
+    },
+    {
+      "name": "Meadows Row (Landmine)",
+      "muscle": "Back",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Pronated grip landmine row delivers exceptional upper lat and teres recruitment.",
+      "cues": [
+        "Stand perpendicular to barbell collar in hip hinge",
+        "Pull with overhand grip leading with elbow high",
+        "Use wrist strap for secure grip if needed"
+      ],
+      "links": []
+    },
+    {
+      "name": "Chin Ups (Supinated Grip)",
+      "muscle": "Back",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "6-10",
+        "restSec": 120
+      },
+      "why": "Combines heavy lat engagement with strong biceps activation through a supinated pull.",
+      "cues": [
+        "Palms facing you shoulder-width apart",
+        "Pull chest to bar leading with chest up",
+        "Lower under strict 3-second control"
+      ],
+      "links": []
+    },
+    {
+      "name": "Face Pull (Rope attachment)",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "15-20",
+        "restSec": 60
+      },
+      "why": "Strengthens rear delts, infraspinatus, and rhomboids to restore shoulder posture balance.",
+      "cues": [
+        "Set pulley at eye height",
+        "Pull rope towards bridge of nose while externally rotating hands",
+        "End in a double-bicep pose position"
+      ],
+      "links": []
+    },
+    {
+      "name": "Inverted Bodyweight Row",
+      "muscle": "Back",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Horizontal pull balancing push-to-pull ratios with minimal lower back shear load.",
+      "cues": [
+        "Set bar at waist height on rack or Smith machine",
+        "Hang underneath with body in rigid straight plank",
+        "Pull chest up to touch bar"
+      ],
+      "links": []
+    },
+    {
+      "name": "Dumbbell Pullover",
+      "muscle": "Back",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Loaded stretch on lats, serratus anterior, and ribcage expansiveness.",
+      "cues": [
+        "Lie crosswise or lengthwise on flat bench",
+        "Cup inner plate of dumbbell with both palms",
+        "Lower weight behind head with soft elbows then return to eye line"
+      ],
+      "links": []
+    },
+    {
+      "name": "Barbell Shrugs",
+      "muscle": "Back",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Overloads upper trapezius muscle belly through pure scapular elevation.",
+      "cues": [
+        "Hold bar with clean overhand grip shoulder-width",
+        "Elevate shoulders directly towards ears",
+        "Hold 1 second at apex, no rolling"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Shrugs",
+      "muscle": "Back",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Smooth constant cable pull matches natural upward and inward trapezius line of drive.",
+      "cues": [
+        "Stand centered between low cable attachments or bar",
+        "Shrug shoulders straight up and slightly in",
+        "Lower with 2-second control"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/hMREf3_mWsQ?si=EHXz1GFfdOYFa8jg"
+        }
+      ]
+    },
+    {
+      "name": "Dumbbell Shrugs",
+      "muscle": "Back",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Neutral side-grip allows natural scapular elevation without barbell rubbing thighs.",
+      "cues": [
+        "Hold heavy dumbbells at sides",
+        "Elevate shoulders as high as possible towards ears",
+        "Avoid rolling shoulders; keep movement vertical"
+      ],
+      "links": []
+    },
+    {
+      "name": "Machine High Row",
+      "muscle": "Back",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Diagonal pulling vector engages latissimus dorsi and lower trapezius simultaneously.",
+      "cues": [
+        "Adjust seat so feet are flat on floor",
+        "Pull handles down and back towards ribs",
+        "Control release until full overhead stretch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Behind the back Cable lateral Raise",
+      "muscle": "Shoulders",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Places lateral deltoid under continuous tension throughout the entire abduction arc.",
+      "cues": [
+        "Cable set at wrist/hip height behind back",
+        "Lead with elbow raising arm to shoulder level",
+        "Control lowering phase without swinging torso"
+      ],
+      "links": [
+        {
+          "label": "Set Up Reference (Wrist Height",
+          "url": "https://youtube.com/shorts/kLQh-d65fv4?si=_OV7oV5zQhAbhLl3"
+        },
+        {
+          "label": "Technical Reference",
+          "url": "https://youtube.com/shorts/ZuYk-Me44i0?si=Xo2Xo8yfcO-Ne2L-"
+        }
+      ]
+    },
+    {
+      "name": "Seated Side Lateral Dumbbell Raises",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Eliminates leg drive and momentum to isolate the medial deltoid head.",
+      "cues": [
+        "Sit upright with slight forward torso lean",
+        "Raise dumbbells out to sides leading with elbows",
+        "Pause at shoulder level before slow descent"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/ciMyy6Q-GrI?si=g54S6N2aopg5IZoZ"
+        }
+      ]
+    },
+    {
+      "name": "Cross Cable 45 degree Rear Delt Fly",
+      "muscle": "Shoulders",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Isolates the posterior deltoid along its exact 45-degree fiber orientation.",
+      "cues": [
+        "Cross cables without handles holding cable balls",
+        "Keep slight bend in elbows and sweep arms backward",
+        "Squeeze rear delts at the back without pinching traps"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/bkejPHrPkmA?si=RsDLjwVxrmOwxkzF"
+        }
+      ]
+    },
+    {
+      "name": "Seated Incline Front dumbbell Raise",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Incline bench position keeps anterior deltoid under loaded tension from start to finish.",
+      "cues": [
+        "Lie back on 45-60 degree incline bench",
+        "Raise dumbbells straight forward to eye level",
+        "Lower with control resisting gravity"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/p3Zgb1iuEdM?si=IwLuBKj1JwINjAwV"
+        }
+      ]
+    },
+    {
+      "name": "Seated Dumbbell Shoulder Press",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 90
+      },
+      "why": "Builds overhead pressing strength and anterior/lateral deltoid mass with freedom of joint angle.",
+      "cues": [
+        "Seat back upright at 75-80 degrees",
+        "Elbows slightly tucked forward of shoulders",
+        "Press overhead in smooth arc without clacking weights"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Overhead Barbell Press (OHP)",
+      "muscle": "Shoulders",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "6-8",
+        "restSec": 120
+      },
+      "why": "Full-body overhead compound lift building shoulders, upper chest, triceps and core stability.",
+      "cues": [
+        "Grip bar just outside shoulders with forearms vertical",
+        "Squeeze glutes and brace core tightly",
+        "Press straight up moving head back then through the window"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Dumbbell Lateral Raise",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Foundational medial deltoid builder for visual shoulder width.",
+      "cues": [
+        "Slight forward lean with soft knees",
+        "Pour the water slightly with thumbs level or pinkies up",
+        "Stop at parallel with shoulders"
+      ],
+      "links": []
+    },
+    {
+      "name": "Arnold Press",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Rotational pressing recruits anterior and lateral delts across a broad functional arc.",
+      "cues": [
+        "Start with palms facing chest at collarbone level",
+        "Rotate forearms outward as you press overhead",
+        "Finish at top with palms facing forward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Reverse Pec Deck (Rear Delt Fly)",
+      "muscle": "Shoulders",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Machine track prevents compensation and directly loads posterior deltoid heads.",
+      "cues": [
+        "Chest firmly against pad with seat adjusted to shoulder height",
+        "Keep arms nearly straight with soft elbows",
+        "Drive elbows backward feeling rear shoulder contraction"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Front Raise (Rope or Bar)",
+      "muscle": "Shoulders",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Constant cable resistance challenges anterior deltoid through full flexion.",
+      "cues": [
+        "Stand facing away or towards cable stack",
+        "Raise attachment smoothly to eye level",
+        "Lower under 3-second tension"
+      ],
+      "links": []
+    },
+    {
+      "name": "Machine Shoulder Press",
+      "muscle": "Shoulders",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Safe mechanical overload for delt mass without needing stabilizing spotters.",
+      "cues": [
+        "Set handles at ear level when seated",
+        "Keep back flat against pad",
+        "Press up smoothly without snapping elbows at top"
+      ],
+      "links": []
+    },
+    {
+      "name": "Lean-Away Cable Lateral Raise",
+      "muscle": "Shoulders",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Alters the angle of pull to maximize resistance at the top of the lateral raise range.",
+      "cues": [
+        "Hold cable post with one arm and lean torso away at 20 degrees",
+        "Raise free arm outward to shoulder height",
+        "Control lowering phase smoothly"
+      ],
+      "links": []
+    },
+    {
+      "name": "Dumbbell Rear Delt Fly (Prone or Bent Over)",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Strengthens posterior chain and improves shoulder balance with free weights.",
+      "cues": [
+        "Hinge torso forward parallel to floor or lie chest-down on incline bench",
+        "Raise dumbbells out to sides leading with pinkies",
+        "Squeeze rear shoulders at top"
+      ],
+      "links": []
+    },
+    {
+      "name": "Upright Row (Cable or Dumbbell)",
+      "muscle": "Shoulders",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Engages lateral delts and upper traps; wide grip prevents internal rotation impingement.",
+      "cues": [
+        "Take wide grip slightly outside shoulders",
+        "Pull attachment upward leading with elbows high",
+        "Stop when elbows reach shoulder height"
+      ],
+      "links": []
+    },
+    {
+      "name": "Lu Raises (Full ROM Lateral Raise)",
+      "muscle": "Shoulders",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Full overhead range of motion develops scapular upward rotation and healthy shoulder mobility.",
+      "cues": [
+        "Use light dumbbells and raise arms all the way overhead",
+        "Touch dumbbells softly at apex",
+        "Lower along wide perimeter with strict control"
+      ],
+      "links": []
+    },
+    {
+      "name": "Egyptian Cable Lateral Raise",
+      "muscle": "Shoulders",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Leaning angle increases lateral delt tension specifically at mid-to-top range.",
+      "cues": [
+        "Grasp pole leaning out at 30 degrees",
+        "Lift cable across body smoothly",
+        "Maintain strict tempo without jerking"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Neutral to Supination Rope Curls",
+      "muscle": "Biceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Targets the brachialis in neutral grip and peaks biceps brachii as wrists supinate at top.",
+      "cues": [
+        "Start with thumbs up on rope attachment",
+        "Supinate palms outward as you curl to chest height",
+        "Squeeze biceps and spread rope ends apart at top"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtu.be/QEpDS1HDaYg?si=7CSJjvK0NaUfqoGt"
+        }
+      ]
+    },
+    {
+      "name": "Single Arm Preacher Curls (On 45-75 Degree Incline bench)",
+      "muscle": "Biceps",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Arm placed in front of torso puts short head under peak overload at the fully stretched position.",
+      "cues": [
+        "Armpit locked over top edge of bench",
+        "Lower weight smoothly without hyperextending elbow",
+        "Curl up without lifting upper arm off pad"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/Kmp10x8k7J4?si=GkTg_rNYf3Hy1fRq"
+        }
+      ]
+    },
+    {
+      "name": "Barbell Bicep Curl",
+      "muscle": "Biceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 90
+      },
+      "why": "Overload movement for total biceps brachii mass and forearm flexor strength.",
+      "cues": [
+        "Grip bar shoulder-width with elbows pinned at sides",
+        "Curl bar upward in a smooth arc",
+        "Lower under controlled 3-second eccentric"
+      ],
+      "links": []
+    },
+    {
+      "name": "EZ-Bar Bicep Curl",
+      "muscle": "Biceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Cambered bar relieves wrist supination strain while heavily loading the biceps.",
+      "cues": [
+        "Hold inner camber angles with wrists firm",
+        "Curl upward without swinging torso",
+        "Keep elbows stationary at rib cage"
+      ],
+      "links": []
+    },
+    {
+      "name": "Incline Dumbbell Curl",
+      "muscle": "Biceps",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Shoulder hyperextension on incline bench maximizes long head bicep stretch for peak height.",
+      "cues": [
+        "Set bench to 45-60 degrees with head supported",
+        "Let arms hang vertically behind torso",
+        "Curl dumbbells up while keeping elbows pinned back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Hammer Curls (Dumbbell)",
+      "muscle": "Biceps",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Neutral grip shifts mechanical advantage onto the brachialis and brachioradialis for arm thickness.",
+      "cues": [
+        "Keep palms facing each other throughout",
+        "Curl dumbbell up towards same-side shoulder",
+        "Control descent without swinging"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Bicep Curls (Straight Bar)",
+      "muscle": "Biceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Provides uninterrupted muscle tension from full elbow extension to peak contraction.",
+      "cues": [
+        "Stand upright with feet hip-width apart",
+        "Curl bar up to collarbones keeping elbows still",
+        "Feel constant tension on negative return"
+      ],
+      "links": []
+    },
+    {
+      "name": "Concentration Curls",
+      "muscle": "Biceps",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Tricep anchored to inner thigh eliminates all torso momentum for strict isolation.",
+      "cues": [
+        "Sit on bench and brace back of upper arm against inner thigh",
+        "Curl weight towards opposite chest",
+        "Hold peak contraction for 1 count"
+      ],
+      "links": []
+    },
+    {
+      "name": "Spider Curls (Chest on Incline Bench)",
+      "muscle": "Biceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Forward arm angle places maximal mechanical tension at top of range for short head peak.",
+      "cues": [
+        "Chest supported on 45-degree incline bench with arms hanging down",
+        "Curl bar upwards without shifting elbows forward",
+        "Squeeze hard at apex"
+      ],
+      "links": []
+    },
+    {
+      "name": "Bayesian Cable Curl (Facing Away)",
+      "muscle": "Biceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Loaded stretch behind the back throughout the rep creates deep muscle hypertrophy stimulus.",
+      "cues": [
+        "Stand facing away from low pulley with arm extended behind",
+        "Curl handle forward keeping upper arm angled back",
+        "Control the stretch as arm extends back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cross Body Hammer Curl",
+      "muscle": "Biceps",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Curling across the torso isolates the brachialis and outer bicep head.",
+      "cues": [
+        "Curl dumbbell across torso towards opposite pectoral",
+        "Keep wrist locked neutral",
+        "Lower slowly back to starting side"
+      ],
+      "links": []
+    },
+    {
+      "name": "Reverse Barbell Curl",
+      "muscle": "Biceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Pronated grip develops the brachioradialis and forearm extensor musculature.",
+      "cues": [
+        "Grip bar with overhand (palms down) grip",
+        "Keep wrists straight and rigid throughout",
+        "Curl upward under strict control"
+      ],
+      "links": []
+    },
+    {
+      "name": "High To Low Dual Rope Tricep Extension",
+      "muscle": "Triceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Allows full shoulder clearance so triceps contract into complete extension without rope hitting hips.",
+      "cues": [
+        "Use dual ropes on high pulley for full range of motion",
+        "Lock elbows at ribs and drive hands down and back",
+        "Squeeze triceps at lockout for 1 full second"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtu.be/Za1gKfXfXbM?si=x7C2r9DvwJXvS7TF"
+        }
+      ]
+    },
+    {
+      "name": "Single arm overhead DUMBBELL Tricep Extension",
+      "muscle": "Triceps",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Overhead arm angle places the long head of the triceps in loaded stretch.",
+      "cues": [
+        "Sit upright supporting elbow with opposite hand if needed",
+        "Lower dumbbell behind head until deep tricep stretch",
+        "Extend arm upward to full lockout"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtu.be/F3w6m0aENVQ?si=X5CwDiUBVXRwDjcD"
+        }
+      ]
+    },
+    {
+      "name": "Tricep Pushdown (Straight or V-Bar)",
+      "muscle": "Triceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Overloads lateral and medial heads with stable joint path and high tension.",
+      "cues": [
+        "Pin elbows to ribcage with slight torso lean",
+        "Push bar straight down to thighs",
+        "Control eccentric return to 90 degrees"
+      ],
+      "links": []
+    },
+    {
+      "name": "Skull Crushers / Lying Triceps Extension (EZ-Bar)",
+      "muscle": "Triceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Free weight long and medial tricep builder with high eccentric loading.",
+      "cues": [
+        "Lie flat on bench holding EZ bar with narrow grip",
+        "Lower bar towards forehead or crown by bending elbows",
+        "Extend elbows back up without flaring outward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Close Grip Barbell Bench Press",
+      "muscle": "Triceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 90
+      },
+      "why": "Heavy compound exercise maximizing triceps mechanical tension with high loads.",
+      "cues": [
+        "Hands placed shoulder-width apart (not too narrow)",
+        "Tuck elbows close to torso as bar lowers",
+        "Press upward focusing on tricep extension"
+      ],
+      "links": []
+    },
+    {
+      "name": "Overhead Cable Tricep Extension (Rope)",
+      "muscle": "Triceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Maintains constant stretch tension on the triceps long head unlike free dumbbells.",
+      "cues": [
+        "Face away from pulley in staggered lunge stance",
+        "Bend elbows behind head feeling deep stretch",
+        "Extend arms forward and outward spreading ropes"
+      ],
+      "links": []
+    },
+    {
+      "name": "Dips for Triceps (Parallel Bars)",
+      "muscle": "Triceps",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Upright torso posture channels bodyweight resistance directly through triceps.",
+      "cues": [
+        "Keep torso as upright as possible without forward lean",
+        "Lower until elbows reach 90 degrees",
+        "Push through palms to lockout"
+      ],
+      "links": []
+    },
+    {
+      "name": "Bench Dips",
+      "muscle": "Triceps",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Accessible tricep burner targeting lockout strength with bodyweight or plate.",
+      "cues": [
+        "Hands on edge of bench behind hips",
+        "Lower hips close to bench by bending elbows straight back",
+        "Press up through palms"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Kickbacks",
+      "muscle": "Triceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Cable line provides peak resistance at complete elbow extension.",
+      "cues": [
+        "Hinge torso forward with elbow locked parallel to ribs",
+        "Extend forearm backward until arm is completely straight",
+        "Hold contraction for 1 second"
+      ],
+      "links": []
+    },
+    {
+      "name": "JM Press (Smith or Barbell)",
+      "muscle": "Triceps",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 90
+      },
+      "why": "Hybrid between close-grip bench and skull crusher for heavy tricep mass.",
+      "cues": [
+        "Lower bar directly toward chin or clavicle with elbows tucked",
+        "Keep wrists straight and press up forcefully",
+        "Control the eccentric tempo"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cross-Body Cable Tricep Extension",
+      "muscle": "Triceps",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Aligns the line of pull with the natural anatomical angle of the tricep heads.",
+      "cues": [
+        "Hold cable without handles across chest",
+        "Extend arm diagonally outward across the body",
+        "Lock out tricep with zero wrist flexion"
+      ],
+      "links": []
+    },
+    {
+      "name": "Diamond Push Ups",
+      "muscle": "Triceps",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Narrow hand placement shifts primary load onto lateral and medial tricep heads.",
+      "cues": [
+        "Join index fingers and thumbs to form diamond under chest",
+        "Lower chest to hands keeping elbows tucked",
+        "Press up through palms to lockout"
+      ],
+      "links": []
+    },
+    {
+      "name": "Heels Elevated Dumbbell Goblet Squat",
+      "muscle": "Quads",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 90
+      },
+      "why": "Heel elevation increases knee flexion and shifts load onto the rectus femoris and vastus medialis.",
+      "cues": [
+        "Elevate heels on wedges or weight plate",
+        "Hold dumbbell vertically at chest",
+        "Descend upright driving knees forward over toes"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/EAAeQM3-U1w?si=1HrXDW5Z-O5Pw1BD"
+        }
+      ]
+    },
+    {
+      "name": "Leg Extension (Top Partials)",
+      "muscle": "Quads",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Overloads the rectus femoris at peak shortened contraction where vastus medialis fires hardest.",
+      "cues": [
+        "Perform reps only in top 30-40% of knee extension",
+        "Squeeze quads rock-hard at top of every rep",
+        "Control the descent without dropping weight stack"
+      ],
+      "links": []
+    },
+    {
+      "name": "Leg Extension (Bottom Partials)",
+      "muscle": "Quads",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Overloads quads in the loaded stretched position to trigger mechanical tension hypertrophy.",
+      "cues": [
+        "Perform reps only in bottom 40-50% out of deep knee bend",
+        "Maintain smooth continuous tension without resting at bottom",
+        "Push out of stretch with control"
+      ],
+      "links": []
+    },
+    {
+      "name": "Leg Extension (Full ROM)",
+      "muscle": "Quads",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Pure knee extension isolation targeting all four quadriceps heads without spinal compression.",
+      "cues": [
+        "Align knee joint axis with machine pivot point",
+        "Extend shins upward smoothly to horizontal",
+        "Pause 1 second at top before slow 3-second descent"
+      ],
+      "links": []
+    },
+    {
+      "name": "Barbell Back Squat",
+      "muscle": "Quads",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "6-8",
+        "restSec": 150
+      },
+      "why": "The ultimate lower body compound builder for quadriceps, glutes, adductors and systemic strength.",
+      "cues": [
+        "Brace core with diaphragmatic 360-degree breath",
+        "Sit hips back and down between knees",
+        "Drive floor away while maintaining chest angle"
+      ],
+      "links": []
+    },
+    {
+      "name": "Barbell Front Squat",
+      "muscle": "Quads",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "6-8",
+        "restSec": 120
+      },
+      "why": "Anterior barbell placement forces upright torso posture and pure quadriceps knee-dominant drive.",
+      "cues": [
+        "Clean rack or cross-arm grip with elbows driven high",
+        "Keep chest tall throughout entire descent",
+        "Push knees forward tracking in line with toes"
+      ],
+      "links": []
+    },
+    {
+      "name": "Hack Squat (Machine)",
+      "muscle": "Quads",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 120
+      },
+      "why": "Guided back support removes balance limits, letting you safely push quads to true failure.",
+      "cues": [
+        "Place feet low on platform shoulder-width",
+        "Squat down into deep knee flexion",
+        "Drive through midfoot without bouncing at bottom"
+      ],
+      "links": []
+    },
+    {
+      "name": "Leg Press (Quad Focused - Low Foot Placement)",
+      "muscle": "Quads",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 90
+      },
+      "why": "Low platform stance maximizes knee flexion and quad engagement while sparing lower back.",
+      "cues": [
+        "Feet placed lower on sled hip-width apart",
+        "Lower carriage smoothly until knees reach 90 degrees or deeper",
+        "Press up without snapping knees into hyperextension"
+      ],
+      "links": []
+    },
+    {
+      "name": "Bulgarian Split Squat (Quad Focused)",
+      "muscle": "Quads",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 90
+      },
+      "why": "Unilateral quad overload with upright torso driving intense quad load and correcting imbalances.",
+      "cues": [
+        "Rear foot laces down on bench behind you",
+        "Keep torso upright as front knee drives forward",
+        "Drive through front midfoot to stand"
+      ],
+      "links": []
+    },
+    {
+      "name": "Walking Lunges (Dumbbell or Barbell)",
+      "muscle": "Quads",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15 reps each",
+        "restSec": 90
+      },
+      "why": "Dynamic unilateral movement challenging quads, glute stabilizers, and knee tracking.",
+      "cues": [
+        "Take controlled strides keeping chest proud",
+        "Lower back knee gently toward floor",
+        "Push off front foot into next stride seamlessly"
+      ],
+      "links": []
+    },
+    {
+      "name": "Sissy Squats (Bodyweight or Weighted)",
+      "muscle": "Quads",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Extreme loaded stretch on the rectus femoris across hip extension and knee flexion.",
+      "cues": [
+        "Lean torso back as knees push far forward",
+        "Keep hips locked in extension",
+        "Press through toes to return upright"
+      ],
+      "links": []
+    },
+    {
+      "name": "Smith Machine Squat",
+      "muscle": "Quads",
+      "equipment": "Smith Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Fixed vertical track allows placing feet forward to emphasize pure quadriceps loading.",
+      "cues": [
+        "Position feet slightly forward of bar",
+        "Lower smoothly with hips sinking between heels",
+        "Drive up smoothly against bar track"
+      ],
+      "links": []
+    },
+    {
+      "name": "Step Ups (Dumbbell - Box or Bench)",
+      "muscle": "Quads",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12 reps each",
+        "restSec": 60
+      },
+      "why": "Functional unilateral single-leg drive with high quad and glute recruitment.",
+      "cues": [
+        "Step onto knee-height box with whole foot",
+        "Drive through lead heel without pushing off trailing toes",
+        "Control the step-down phase under slow tempo"
+      ],
+      "links": []
+    },
+    {
+      "name": "Machine ADDUCTIONS",
+      "muscle": "Quads",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Develops adductor magnus and longus for inner thigh mass and knee stabilization.",
+      "cues": [
+        "Set pads wide to comfortable stretch position",
+        "Squeeze knees together smoothly",
+        "Hold 1 second at full inner squeeze"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/BmMmt-c9aNM?si=-B3c0A-TlONA1bRj"
+        }
+      ]
+    },
+    {
+      "name": "Lying Leg Curls",
+      "muscle": "Hamstrings",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Isolates the knee flexion function of the hamstrings with hip extension stretch.",
+      "cues": [
+        "Keep hips pressed firmly down against pad",
+        "Curl heels up smoothly toward glutes",
+        "Resist the negative phase for 3 seconds"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://www.instagram.com/p/CScD4s0JuxC/?igsh=eHEwY2swNTNqaGdv"
+        }
+      ]
+    },
+    {
+      "name": "Seated Leg Curl",
+      "muscle": "Hamstrings",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 60
+      },
+      "why": "Flexed hip position puts hamstrings under stretch for superior hypertrophy outcomes.",
+      "cues": [
+        "Lock thigh pad down snugly to prevent hips lifting",
+        "Curl heels back under seat as far as possible",
+        "Control the return until legs are almost straight"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://www.instagram.com/reel/Cg12_xxgAIn/?igsh=MXdqdDI3NXBscXpmYg=="
+        }
+      ]
+    },
+    {
+      "name": "Dumbbell Romanian Deadlifts",
+      "muscle": "Hamstrings",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 90
+      },
+      "why": "Loaded eccentric stretch targeting hamstring origins and glute-ham tie-in.",
+      "cues": [
+        "Hinge hips backward keeping shins nearly vertical",
+        "Keep dumbbells sliding close along legs",
+        "Stop at mid-shin when hamstrings are fully stretched"
+      ],
+      "links": [
+        {
+          "label": "Reference 1 (Pay Deep Attention",
+          "url": "https://youtube.com/shorts/Z29fGInHDJY?si=ETMCJyT2SCCcAqhZ"
+        },
+        {
+          "label": "Reference 2",
+          "url": "https://youtube.com/shorts/vnEANU7BqqY?si=6UopVXRr0TlIaIyM"
+        }
+      ]
+    },
+    {
+      "name": "Barbell Romanian Deadlift (RDL)",
+      "muscle": "Hamstrings",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 120
+      },
+      "why": "Heaviest hamstring hip-hinge builder overloading the posterior chain through loaded stretch.",
+      "cues": [
+        "Soft unlock in knees and hinge hips back towards wall",
+        "Keep lats packed and bar close to shins",
+        "Drive hips forward to stand tall"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Single Leg Curl (Machine or Cable)",
+      "muscle": "Hamstrings",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15 reps each",
+        "restSec": 60
+      },
+      "why": "Unilateral knee flexion corrects side-to-side hamstring strength imbalances.",
+      "cues": [
+        "Brace torso against machine pad",
+        "Curl heel up towards buttock under control",
+        "Lower slowly without letting weight stack touch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Glute Ham Raise (GHR)",
+      "muscle": "Hamstrings",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 90
+      },
+      "why": "Works hamstrings across both knee flexion and hip extension simultaneously.",
+      "cues": [
+        "Secure ankles under rollers with knees on pad",
+        "Lower body forward under control keeping hips extended",
+        "Pull back up by contracting hamstrings"
+      ],
+      "links": []
+    },
+    {
+      "name": "Nordic Hamstring Curl",
+      "muscle": "Hamstrings",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "5-8",
+        "restSec": 90
+      },
+      "why": "Proven gold-standard eccentric hamstring exercise for injury prevention and strength.",
+      "cues": [
+        "Kneel with ankles anchored securely",
+        "Lower torso forward as slowly as possible resisting with hamstrings",
+        "Catch with hands and push back up"
+      ],
+      "links": []
+    },
+    {
+      "name": "Good Mornings (Barbell)",
+      "muscle": "Hamstrings",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "8-10",
+        "restSec": 90
+      },
+      "why": "Hip hinge movement overloading hamstrings and spinal erectors with long moment arm.",
+      "cues": [
+        "Rest bar on upper traps with soft knees",
+        "Hinge hips straight back keeping flat back",
+        "Feel stretch in hamstrings and return with glute squeeze"
+      ],
+      "links": []
+    },
+    {
+      "name": "Swiss Ball / Slider Hamstring Curl",
+      "muscle": "Hamstrings",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Active hip bridge combined with knee curl creates intense cramping hamstring contraction.",
+      "cues": [
+        "Lie on back and bridge hips up with heels on ball/sliders",
+        "Curl heels in towards glutes keeping hips elevated",
+        "Extend legs back under control"
+      ],
+      "links": []
+    },
+    {
+      "name": "Single Leg Romanian Deadlift (Dumbbell)",
+      "muscle": "Hamstrings",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12 reps each",
+        "restSec": 60
+      },
+      "why": "Unilateral hinge builds hamstring stability, balance, and foot/ankle proprioception.",
+      "cues": [
+        "Stand on one foot with soft knee bend",
+        "Hinge forward reaching dumbbell towards floor as back leg extends",
+        "Keep hips square to floor without twisting"
+      ],
+      "links": []
+    },
+    {
+      "name": "B-Stance Romanian Deadlift (Kickstand)",
+      "muscle": "Hamstrings",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12 reps each",
+        "restSec": 60
+      },
+      "why": "Toe-kickstand provides balance support while loading 90% of weight onto working hamstring.",
+      "cues": [
+        "Step one toe 6 inches behind working foot as kickstand",
+        "Hinge hips back feeling pure stretch on front leg hamstring",
+        "Drive up through front heel"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Pull-Through",
+      "muscle": "Hamstrings",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Horizontal cable vector provides constant hinge resistance without spinal compression.",
+      "cues": [
+        "Straddle low pulley facing away holding rope between legs",
+        "Hinge hips back letting hands travel behind knees",
+        "Snap hips forward into glute contraction"
+      ],
+      "links": []
+    },
+    {
+      "name": "Machine Hip Thrust",
+      "muscle": "Glutes",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-15",
+        "restSec": 90
+      },
+      "why": "Locks in setup angle and eliminates barbell bruising to overload glutes in full extension.",
+      "cues": [
+        "Belt or pad across pelvic hip crease",
+        "Drive through heels pushing hips up to full lockout",
+        "Squeeze glutes at top and tuck chin slightly"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/FVhQUH9aZZA?si=oTAJ2_ZGEh3De3BL"
+        }
+      ]
+    },
+    {
+      "name": "Barbell Hip Thrust",
+      "muscle": "Glutes",
+      "equipment": "Barbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 2,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 120
+      },
+      "why": "Unrivaled horizontal hip extension overload maximizing gluteus maximus recruitment.",
+      "cues": [
+        "Upper back resting across bench with padded bar on hips",
+        "Feet flat hip-width apart with vertical shins at top",
+        "Drive hips to parallel with floor and hold 1 count"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Glute Kickback",
+      "muscle": "Glutes",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15 reps each",
+        "restSec": 60
+      },
+      "why": "Isolates the gluteus maximus through pure hip extension with uninterrupted cable tension.",
+      "cues": [
+        "Attach ankle cuff to low pulley with torso hinged 45 degrees",
+        "Drive working heel back and slightly outward",
+        "Hold squeeze at peak extension without arching lumbar"
+      ],
+      "links": []
+    },
+    {
+      "name": "Seated Hip Abduction Machine",
+      "muscle": "Glutes",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "15-20",
+        "restSec": 60
+      },
+      "why": "Directly targets gluteus medius and minimus for hip stability and upper glute shelf.",
+      "cues": [
+        "Sit upright or lean slightly forward on seat",
+        "Push pads outward as wide as comfortable",
+        "Hold 1 second before controlled return"
+      ],
+      "links": []
+    },
+    {
+      "name": "Glute Bridge (Dumbbell or Barbell)",
+      "muscle": "Glutes",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Floor-based hip extension with zero lower back strain for focused glute contraction.",
+      "cues": [
+        "Lie flat on floor with knees bent and feet flat",
+        "Place weight across hips",
+        "Drive through heels to bridge hips until straight alignment"
+      ],
+      "links": []
+    },
+    {
+      "name": "Bulgarian Split Squat (Glute Focused - Forward Lean)",
+      "muscle": "Glutes",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "10-12 reps each",
+        "restSec": 90
+      },
+      "why": "Forward torso hinge and longer stride maximize glute stretch and eccentric load.",
+      "cues": [
+        "Forward torso lean over front knee",
+        "Hips hinge back into deep glute stretch",
+        "Drive up through working heel"
+      ],
+      "links": []
+    },
+    {
+      "name": "Hyperextensions (45 Degree Glute Focused)",
+      "muscle": "Glutes",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Flared feet and rounded upper back deactivate spinal erectors to isolate glutes.",
+      "cues": [
+        "Set pad just below hip crease with toes turned out 45 degrees",
+        "Round upper spine softly and squeeze glutes to rise",
+        "Stop at neutral hip alignment, do not overextend"
+      ],
+      "links": []
+    },
+    {
+      "name": "Frog Pumps",
+      "muscle": "Glutes",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "20-30",
+        "restSec": 45
+      },
+      "why": "External hip rotation paired with bridging causes massive glute pump and metabolic stress.",
+      "cues": [
+        "Lie on back with soles of feet pressed together (butterfly pose)",
+        "Drive outer edges of feet down and bridge hips up",
+        "Squeeze glutes at the top"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Pull-Through (Glute Bias)",
+      "muscle": "Glutes",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Safe hip hinge teaching posterior chain mechanics with strong peak glute lockout.",
+      "cues": [
+        "Reach back through legs on hinge",
+        "Snap hips through with powerful glute squeeze",
+        "Stand tall without leaning back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Cable Abduction",
+      "muscle": "Glutes",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15 reps each",
+        "restSec": 60
+      },
+      "why": "Loads gluteus medius standing to challenge pelvic level stability.",
+      "cues": [
+        "Ankle cuff on low pulley",
+        "Abduct leg out to side with foot pointing forward",
+        "Hold top position for a beat"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Calf Raise (Smith Machine)",
+      "muscle": "Calves",
+      "equipment": "Smith Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Straight-leg extension fully engages the gastrocnemius with heavy progressive overload.",
+      "cues": [
+        "Balls of feet on calf block with heels dropping deep",
+        "Press through big toes into full plantarflexion",
+        "Hold top for 1 full second and bottom stretch for 2 seconds"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/wlqTemUXPXY?si=uDVVlfSimGX56ZCN"
+        }
+      ]
+    },
+    {
+      "name": "Seated Machine Calf Raises",
+      "muscle": "Calves",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Bent knee position places gastrocnemius in active insufficiency to isolate the soleus.",
+      "cues": [
+        "Knee pad secured over lower thighs",
+        "Drop heels deep into full ankle dorsiflexion",
+        "Drive up onto toes pausing at the apex"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/pHm6LFuGGbs?si=ffT5Qtq2qOVEXT7V"
+        }
+      ]
+    },
+    {
+      "name": "Standing Dumbbell Single Leg Calf Raise",
+      "muscle": "Calves",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "15-20 reps each",
+        "restSec": 45
+      },
+      "why": "Unilateral calf loading improves ankle stability and balances left-to-right development.",
+      "cues": [
+        "Hold dumbbell in working side hand and balance with free hand",
+        "Lower heel below step level for deep stretch",
+        "Press straight up onto ball of foot"
+      ],
+      "links": []
+    },
+    {
+      "name": "Leg Press Calf Raise",
+      "muscle": "Calves",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "15-20",
+        "restSec": 60
+      },
+      "why": "High load capacity with zero spinal compression for high-volume calf stimulus.",
+      "cues": [
+        "Balls of feet on lower lip of sled with heels free",
+        "Push sled away by flexing ankles forward",
+        "Keep knees softly unlocked (never hyper-extended)"
+      ],
+      "links": []
+    },
+    {
+      "name": "Donkey Calf Raise",
+      "muscle": "Calves",
+      "equipment": "Machine",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 1,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Hinged hip position stretches hamstrings and places gastrocnemius in optimal length-tension.",
+      "cues": [
+        "Hinge 90 degrees at hips with back pad resting on sacrum",
+        "Deep drop at the bottom of each rep",
+        "Explode up onto toes and pause"
+      ],
+      "links": []
+    },
+    {
+      "name": "Tibialis Raises",
+      "muscle": "Calves",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "15-20",
+        "restSec": 45
+      },
+      "why": "Strengthens tibialis anterior to balance calf pull and prevent shin splints and knee pain.",
+      "cues": [
+        "Lean buttocks against wall with heels 1-2 feet out",
+        "Pull toes up towards shins as high as possible",
+        "Control descent without slapping floor"
+      ],
+      "links": []
+    },
+    {
+      "name": "Core: Planks (Isometric Hold)",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "max seconds",
+        "restSec": 60
+      },
+      "why": "Develops anti-extension spinal stability, transversus abdominis bracing, and shoulder endurance.",
+      "cues": [
+        "Forearms on floor with elbows under shoulders",
+        "Posterior pelvic tilt with glutes and quads squeezed hard",
+        "Do not allow lower back to sag"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/v25dawSzRTM?si=cYL0n5FwoMrLP0GE"
+        }
+      ]
+    },
+    {
+      "name": "Core Stability: Side Planks",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30-45s each",
+        "restSec": 45
+      },
+      "why": "Strengthens the quadratus lumborum and obliques in lateral anti-flexion stability.",
+      "cues": [
+        "Stack feet or stagger for balance with elbow under shoulder",
+        "Elevate hips until body forms straight diagonal line",
+        "Hold steady breathing smoothly"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/BtM0a9x1F5o?si=LrfZ3_oPhOv4Sjjx"
+        }
+      ]
+    },
+    {
+      "name": "Abs: Declined Reverse Crunches",
+      "muscle": "Core",
+      "equipment": "Bench",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Posterior pelvic tilt pulls pelvis towards ribcage to emphasize lower rectus abdominis fibers.",
+      "cues": [
+        "Grip top handles on decline bench",
+        "Curl knees up towards chest lifting pelvis off bench",
+        "Lower hips under strict control without swinging"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtu.be/5M5aH_RNcvo?si=GVwwTNvsxx1bAfLZ"
+        }
+      ]
+    },
+    {
+      "name": "Abs: Oblique Crunches",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "15-20 reps each",
+        "restSec": 45
+      },
+      "why": "Targets internal and external obliques through controlled lateral trunk flexion.",
+      "cues": [
+        "Lie with knees dropped softly to one side",
+        "Curl ribcage diagonally towards hip",
+        "Squeeze side ab wall at the peak"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/J_PzPKlOTuA?si=S-FbFaDSnUrAJr8i"
+        }
+      ]
+    },
+    {
+      "name": "Hanging Leg Raises",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12",
+        "restSec": 60
+      },
+      "why": "Advanced anterior core movement pulling pelvis into posterior tilt against gravity.",
+      "cues": [
+        "Hang from pull-up bar with active shoulders",
+        "Raise legs by curling pelvis up towards chest (not just hip flexion)",
+        "Lower under 3-second control without swinging"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Woodchoppers (High to Low)",
+      "muscle": "Core",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15 reps each",
+        "restSec": 60
+      },
+      "why": "Rotational core power exercise engaging obliques and transverse abdominis dynamically.",
+      "cues": [
+        "Hold handle with both hands outside high pulley",
+        "Rotate torso down across opposite knee pivoting back foot",
+        "Control the return with core bracing"
+      ],
+      "links": []
+    },
+    {
+      "name": "Ab Wheel Rollouts",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "8-12",
+        "restSec": 60
+      },
+      "why": "Intense anti-extension challenge building deep core wall tension at long muscle lengths.",
+      "cues": [
+        "Kneel on mat with wheel under shoulders",
+        "Roll forward maintaining posterior pelvic tilt",
+        "Pull back using abs and lats without sagging lower back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cable Kneeling Crunch",
+      "muscle": "Core",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Allows progressive weighted overload on the rectus abdominis while keeping hips fixed.",
+      "cues": [
+        "Hold rope behind neck kneeling on floor",
+        "Curl elbows down towards thighs flexing spine",
+        "Keep hips locked in position without sitting back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Dead Bug",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12 reps each",
+        "restSec": 45
+      },
+      "why": "Teaches independent limb movement while maintaining flat lumbar spine anti-extension.",
+      "cues": [
+        "Lie on back with arms up and knees at 90 degrees",
+        "Press lower back flat into floor",
+        "Extend opposite arm and leg smoothly, return and switch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Pallof Press",
+      "muscle": "Core",
+      "equipment": "Cable",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "10-12 reps each",
+        "restSec": 45
+      },
+      "why": "Pure anti-rotation core exercise preventing torque on the lumbar spine.",
+      "cues": [
+        "Hold cable handle at center of chest sideways to stack",
+        "Press arms straight out in front and hold 2 seconds",
+        "Resist the rotational pull of the cable"
+      ],
+      "links": []
+    },
+    {
+      "name": "Captain Chair Knee Raise",
+      "muscle": "Core",
+      "equipment": "Bodyweight",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "12-15",
+        "restSec": 60
+      },
+      "why": "Forearm support isolates rectus abdominis without grip fatigue or shoulder strain.",
+      "cues": [
+        "Back against pad, forearms braced",
+        "Curl knees up towards chest rounding lower back slightly",
+        "Lower slowly without letting legs swing"
+      ],
+      "links": []
+    },
+    {
+      "name": "Russian Twists",
+      "muscle": "Core",
+      "equipment": "Dumbbell",
+      "kind": "strength",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 3,
+        "reps": "15-20 reps total",
+        "restSec": 45
+      },
+      "why": "Strengthens oblique rotation and isometric hip flexor endurance.",
+      "cues": [
+        "Balance on sit bones with feet elevated or heels down",
+        "Rotate shoulders and weight from side to side",
+        "Keep chest open and spine neutral"
+      ],
+      "links": []
+    },
+    {
+      "name": "Incline Walk (Treadmill)",
+      "muscle": "Cardio",
+      "equipment": "Cardio Machine",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "15-20 min",
+        "restSec": 0
+      },
+      "why": "Low-impact Zone 2 aerobic stimulus that burns calories while preserving muscle and sparing joints.",
+      "cues": [
+        "Set incline to 8-12% at 4.5-5.5 km/h",
+        "Do not hold onto handrails; swing arms naturally",
+        "Keep upright posture with engaged core"
+      ],
+      "links": []
+    },
+    {
+      "name": "Stationary Cycling (Upright or Recumbent Bike)",
+      "muscle": "Cardio",
+      "equipment": "Cardio Machine",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10-15 min",
+        "restSec": 0
+      },
+      "why": "Zero-impact cardiovascular conditioning that stimulates synovial fluid in knees and hips.",
+      "cues": [
+        "Adjust seat height so knee has slight 10-degree bend at bottom of pedal stroke",
+        "Maintain smooth continuous cadence 75-85 RPM",
+        "Keep breathing steady through the nose if in Zone 2"
+      ],
+      "links": []
+    },
+    {
+      "name": "Elliptical Trainer",
+      "muscle": "Cardio",
+      "equipment": "Cardio Machine",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "15-20 min",
+        "restSec": 0
+      },
+      "why": "Full-body cardiovascular work with zero ground impact shock on ankles, knees and spine.",
+      "cues": [
+        "Push and pull actively through handles to recruit upper body",
+        "Keep whole foot in contact with footpads",
+        "Maintain steady heart rate target"
+      ],
+      "links": []
+    },
+    {
+      "name": "Stair Climber (StairMaster)",
+      "muscle": "Cardio",
+      "equipment": "Cardio Machine",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10-15 min",
+        "restSec": 0
+      },
+      "why": "High-calorie vertical climbing demanding both aerobic endurance and glute/quad drive.",
+      "cues": [
+        "Step with whole foot on each step, not just toes",
+        "Rest fingertips lightly on rails for balance only",
+        "Keep torso upright without slumping forward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Outdoor Brisk Walk / Jog",
+      "muscle": "Cardio",
+      "equipment": "Outdoor",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "20-30 min",
+        "restSec": 0
+      },
+      "why": "Natural functional gait training providing natural vitamin D, mental reset, and cardiovascular endurance.",
+      "cues": [
+        "Brisk pace where you can speak short sentences (Zone 2)",
+        "Land midfoot with soft knees",
+        "Keep head up and eyes forward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cardio Warm Up: Cycling/ Elliptical trainer",
+      "muscle": "Cardio",
+      "equipment": "Cardio Machine",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10 minutes",
+        "restSec": 0
+      },
+      "why": "Raises core body temperature, increases blood flow to working muscles, and lubricates joints.",
+      "cues": [
+        "Maintain comfortable conversational pace",
+        "Gradually ramp up speed in final 2 minutes",
+        "Focus on rhythmic breathing"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cardio Warm Up: Recumbent Bike Or Incline TREADMILL walk",
+      "muscle": "Cardio",
+      "equipment": "Cardio Machine",
+      "kind": "cardio",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10 minutes",
+        "restSec": 0
+      },
+      "why": "Gentle aerobic preparation to elevate heart rate safely without generating muscular fatigue.",
+      "cues": [
+        "Maintain steady cadence",
+        "BPM around 110-130",
+        "Relax shoulders and breathe deep"
+      ],
+      "links": []
+    },
+    {
+      "name": "Dynamic Stretchings",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10-15 reps each",
+        "restSec": 0
+      },
+      "why": "Full-body dynamic movements that take joints through full active range to prepare for lifting.",
+      "cues": [
+        "Perform smooth continuous controlled repetitions",
+        "Do not bounce or force joints into pain",
+        "Coordinate movement with steady breathing"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/7CDj2226XRg?si=fwzoetDEsjfCVIag"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Stretchings (Lower Body)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10-15 reps each",
+        "restSec": 0
+      },
+      "why": "Mobilizes hips, knees, and ankles for squats and hinges with active muscle engagement.",
+      "cues": [
+        "Perform controlled leg swings, walking knee hugs and hip openers",
+        "Gradually expand range with each rep",
+        "Keep core braced throughout"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/Dg6gPxl8p24?si=nBsAIt-3bxY10M4H"
+        }
+      ]
+    },
+    {
+      "name": "Cat & Camel",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "10-12 reps",
+        "restSec": 30
+      },
+      "why": "Gently mobilizes the entire spinal column through flexion and extension without axial loading.",
+      "cues": [
+        "On hands and knees, slowly round spine up toward ceiling tucking chin",
+        "Smoothly reverse by sinking belly toward floor and looking up",
+        "Move smoothly with deep breathing"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/DhFQWjGArfk?si=gXwlnhTfzu8b7fXc"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Bird Dogs Followed By Isometric Holds",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "8-10 reps + 5s hold",
+        "restSec": 30
+      },
+      "why": "Activates posterior chain cross-body stability and glute medius while protecting lower back.",
+      "cues": [
+        "On all fours, extend opposite arm and leg simultaneously",
+        "Hold straight line for 3-5 seconds without arching lower back",
+        "Keep hips perfectly square to floor"
+      ],
+      "links": [
+        {
+          "label": "Video",
+          "url": "https://youtube.com/shorts/dzUcsV1Q2D4?si=cPeryMB2COCBivX2"
+        }
+      ]
+    },
+    {
+      "name": "Arm Circles & Hugs (Dynamic)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "15-20 reps each",
+        "restSec": 0
+      },
+      "why": "Warms up glenohumeral joint capsule, rotator cuff, and chest/back tissue.",
+      "cues": [
+        "Start with small circles, gradually making them larger",
+        "Alternate crossing arms across chest in dynamic hugs",
+        "Keep shoulders relaxed and down"
+      ],
+      "links": []
+    },
+    {
+      "name": "Leg Swings (Front to Back)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "12-15 reps each",
+        "restSec": 0
+      },
+      "why": "Dynamically stretches hamstrings on forward swing and hip flexors on back swing.",
+      "cues": [
+        "Hold wall for balance",
+        "Swing leg smoothly like a pendulum",
+        "Do not arch back excessively on rear swing"
+      ],
+      "links": []
+    },
+    {
+      "name": "Leg Swings (Side to Side)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "12-15 reps each",
+        "restSec": 0
+      },
+      "why": "Dynamically stretches adductors on outward swing and abductors on inward cross.",
+      "cues": [
+        "Stand facing wall with both hands on it",
+        "Swing leg across body and then out to side",
+        "Maintain tall upright torso"
+      ],
+      "links": []
+    },
+    {
+      "name": "Worlds Greatest Stretch (Lunge with Thoracic Rotation)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "6-8 reps each side",
+        "restSec": 0
+      },
+      "why": "Opens hip flexors, groin, hamstrings, and thoracic spine in one integrated movement.",
+      "cues": [
+        "Step into deep lunge with both hands inside front foot",
+        "Reach inside elbow toward floor, then rotate chest toward ceiling",
+        "Follow hand with eyes at top of rotation"
+      ],
+      "links": []
+    },
+    {
+      "name": "Thoracic Spine Open Books",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10 reps each side",
+        "restSec": 0
+      },
+      "why": "Mobilizes the mid-back and chest without straining the lumbar spine.",
+      "cues": [
+        "Lie on side with knees bent at 90 degrees",
+        "Sweep top arm all the way across body opening chest to floor",
+        "Keep knees glued together throughout"
+      ],
+      "links": []
+    },
+    {
+      "name": "Inchworms with Push-Up",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "6-8 reps",
+        "restSec": 0
+      },
+      "why": "Stretches calves and hamstrings while activating shoulders, core and triceps.",
+      "cues": [
+        "Hinge down touching floor with soft knees",
+        "Walk hands out into strong plank, perform push up",
+        "Walk feet up toward hands taking small steps"
+      ],
+      "links": []
+    },
+    {
+      "name": "Deep Squat to Hamstring Stretch (Bootstrappers)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10-12 reps",
+        "restSec": 0
+      },
+      "why": "Prepares hips, knees, and ankles for deep squatting and hinges.",
+      "cues": [
+        "Grab toes in deep squat with elbows pressing knees out",
+        "Keep hold of toes and push hips high into hamstring stretch",
+        "Sink back down tall into deep squat"
+      ],
+      "links": []
+    },
+    {
+      "name": "Band Dislocates / Pass-Throughs",
+      "muscle": "Stretch",
+      "equipment": "Bands",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "12-15 reps",
+        "restSec": 0
+      },
+      "why": "Increases shoulder internal and external rotation mobility safely with band elasticity.",
+      "cues": [
+        "Hold light resistance band wide with straight arms",
+        "Sweep band up overhead and behind back without bending elbows",
+        "Bring back smoothly to front"
+      ],
+      "links": []
+    },
+    {
+      "name": "Scapular Wall Slides",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10-12 reps",
+        "restSec": 0
+      },
+      "why": "Activates serratus anterior and lower traps while mobilizing the rotator cuff.",
+      "cues": [
+        "Back, head and forearms flat against wall in goalpost shape",
+        "Slide forearms upward without letting lower back arch off wall",
+        "Pull elbows down feeling mid-back squeeze"
+      ],
+      "links": []
+    },
+    {
+      "name": "Walking Knee to Chest Hugs",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10 reps each side",
+        "restSec": 0
+      },
+      "why": "Dynamically opens glutes and hip capsules while challenging single-leg balance.",
+      "cues": [
+        "Pull knee tight into chest while standing tall on opposite toe",
+        "Hold 1 second and step smoothly into next rep",
+        "Keep chest high without rounding forward"
+      ],
+      "links": []
+    },
+    {
+      "name": "Walking Heel to Butt (Quad Warm Up)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "10 reps each side",
+        "restSec": 0
+      },
+      "why": "Dynamic stretch for quadriceps and hip flexors before running or lifting.",
+      "cues": [
+        "Grasp ankle and pull heel gently to buttock with knees touching",
+        "Reach opposite arm tall toward ceiling",
+        "Step forward and alternate"
+      ],
+      "links": []
+    },
+    {
+      "name": "Lateral Lunge Shifting (Cossack Dynamic)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "8-10 reps each side",
+        "restSec": 0
+      },
+      "why": "Opens adductors, groin, and ankles in the frontal plane.",
+      "cues": [
+        "Wide stance, sink hips to one side keeping other leg straight",
+        "Turn straight leg toes upward",
+        "Shift smoothly across to other side without standing fully"
+      ],
+      "links": []
+    },
+    {
+      "name": "Wrist Circles & Mobility",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "15 reps each direction",
+        "restSec": 0
+      },
+      "why": "Warms up wrist flexors and extensors before heavy pressing and gripping.",
+      "cues": [
+        "Clasp hands and roll wrists in smooth fluid figures of eight",
+        "Gently extend and flex fingers",
+        "Place palms on floor on all fours to stretch lightly"
+      ],
+      "links": []
+    },
+    {
+      "name": "Ankle Dorsiflexion Wall Rocks",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "12-15 reps each side",
+        "restSec": 0
+      },
+      "why": "Enhances ankle mobility for squat depth and prevents knee valgus collapse.",
+      "cues": [
+        "Toes 3-4 inches from wall in half-kneeling or standing",
+        "Drive knee straight over second toe until knee touches wall",
+        "Keep heel pinned flat to floor"
+      ],
+      "links": []
+    },
+    {
+      "name": "Hip 90/90 Transitions (Dynamic)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "8-10 transitions",
+        "restSec": 0
+      },
+      "why": "Mobilizes internal and external hip rotation simultaneously on the floor.",
+      "cues": [
+        "Sit on floor with front and back legs bent at 90 degrees",
+        "Pivot knees smoothly across to opposite side without hands if possible",
+        "Keep spine tall throughout the switch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Downward Dog to Upward Dog Flow",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "6-8 flows",
+        "restSec": 0
+      },
+      "why": "Full anterior and posterior chain dynamic flow warming shoulders, spine and calves.",
+      "cues": [
+        "Push hips high in down dog pressing heels to floor",
+        "Flow forward through plank into upward dog lifting chest",
+        "Breathe deeply through transitions"
+      ],
+      "links": []
+    },
+    {
+      "name": "Chest Doorway Stretch (Static)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold",
+        "restSec": 30
+      },
+      "why": "Relieves pec minor tightness and counters rounded shoulder posture.",
+      "cues": [
+        "Place forearm on door frame with elbow at 90 degrees",
+        "Step forward with same-side leg until comfortable chest stretch",
+        "Hold and breathe smoothly without twisting spine"
+      ],
+      "links": []
+    },
+    {
+      "name": "Kneeling Lat & Upper Back Stretch (Childs Pose with reach)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30-45s hold",
+        "restSec": 30
+      },
+      "why": "Lengthens latissimus dorsi and decompresses lower spine after heavy pulling or squats.",
+      "cues": [
+        "Kneel sitting back on heels with arms outstretched forward on floor",
+        "Walk both hands diagonally to one side for targeted lat stretch",
+        "Breathe into side ribs and hold"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Quad Stretch (Static)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each",
+        "restSec": 30
+      },
+      "why": "Restores resting length of the quadriceps and rectus femoris post leg workout.",
+      "cues": [
+        "Hold wall for balance, grasp ankle and pull heel towards glutes",
+        "Keep knees aligned together and tuck pelvis slightly under",
+        "Avoid arching lower back"
+      ],
+      "links": []
+    },
+    {
+      "name": "Kneeling Hip Flexor Stretch (Couch Stretch)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30-45s hold each",
+        "restSec": 30
+      },
+      "why": "Releases tight psoas and iliacus muscles to reduce anterior pelvic tilt and lower back stress.",
+      "cues": [
+        "Kneel in lunge with rear knee on mat and rear foot against wall/box",
+        "Squeeze rear glute and keep torso upright",
+        "Shift hips gently forward until deep stretch at front of hip"
+      ],
+      "links": []
+    },
+    {
+      "name": "Seated Hamstring Stretch (Single or Double Leg)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30-45s hold",
+        "restSec": 30
+      },
+      "why": "Lengthens hamstring muscle bellies and relieves sciatic nerve tension.",
+      "cues": [
+        "Sit on floor with legs extended straight in front",
+        "Hinge forward from hips leading with chest (not rounding back)",
+        "Hold ankles or feet and breathe deeply"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing Calf Stretch (Wall push)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each",
+        "restSec": 30
+      },
+      "why": "Lengthens gastrocnemius and Achilles tendon after running or calf training.",
+      "cues": [
+        "Place hands on wall with back leg straight and heel pressed flat",
+        "Front knee bent, lean hips forward toward wall",
+        "Keep back heel glued down to feel deep calf stretch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Pigeon Pose / Glute Stretch",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30-45s hold each",
+        "restSec": 30
+      },
+      "why": "Deep external hip rotator and piriformis release to prevent sciatic irritation.",
+      "cues": [
+        "Bring front knee bent across mat with back leg extended straight behind",
+        "Square hips toward mat and lower chest forward over front shin",
+        "Relax into the stretch with long exhales"
+      ],
+      "links": []
+    },
+    {
+      "name": "Figure 4 Piriformis Stretch (Lying on Back)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each",
+        "restSec": 30
+      },
+      "why": "Gentle on knees while effectively isolating deep glute and piriformis muscles.",
+      "cues": [
+        "Lie on back, cross right ankle over left knee",
+        "Reach hands through to grasp behind left thigh and pull gently towards chest",
+        "Keep head and neck relaxed on floor"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cross-Body Shoulder Stretch (Posterior Capsule)",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each",
+        "restSec": 30
+      },
+      "why": "Relieves posterior shoulder capsule stiffness after heavy pressing.",
+      "cues": [
+        "Bring one arm across chest at shoulder level",
+        "Use opposite forearm to gently hug arm closer to chest",
+        "Keep shoulder down away from ear"
+      ],
+      "links": []
+    },
+    {
+      "name": "Overhead Tricep & Lat Stretch",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each",
+        "restSec": 30
+      },
+      "why": "Lengthens triceps long head and lateral ribcage.",
+      "cues": [
+        "Raise one elbow overhead and reach hand down between shoulder blades",
+        "Use other hand to guide elbow gently back and down",
+        "Maintain neutral spine without hyperextending ribs"
+      ],
+      "links": []
+    },
+    {
+      "name": "Seated Butterfly Groin Stretch (Adductors)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "45s hold",
+        "restSec": 30
+      },
+      "why": "Lengthens inner thigh adductor complex to restore hip abduction range.",
+      "cues": [
+        "Sit tall with soles of feet together and knees falling outward",
+        "Hold feet with hands and gently press knees toward floor with elbows",
+        "Keep chest proud and breathe easy"
+      ],
+      "links": []
+    },
+    {
+      "name": "Lying Spinal Twist",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each side",
+        "restSec": 30
+      },
+      "why": "Rotational spinal decompression releasing lower back and lateral hip tension.",
+      "cues": [
+        "Lie on back, hug right knee to chest, then drop it across body to the left",
+        "Look to the right with right arm extended on floor",
+        "Relax with slow abdominal breaths"
+      ],
+      "links": []
+    },
+    {
+      "name": "Frog Stretch (Deep Adductors)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30-45s hold",
+        "restSec": 30
+      },
+      "why": "Intense hip opener targeting adductors and pelvic floor flexibility.",
+      "cues": [
+        "On hands and knees, slide knees as wide apart as comfortable with inner feet flat",
+        "Sink forearms to floor and gently press hips backward",
+        "Hold where stretch is comfortable, breathe slowly"
+      ],
+      "links": []
+    },
+    {
+      "name": "Biceps & Anterior Shoulder Wall Stretch",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each side",
+        "restSec": 30
+      },
+      "why": "Releases bicep tendon and anterior deltoid after high volume pulling and curling.",
+      "cues": [
+        "Place palm flat on wall behind you at shoulder height",
+        "Rotate chest and torso gently away from wall",
+        "Feel stretch run across bicep and front of shoulder"
+      ],
+      "links": []
+    },
+    {
+      "name": "Neck & Upper Trapezius Lateral Stretch",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "20-30s hold each side",
+        "restSec": 20
+      },
+      "why": "Alleviates upper trapezius and levator scapulae tension from heavy shrugs or computer work.",
+      "cues": [
+        "Drop right ear toward right shoulder gently",
+        "Rest right hand lightly on head without pulling hard",
+        "Reach left fingertips towards floor to deepen stretch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Forearm Flexor & Extensor Stretch",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "20-30s hold each side",
+        "restSec": 20
+      },
+      "why": "Prevents medial and lateral epicondylitis (golfers and tennis elbow) from heavy gripping.",
+      "cues": [
+        "Extend arm forward with palm up, pull fingers back towards body with other hand",
+        "Reverse by turning palm down and pulling hand backward",
+        "Keep elbow straight"
+      ],
+      "links": []
+    },
+    {
+      "name": "Seated Piriformis Chair Stretch",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each side",
+        "restSec": 30
+      },
+      "why": "Accessible seated hip release for office workers and gym goers alike.",
+      "cues": [
+        "Sit tall on edge of chair with one ankle crossed over opposite knee",
+        "Keep flat back and hinge forward from hips over the crossed shin",
+        "Hold until glute tension softens"
+      ],
+      "links": []
+    },
+    {
+      "name": "Cobra / Sphinx Abdominal Stretch",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold",
+        "restSec": 30
+      },
+      "why": "Lengthens rectus abdominis and gently extends thoracic spine post core workout.",
+      "cues": [
+        "Lie prone on stomach with hands under shoulders",
+        "Gently press chest up keeping pelvis pinned to floor",
+        "Keep shoulders relaxed down away from ears"
+      ],
+      "links": []
+    },
+    {
+      "name": "Standing IT Band & Lateral Hip Stretch",
+      "muscle": "Stretch",
+      "equipment": "Bodyweight",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 2,
+        "reps": "30s hold each side",
+        "restSec": 30
+      },
+      "why": "Releases tension in tensor fasciae latae and lateral hip line.",
+      "cues": [
+        "Cross right leg behind left leg with feet flat",
+        "Reach right arm overhead leaning torso toward left side",
+        "Push right hip out to side to feel long lateral stretch"
+      ],
+      "links": []
+    },
+    {
+      "name": "Childs Pose (Deep Resting Pose)",
+      "muscle": "Stretch",
+      "equipment": "Mat",
+      "kind": "stretch",
+      "defaultScheme": {
+        "warmupSets": 0,
+        "sets": 1,
+        "reps": "60s hold",
+        "restSec": 0
+      },
+      "why": "Lowers nervous system arousal, restores parasympathetic state, and lengthens spine.",
+      "cues": [
+        "Knees wide, big toes touching, sit hips all the way back onto heels",
+        "Rest forehead gently on floor with arms relaxed forward",
+        "Take slow 4-second inhales and 6-second exhales"
+      ],
+      "links": []
+    }
+  ],
+  "techniques": {
+    "superset": "Perform 1 exercise followed immediately by another with minimal or no rest in between. Improves metabolic conditioning and workout density.",
+    "tri_set": "Perform 3 exercises consecutively with no rest in between until the round is completed. Maximizes localized muscle fatigue.",
+    "giant_set": "Perform 4 or more exercises back-to-back with zero rest between movements. High volume and cardiovascular stimulus.",
+    "drop_set": "After finishing the set, immediately reduce the weight by ~10-20% without resting and continue reps to near failure.",
+    "double_drop": "After reaching failure, reduce weight ~10-20% and rep out, then reduce weight again ~10-20% and rep to failure a second time.",
+    "rir": "Reps In Reserve: how many more reps you could do before absolute muscular failure. Maintain 2-3 RIR on most sets, taking only the final set to near failure.",
+    "tempo": "Speed of each repetition (eccentric / pause / concentric). Emphasize a controlled 3-4 second lowering phase to maximize muscle tension.",
+    "partials": "After reaching full-range failure, perform partial reps through the strongest portion of the range of motion to extend the set safely.",
+    "rest_periods": "Take 60 to 180 seconds between working sets to allow ATP-CP regeneration and nervous system recovery for maximum performance on the next set."
+  }
+}

@@ -10,8 +10,6 @@ export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showPrompt, setShowPrompt] = useState(false)
 
-  if (pathname?.startsWith("/bill")) return null
-
   useEffect(() => {
     // Show prompt if demo parameter is present
     if (typeof window !== "undefined" && window.location.search.includes("pwa_prompt=1")) {
@@ -56,6 +54,8 @@ export default function PwaInstallPrompt() {
     setDeferredPrompt(null)
   }
 
+  if (pathname?.startsWith("/bill") || pathname?.startsWith("/plans/maker")) return null
+
   return (
     <AnimatePresence>
       {showPrompt && (
@@ -63,7 +63,7 @@ export default function PwaInstallPrompt() {
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
-          className="fixed bottom-28 md:bottom-8 left-4 right-4 max-w-sm mx-auto z-40 bg-[#121212] border border-[#FFB800]/50 rounded-2xl p-4 shadow-[0_0_30px_rgba(255,184,0,0.2)] flex items-center justify-between gap-3"
+          className="fixed bottom-28 left-4 right-4 max-w-sm mx-auto z-40 bg-[#121212] border border-[#FFB800]/50 rounded-2xl p-4 shadow-[0_0_30px_rgba(255,184,0,0.2)] flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-3">
             <div className="size-11 rounded-xl bg-[#FFB800]/20 border border-[#FFB800]/40 flex items-center justify-center text-[#FFB800] flex-shrink-0">

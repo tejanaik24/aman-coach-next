@@ -48,6 +48,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# qa
+qa-shots/
+
 .vercel
 supabase/.temp/
 

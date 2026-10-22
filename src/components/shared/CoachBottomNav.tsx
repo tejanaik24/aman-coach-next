@@ -22,6 +22,9 @@ export default function CoachBottomNav() {
     router.prefetch("/submissions")
   }, [router])
 
+  // Hide inside plan maker so only the plan maker bottom bar is active
+  if (pathname?.startsWith("/plans/maker")) return null
+
   return (
     <nav className="fixed bottom-4 left-4 right-4 max-w-[398px] mx-auto bg-bg-surface/90 backdrop-blur-xl border border-border-subtle rounded-full p-2 flex justify-between items-center shadow-[0_0_30px_rgba(255,106,26,0.08)] z-50 select-none">
       {tabs.map(({ href, label, icon: Icon }) => {
@@ -54,4 +57,3 @@ export default function CoachBottomNav() {
     </nav>
   )
 }
-

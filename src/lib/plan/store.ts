@@ -1,8 +1,9 @@
 import { format, differenceInCalendarWeeks, addDays } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import seed from "./seed-aman.json"
+import exerciseDb from "./exercise-db.json"
 import {
-  cloneWithNewIds, plain, textIndex,
+  cloneWithNewIds, plain, schemeText, textIndex, uid,
   type DietData, type LibraryItem, type LibraryKind, type PlanDoc, type PlanDocData, type PlanHeader, type PlanKind, type WorkoutData,
 } from "./types"
 
@@ -55,7 +56,26 @@ export async function loadHeader(clientId: string): Promise<PlanHeader> {
 export function blankData(kind: PlanKind, header: PlanHeader): PlanDocData {
   const s = seed as unknown as { workout: WorkoutData; diet: DietData }
   return kind === "workout"
-    ? { header, showRules: true, markChanges: false, workout: { ...cloneWithNewIds(s.workout), days: [] } }
+    ? {
+        header,
+        showRules: true,
+        showWhy: true,
+        markChanges: false,
+        workout: {
+          ...cloneWithNewIds(s.workout),
+          days: [
+            {
+              id: uid(),
+              rest: false,
+              title: "DAY 1: New Day",
+              leftNote: "",
+              rightNote: "",
+              rows: [],
+              groups: {},
+            },
+          ],
+        },
+      }
     : { header, showRules: true, markChanges: false, diet: { ...cloneWithNewIds(s.diet), plans: [] } }
 }
 
@@ -69,7 +89,7 @@ export async function ensureStarterTemplates() {
   const s = seed as unknown as { workout: WorkoutData; diet: DietData }
   const header: PlanHeader = { show: true, rows: [], dates: [], measures: [] }
   const docs = [
-    { kind: "workout", title: "Upper/Lower 4 day (Deload)", data: { header, showRules: true, markChanges: false, workout: cloneWithNewIds(s.workout) } },
+    { kind: "workout", title: "Upper/Lower 4 day (Deload)", data: { header, showRules: true, showWhy: true, markChanges: false, workout: cloneWithNewIds(s.workout) } },
     { kind: "diet", title: "Non-veg + Veg Tuesday", data: { header, showRules: true, markChanges: false, diet: cloneWithNewIds(s.diet) } },
   ] as const
   await sb.from("plan_docs").insert(docs.map((d) => ({ ...d, coach_id: user.id, is_template: true })))
@@ -129,7 +149,13 @@ export async function saveToLibrary(d: PlanDocData) {
   d.workout?.days.forEach((day) =>
     day.rows.forEach((r) => {
       if (r.type === "banner") put("banner", r.name)
-      else put(r.type, plain(r.name), { links: r.links, cues: r.cues, sets: r.sets })
+      else put(r.type, plain(r.name), {
+        links: r.links,
+        cues: r.cues,
+        sets: r.sets,
+        why: r.why,
+        kind: r.kind,
+      })
       if (r.sets.trim()) put("sets", r.sets.trim())
     }),
   )
@@ -146,7 +172,75 @@ export async function saveToLibrary(d: PlanDocData) {
   }
 }
 
+/**
+ * Loads library items: Aman's library items come FIRST (they have his custom links and cues),
+ * followed by built-in database items. If Aman edited why/muscle, his edit wins.
+ */
 export async function loadLibrary(): Promise<LibraryItem[]> {
   const { data } = await createClient().from("coach_library").select("id, kind, name, data, use_count").order("updated_at", { ascending: false }).limit(3000)
-  return (data ?? []) as LibraryItem[]
+  const userItems = ((data ?? []) as LibraryItem[]).map((it) => ({
+    ...it,
+    data: it.data ?? {},
+  }))
+
+  // Create lookup for fast matching
+  const userMap = new Map<string, LibraryItem>()
+  userItems.forEach((i) => {
+    userMap.set(plain(i.name).toLowerCase().trim(), i)
+  })
+
+  // Built-in database items
+  const dbExercises = (exerciseDb.exercises ?? []) as Array<{
+    name: string
+    muscle: string
+    equipment: string
+    kind: "strength" | "cardio" | "stretch"
+    defaultScheme?: { warmupSets?: number; sets?: number; reps?: string; restSec?: number }
+    why?: string
+    cues?: string[]
+    links?: { label: string; url: string }[]
+  }>
+
+  // Enrich user items with why / muscle from DB if user item is missing them
+  userItems.forEach((it) => {
+    const matched = dbExercises.find((e) => plain(e.name).toLowerCase() === plain(it.name).toLowerCase().trim())
+    if (matched) {
+      if (!it.data.why && matched.why) it.data.why = matched.why
+      if (!it.data.muscle && matched.muscle) it.data.muscle = matched.muscle
+      if (!it.data.kind && matched.kind) it.data.kind = matched.kind
+      if (!it.data.equipment && matched.equipment) it.data.equipment = matched.equipment
+    }
+  })
+
+  // Built-in items not yet saved in coach_library
+  const builtinItems: LibraryItem[] = []
+  dbExercises.forEach((ex) => {
+    const key = plain(ex.name).toLowerCase().trim()
+    if (!userMap.has(key)) {
+      const libKind: LibraryKind = ex.kind === "stretch" || ex.kind === "cardio" ? "warmup" : "exercise"
+      builtinItems.push({
+        id: "builtin_" + ex.name.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase(),
+        kind: libKind,
+        name: ex.name,
+        data: {
+          links: ex.links ?? [],
+          cues: (ex.cues ?? []).map((t) => ({ text: t })),
+          sets: schemeText({
+            warmupSets: ex.defaultScheme?.warmupSets,
+            workingSets: ex.defaultScheme?.sets,
+            reps: ex.defaultScheme?.reps,
+            kind: ex.kind,
+          }),
+          why: ex.why,
+          muscle: ex.muscle,
+          kind: ex.kind,
+          equipment: ex.equipment,
+        },
+        use_count: 0,
+      })
+    }
+  })
+
+  // Aman's items first, then built-in database items
+  return [...userItems, ...builtinItems]
 }

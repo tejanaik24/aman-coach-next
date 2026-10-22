@@ -1,146 +1,1054 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, X } from "lucide-react"
-import { Sheet, Label, LineList, Chips, LibraryPicker, inputCls, byKind } from "./parts"
-import { plain, type DietRow, type LibraryItem, type Link, type PlanHeader, type WorkoutRow } from "@/lib/plan/types"
+import { ChevronDown, Plus, Sparkles, X, Heart, Dumbbell, Activity, Check } from "lucide-react"
+import { Sheet, Label, LineList, LibraryPicker, inputCls, byKind } from "./parts"
+import {
+  cardioBpm,
+  plain,
+  schemeText,
+  type DietRow,
+  type LibraryItem,
+  type Link,
+  type PlanHeader,
+  type WorkoutRow,
+} from "@/lib/plan/types"
+import exerciseDb from "@/lib/plan/exercise-db.json"
 
-const DEFAULT_SETS = ["2 × 10-15 Reps", "1 warm up\n+\n2 × 10-15 Reps", "2 Light warm Up Sets\n+\n2 × 10-15 Reps", "3 × 8-12 Reps", "2 × max", "10-15 reps each", "10 minutes\n(Average BPM: 110-130)"]
-const DEFAULT_BANNERS = [
-  "*OR (Either Complete Option 1 OR Complete Option 2)*",
-  "*10-15 minutes of Normal walk within 10-15 minutes of finishing Meal 1*",
-  "*AFTER Minimum 30 - 60 minutes Gap*",
-  "*Mechanical Drop SET*",
-  "*SUPER SET*",
-]
 const uniq = (a: string[]) => [...new Set(a.map((s) => s.trim()).filter(Boolean))]
 const Hint = () => <p className="text-xs text-text-muted">Tip: put words between *stars* to make them red in the PDF.</p>
 
 function Done({ onClick, label = "Done" }: { onClick: () => void; label?: string }) {
-  return <button type="button" onClick={onClick} className="w-full h-14 rounded-2xl bg-accent-orange text-black font-bold text-lg cursor-pointer">{label}</button>
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full h-14 min-h-[56px] rounded-2xl bg-accent-orange text-black font-bold text-lg cursor-pointer active:scale-[0.99] transition-transform"
+    >
+      {label}
+    </button>
+  )
 }
 
-/** Edit one exercise / warm-up. Typing a name offers matches from Aman's library. */
-export function RowSheet({ row, library, onSave, onClose }: { row: WorkoutRow; library: LibraryItem[]; onSave: (r: WorkoutRow) => void; onClose: () => void }) {
-  const [r, setR] = useState<WorkoutRow>(row)
-  const kindLib = byKind(library, r.type === "warmup" ? "warmup" : "exercise")
+function Stepper({
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  suffix = "",
+}: {
+  value: number
+  min: number
+  max: number
+  step?: number
+  onChange: (v: number) => void
+  suffix?: string
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        disabled={value <= min}
+        onClick={() => onChange(Math.max(min, value - step))}
+        className="size-12 min-h-[48px] rounded-xl bg-white/10 text-white font-bold text-2xl grid place-items-center disabled:opacity-25 cursor-pointer active:scale-95"
+      >
+        −
+      </button>
+      <span className="min-w-16 text-center font-bold text-xl text-white">
+        {value}
+        {suffix && <span className="text-sm font-normal text-text-muted ml-1">{suffix}</span>}
+      </span>
+      <button
+        type="button"
+        disabled={value >= max}
+        onClick={() => onChange(Math.min(max, value + step))}
+        className="size-12 min-h-[48px] rounded-xl bg-white/10 text-white font-bold text-2xl grid place-items-center disabled:opacity-25 cursor-pointer active:scale-95"
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
+function ChipSelect<T extends string | number>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { label: string; value: T }[]
+  value?: T
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const active = value === opt.value
+        return (
+          <button
+            key={String(opt.value)}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`h-11 min-h-[44px] px-4 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              active
+                ? "bg-accent-orange text-black font-bold shadow-sm"
+                : "bg-white/5 text-white/80 border border-border-subtle hover:bg-white/10"
+            }`}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Edit one exercise / cardio / stretch row. Steppers & chips only. Tap, don't type. */
+export function RowSheet({
+  row,
+  library,
+  clientAge,
+  onSave,
+  onClose,
+}: {
+  row: WorkoutRow
+  library: LibraryItem[]
+  clientAge?: number
+  onSave: (r: WorkoutRow) => void
+  onClose: () => void
+}) {
+  // Infer kind if not explicitly saved
+  const initialKind =
+    row.kind ??
+    (row.stretchType || row.name.toLowerCase().includes("stretch")
+      ? "stretch"
+      : row.cardioMachine || row.name.toLowerCase().includes("cardio") || row.name.toLowerCase().includes("cycling") || row.name.toLowerCase().includes("bike")
+      ? "cardio"
+      : "strength")
+
+  const [r, setR] = useState<WorkoutRow>({
+    ...row,
+    kind: initialKind,
+    warmupSets: row.warmupSets ?? 0,
+    workingSets: row.workingSets ?? (initialKind === "stretch" ? 2 : initialKind === "cardio" ? 1 : 3),
+    reps: row.reps ?? "10-15",
+    restSec: row.restSec ?? 60,
+    why: row.why ?? "",
+    cardioMachine: row.cardioMachine ?? "Incline walk",
+    cardioMinutes: row.cardioMinutes ?? 10,
+    cardioZone: row.cardioZone ?? "Z2",
+    cardioRestHr: row.cardioRestHr ?? 60,
+    stretchType: row.stretchType ?? (row.name.toLowerCase().includes("dynamic") ? "dynamic" : "static"),
+    stretchHoldSec: row.stretchHoldSec ?? 30,
+  })
+
+  // Lookup matches from library
   const q = plain(r.name).toLowerCase().trim()
-  const matches = q.length >= 2 ? kindLib.filter((i) => plain(i.name).toLowerCase().includes(q) && plain(i.name) !== plain(r.name)).slice(0, 5) : []
-  const sets = uniq([...byKind(library, "sets").map((i) => i.name), ...DEFAULT_SETS]).slice(0, 14)
-  const setLink = (i: number, p: Partial<Link>) => setR({ ...r, links: r.links.map((l, j) => (j === i ? { ...l, ...p } : l)) })
-  const save = () => { onSave({ ...r, name: r.name.trim(), links: r.links.filter((l) => l.url.trim()), cues: r.cues.filter((c) => c.text.trim()) }); onClose() }
+  const matches =
+    q.length >= 2
+      ? library
+          .filter(
+            (i) =>
+              plain(i.name).toLowerCase().includes(q) &&
+              plain(i.name).toLowerCase() !== q,
+          )
+          .slice(0, 5)
+      : []
+
+  const updateState = (patch: Partial<WorkoutRow>) => {
+    const next = { ...r, ...patch }
+    if (!next.custom) {
+      next.sets = schemeText(next)
+    }
+    setR(next)
+  }
+
+  const pickLibraryItem = (m: LibraryItem) => {
+    const k = m.data.kind ?? (m.kind === "warmup" && m.name.toLowerCase().includes("stretch") ? "stretch" : "strength")
+    const next: WorkoutRow = {
+      ...r,
+      name: m.name,
+      kind: k,
+      links: m.data.links?.length ? m.data.links : r.links,
+      cues: m.data.cues?.length ? m.data.cues : r.cues,
+      why: m.data.why || r.why,
+    }
+    if (!next.custom) {
+      next.sets = schemeText(next)
+    }
+    setR(next)
+  }
+
+  const setLink = (i: number, p: Partial<Link>) =>
+    setR({ ...r, links: r.links.map((l, j) => (j === i ? { ...l, ...p } : l)) })
+
+  const save = () => {
+    const clean: WorkoutRow = {
+      ...r,
+      name: r.name.trim(),
+      why: r.why?.trim() || undefined,
+      links: r.links.filter((l) => l.url.trim()),
+      cues: r.cues.filter((c) => c.text.trim()),
+      sets: r.custom ? (r.customSets || r.sets) : schemeText(r),
+    }
+    onSave(clean)
+    onClose()
+  }
+
+  // Active cardio bpm string
+  const activeBpm = cardioBpm(clientAge, r.cardioRestHr, r.cardioZone)
 
   return (
-    <Sheet title={r.type === "warmup" ? "Warm-up" : "Exercise"} onClose={save} footer={<Done onClick={save} />}>
-      <div className="grid grid-cols-2 gap-2">
-        {(["exercise", "warmup"] as const).map((t) => (
-          <button key={t} type="button" onClick={() => setR({ ...r, type: t })} className={`h-11 rounded-xl font-semibold text-sm cursor-pointer ${r.type === t ? "bg-accent-orange text-black" : "bg-white/5 text-white"}`}>
-            {t === "exercise" ? "Numbered exercise" : "Warm-up / no number"}
+    <Sheet
+      title={r.kind === "cardio" ? "Cardio" : r.kind === "stretch" ? "Stretch" : "Exercise"}
+      onClose={save}
+      footer={<Done onClick={save} />}
+    >
+      {/* Exercise Kind Selector */}
+      <div className="grid grid-cols-3 gap-2">
+        {(
+          [
+            { id: "strength", label: "Strength", icon: Dumbbell },
+            { id: "cardio", label: "Cardio", icon: Heart },
+            { id: "stretch", label: "Stretch", icon: Activity },
+          ] as const
+        ).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => updateState({ kind: id })}
+            className={`h-12 min-h-[48px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors ${
+              r.kind === id
+                ? "bg-accent-orange text-black"
+                : "bg-white/5 text-white/80 border border-border-subtle"
+            }`}
+          >
+            <Icon className="size-4" /> {label}
           </button>
         ))}
       </div>
+
+      {/* Name Input with Autocomplete */}
       <div>
         <Label>Name</Label>
-        <input value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })} placeholder="e.g. Seated Cable Row" className={`${inputCls} h-14 font-semibold`} />
+        <input
+          value={r.name}
+          onChange={(e) => updateState({ name: e.target.value })}
+          placeholder={
+            r.kind === "cardio"
+              ? "e.g. Incline Treadmill Walk"
+              : r.kind === "stretch"
+              ? "e.g. Worlds Greatest Stretch"
+              : "e.g. Seated Cable Row"
+          }
+          className={`${inputCls} h-14 font-semibold text-base`}
+        />
         {matches.length > 0 && (
           <div className="mt-2 space-y-1.5">
-            <p className="text-xs text-text-muted">From your list (fills videos, tips and sets):</p>
+            <p className="text-xs text-text-muted">From library (fills videos, cues & why):</p>
             {matches.map((m) => (
-              <button key={m.id} type="button" onClick={() => setR({ ...r, name: m.name, links: m.data.links ?? [], cues: m.data.cues ?? [], sets: m.data.sets ?? r.sets })} className="w-full text-left px-3.5 py-2.5 rounded-xl bg-accent-orange/10 border border-accent-orange/30 text-sm cursor-pointer">
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => pickLibraryItem(m)}
+                className="w-full text-left px-4 py-3 rounded-xl bg-accent-orange/10 border border-accent-orange/30 text-sm font-semibold cursor-pointer hover:bg-accent-orange/20"
+              >
                 {plain(m.name)}
+                {m.data.why && <span className="block text-xs font-normal text-text-muted mt-0.5 line-clamp-1">{m.data.why}</span>}
               </button>
             ))}
           </div>
         )}
       </div>
-      <div>
-        <Label hint="tap a chip or type">Sets & reps</Label>
-        <textarea value={r.sets} onChange={(e) => setR({ ...r, sets: e.target.value })} rows={4} className={`${inputCls} py-3 resize-none mb-2`} />
-        <Chips items={sets} onPick={(v) => setR({ ...r, sets: v })} />
-      </div>
-      <div>
-        <Label>Video links</Label>
-        <div className="space-y-2">
-          {r.links.map((l, i) => (
-            <div key={i} className="rounded-xl border border-border-subtle p-2.5 space-y-2">
-              <div className="flex gap-2">
-                <input value={l.label} onChange={(e) => setLink(i, { label: e.target.value })} placeholder="Button name (Video / Technique Reference)" className={`${inputCls} h-11 text-sm`} />
-                <button type="button" onClick={() => setR({ ...r, links: r.links.filter((_, j) => j !== i) })} aria-label="Remove link" className="size-11 shrink-0 grid place-items-center rounded-lg bg-danger/10 text-danger cursor-pointer"><X className="size-4" /></button>
-              </div>
-              <input value={l.url} onChange={(e) => setLink(i, { url: e.target.value })} placeholder="Paste YouTube / Instagram link" inputMode="url" className={`${inputCls} h-11 text-sm`} />
+
+      {/* ================= STRENGTH SECTION ================= */}
+      {r.kind === "strength" && (
+        <div className="space-y-4">
+          {/* Steppers: Warm-up sets & Working sets */}
+          <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-white/[0.03] border border-border-subtle">
+            <div>
+              <Label hint="0 to 3">Warm-up sets</Label>
+              <Stepper
+                value={r.warmupSets ?? 0}
+                min={0}
+                max={3}
+                onChange={(v) => updateState({ warmupSets: v })}
+              />
             </div>
-          ))}
-          <button type="button" onClick={() => setR({ ...r, links: [...r.links, { label: r.links.length ? "Reference " + (r.links.length + 1) : "Video", url: "" }] })} className="h-11 px-4 rounded-xl bg-white/5 text-white font-semibold text-sm flex items-center gap-1.5 cursor-pointer"><Plus className="size-4" /> Add video link</button>
+            <div>
+              <Label hint="1 to 6">Working sets</Label>
+              <Stepper
+                value={r.workingSets ?? 3}
+                min={1}
+                max={6}
+                onChange={(v) => updateState({ workingSets: v })}
+              />
+            </div>
+          </div>
+
+          {/* Reps Chips */}
+          <div>
+            <Label hint="tap to pick">Target reps</Label>
+            <ChipSelect
+              value={typeof r.reps === "string" ? r.reps : "10-15"}
+              options={[
+                { label: "6-8", value: "6-8" },
+                { label: "8-12", value: "8-12" },
+                { label: "10-15", value: "10-15" },
+                { label: "12-15", value: "12-15" },
+                { label: "15-20", value: "15-20" },
+                { label: "Max", value: "max" },
+                { label: "Time (Hold)", value: "30s hold" },
+              ]}
+              onChange={(v) => updateState({ reps: v })}
+            />
+          </div>
+
+          {/* Rest Chips */}
+          <div>
+            <Label hint="rest between sets">Rest between sets</Label>
+            <ChipSelect
+              value={r.restSec ?? 60}
+              options={[
+                { label: "30s", value: 30 },
+                { label: "45s", value: 45 },
+                { label: "60s", value: 60 },
+                { label: "90s", value: 90 },
+                { label: "2 min", value: 120 },
+                { label: "3 min", value: 180 },
+              ]}
+              onChange={(v) => updateState({ restSec: v })}
+            />
+          </div>
+
+          {/* Scheme Preview */}
+          <div className="p-3 rounded-xl bg-accent-orange/10 border border-accent-orange/20 flex items-center justify-between">
+            <span className="text-xs text-text-muted">Generated sets:</span>
+            <span className="text-sm font-bold text-accent-orange">{schemeText(r)}</span>
+          </div>
+
+          {/* Scientific Why Note */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label>Science note (Why this works)</Label>
+              <span className="text-[11px] text-text-muted">Printed on PDF</span>
+            </div>
+            <textarea
+              value={r.why ?? ""}
+              onChange={(e) => updateState({ why: e.target.value })}
+              rows={2}
+              placeholder="e.g. Targets the upper clavicular pec fibers at a 30° incline to reduce shoulder impingement."
+              className={`${inputCls} py-3 text-sm resize-none`}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ================= CARDIO SECTION ================= */}
+      {r.kind === "cardio" && (
+        <div className="space-y-4">
+          <div>
+            <Label hint="choose machine">Machine</Label>
+            <ChipSelect
+              value={r.cardioMachine ?? "Incline walk"}
+              options={[
+                { label: "Incline walk", value: "Incline walk" },
+                { label: "Bike", value: "Bike" },
+                { label: "Elliptical", value: "Elliptical" },
+                { label: "Stair", value: "Stair" },
+                { label: "Outdoor", value: "Outdoor" },
+              ]}
+              onChange={(v) => updateState({ cardioMachine: v })}
+            />
+          </div>
+
+          {/* Steppers: Minutes & Resting HR */}
+          <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-white/[0.03] border border-border-subtle">
+            <div>
+              <Label hint="duration">Minutes</Label>
+              <Stepper
+                value={r.cardioMinutes ?? 10}
+                min={5}
+                max={90}
+                step={5}
+                onChange={(v) => updateState({ cardioMinutes: v })}
+                suffix="min"
+              />
+            </div>
+            <div>
+              <Label hint="for Karvonen">Resting HR</Label>
+              <Stepper
+                value={r.cardioRestHr ?? 60}
+                min={40}
+                max={100}
+                step={2}
+                onChange={(v) => updateState({ cardioRestHr: v })}
+                suffix="bpm"
+              />
+            </div>
+          </div>
+
+          {/* Intensity Zone Chips */}
+          <div>
+            <Label hint="intensity level">How hard (zone)</Label>
+            <ChipSelect
+              value={r.cardioZone ?? "Z2"}
+              options={[
+                { label: "Z1 (50-60%) Recovery", value: "Z1" },
+                { label: "Z2 (60-70%) Fat burn", value: "Z2" },
+                { label: "Z3 (70-80%) Aerobic", value: "Z3" },
+                { label: "Z4 (80-90%) Threshold", value: "Z4" },
+                { label: "Z5 (90-100%) Max", value: "Z5" },
+              ]}
+              onChange={(v) => updateState({ cardioZone: v })}
+            />
+          </div>
+
+          {/* Karvonen BPM target banner */}
+          <div className="p-3.5 rounded-2xl bg-accent-orange/15 border border-accent-orange/40 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-accent-orange">Target Heart Rate</p>
+              <p className="text-lg font-bold text-white mt-0.5">{activeBpm}</p>
+            </div>
+            <span className="text-xs text-text-muted text-right">
+              {clientAge ? `Age: ${clientAge} yrs` : "No DOB in header"}
+            </span>
+          </div>
+
+          {/* Scientific Why Note */}
+          <div>
+            <Label>Why this cardio</Label>
+            <textarea
+              value={r.why ?? ""}
+              onChange={(e) => updateState({ why: e.target.value })}
+              rows={2}
+              placeholder="e.g. Zone 2 aerobic stimulus preserves muscle while promoting fat oxidation and cardiovascular health."
+              className={`${inputCls} py-3 text-sm resize-none`}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ================= STRETCH SECTION ================= */}
+      {r.kind === "stretch" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {(["dynamic", "static"] as const).map((st) => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => updateState({ stretchType: st })}
+                className={`h-12 min-h-[48px] rounded-xl font-bold text-sm cursor-pointer ${
+                  r.stretchType === st
+                    ? "bg-accent-orange text-black"
+                    : "bg-white/5 text-white/80 border border-border-subtle"
+                }`}
+              >
+                {st === "dynamic" ? "Dynamic (Warm-up)" : "Static (Cool-down)"}
+              </button>
+            ))}
+          </div>
+
+          {r.stretchType === "dynamic" ? (
+            <div className="space-y-4">
+              <div>
+                <Label hint="movement reps">Reps</Label>
+                <ChipSelect
+                  value={typeof r.reps === "string" ? r.reps : "10-15"}
+                  options={[
+                    { label: "8-10 reps", value: "8-10" },
+                    { label: "10-15 reps", value: "10-15" },
+                    { label: "12-15 reps", value: "12-15" },
+                    { label: "15-20 reps", value: "15-20" },
+                  ]}
+                  onChange={(v) => updateState({ reps: v })}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => updateState({ side: !r.side })}
+                className={`h-12 min-h-[48px] w-full rounded-xl text-sm font-semibold border flex items-center justify-center gap-2 cursor-pointer ${
+                  r.side
+                    ? "bg-accent-orange/15 border-accent-orange text-accent-orange font-bold"
+                    : "bg-white/5 border-border-subtle text-text-muted"
+                }`}
+              >
+                <Check className={`size-4 ${r.side ? "opacity-100" : "opacity-0"}`} /> Each side (per side)
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label hint="hold time">Hold for</Label>
+                <ChipSelect
+                  value={r.stretchHoldSec ?? 30}
+                  options={[
+                    { label: "20 seconds", value: 20 },
+                    { label: "30 seconds", value: 30 },
+                    { label: "45 seconds", value: 45 },
+                    { label: "60 seconds", value: 60 },
+                  ]}
+                  onChange={(v) => updateState({ stretchHoldSec: v })}
+                />
+              </div>
+              <div>
+                <Label hint="rounds">Sets / Rounds</Label>
+                <Stepper
+                  value={r.workingSets ?? 2}
+                  min={1}
+                  max={4}
+                  onChange={(v) => updateState({ workingSets: v })}
+                  suffix="sets"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Scheme Preview */}
+          <div className="p-3 rounded-xl bg-accent-orange/10 border border-accent-orange/20 flex items-center justify-between">
+            <span className="text-xs text-text-muted">Generated sets:</span>
+            <span className="text-sm font-bold text-accent-orange">{schemeText(r)}</span>
+          </div>
+
+          <div>
+            <Label>Why this stretch</Label>
+            <textarea
+              value={r.why ?? ""}
+              onChange={(e) => updateState({ why: e.target.value })}
+              rows={2}
+              placeholder="e.g. Opens hip flexors and restores resting tissue length after heavy squatting."
+              className={`${inputCls} py-3 text-sm resize-none`}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ================= FOLDED MORE OPTIONS ================= */}
+      <details className="rounded-2xl bg-white/[0.02] border border-border-subtle p-4 group">
+        <summary className="font-semibold text-sm text-text-muted group-hover:text-white cursor-pointer flex items-center justify-between list-none">
+          <span className="flex items-center gap-2">
+            <Sparkles className="size-4 text-accent-orange" /> More options (Tempo, RIR, Technique, Videos, Tips)
+          </span>
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+        </summary>
+
+        <div className="mt-4 pt-4 border-t border-border-subtle space-y-4">
+          {/* Custom Sets text toggle */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label hint="manual text override">Custom text instead of generated</Label>
+              <button
+                type="button"
+                onClick={() => updateState({ custom: !r.custom })}
+                className={`text-xs px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
+                  r.custom ? "bg-accent-orange text-black" : "bg-white/10 text-white"
+                }`}
+              >
+                {r.custom ? "Custom ON" : "Custom OFF"}
+              </button>
+            </div>
+            {r.custom && (
+              <textarea
+                value={r.customSets ?? r.sets}
+                onChange={(e) => setR({ ...r, customSets: e.target.value, sets: e.target.value })}
+                rows={3}
+                placeholder="e.g. 2 warm up + 3 × 10-15 Reps (Drop set on last set)"
+                className={`${inputCls} py-2.5 text-sm resize-none`}
+              />
+            )}
+          </div>
+
+          {/* Tempo */}
+          <div>
+            <Label hint="speed of rep (eccentric / pause / concentric)">Tempo</Label>
+            <ChipSelect
+              value={r.tempo ?? ""}
+              options={[
+                { label: "Standard (Controlled)", value: "" },
+                { label: "3-0-1-0 (3s down)", value: "3-0-1-0" },
+                { label: "4-1-1-0 (4s down, 1s pause)", value: "4-1-1-0" },
+                { label: "2-2-1-0 (2s hold)", value: "2-2-1-0" },
+              ]}
+              onChange={(v) => updateState({ tempo: v })}
+            />
+          </div>
+
+          {/* RIR */}
+          <div>
+            <Label hint="reps in reserve before failure">Reps In Reserve (RIR)</Label>
+            <ChipSelect
+              value={String(r.rir ?? "")}
+              options={[
+                { label: "None specified", value: "" },
+                { label: "2-3 RIR (Safe buffer)", value: "2-3" },
+                { label: "1-2 RIR (Near failure)", value: "1-2" },
+                { label: "0 RIR (Absolute failure)", value: "0" },
+              ]}
+              onChange={(v) => updateState({ rir: v })}
+            />
+          </div>
+
+          {/* Technique */}
+          <div>
+            <Label hint="special technique">Intensity technique</Label>
+            <ChipSelect
+              value={r.technique ?? ""}
+              options={[
+                { label: "None", value: "" },
+                { label: "Drop set", value: "drop set" },
+                { label: "Double drop set", value: "double drop" },
+                { label: "Pause reps", value: "pause" },
+                { label: "Partials", value: "partials" },
+              ]}
+              onChange={(v) => updateState({ technique: v })}
+            />
+          </div>
+
+          {/* Video links */}
+          <div>
+            <Label>Video links</Label>
+            <div className="space-y-2">
+              {r.links.map((l, i) => (
+                <div key={i} className="rounded-xl border border-border-subtle p-3 space-y-2 bg-black/30">
+                  <div className="flex gap-2">
+                    <input
+                      value={l.label}
+                      onChange={(e) => setLink(i, { label: e.target.value })}
+                      placeholder="Button label (Video / Technique)"
+                      className={`${inputCls} h-11 text-sm`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setR({ ...r, links: r.links.filter((_, j) => j !== i) })}
+                      aria-label="Remove link"
+                      className="size-11 min-h-[44px] shrink-0 grid place-items-center rounded-xl bg-danger/10 text-danger cursor-pointer"
+                    >
+                      <X className="size-5" />
+                    </button>
+                  </div>
+                  <input
+                    value={l.url}
+                    onChange={(e) => setLink(i, { url: e.target.value })}
+                    placeholder="YouTube or Instagram URL"
+                    inputMode="url"
+                    className={`${inputCls} h-11 text-sm`}
+                  />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setR({
+                    ...r,
+                    links: [
+                      ...r.links,
+                      { label: r.links.length ? "Reference " + (r.links.length + 1) : "Video", url: "" },
+                    ],
+                  })
+                }
+                className="h-11 min-h-[44px] px-4 rounded-xl bg-white/5 text-white font-semibold text-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="size-4" /> Add video link
+              </button>
+            </div>
+          </div>
+
+          {/* Tips for client */}
+          <div>
+            <Label>Tips for the client</Label>
+            <LineList
+              lines={r.cues.map((c) => c.text)}
+              onChange={(l) => setR({ ...r, cues: l.map((text) => ({ text })) })}
+              placeholder="e.g. Pause at top for 2 seconds"
+              addLabel="Pick"
+            />
+            <div className="mt-2">
+              <Hint />
+            </div>
+          </div>
+        </div>
+      </details>
+    </Sheet>
+  )
+}
+
+/** Superset / Group details sheet. Coach can edit group note and rest after round. */
+export function GroupSheet({
+  groupLabel,
+  note,
+  restAfterSec,
+  onSave,
+  onUngroup,
+  onClose,
+}: {
+  groupLabel: string
+  note: string
+  restAfterSec?: number
+  onSave: (note: string, restAfterSec: number) => void
+  onUngroup: () => void
+  onClose: () => void
+}) {
+  const [gNote, setGNote] = useState(note)
+  const [rest, setRest] = useState(restAfterSec ?? 90)
+
+  const save = () => {
+    onSave(gNote.trim(), rest)
+    onClose()
+  }
+
+  return (
+    <Sheet
+      title={`${groupLabel} Settings`}
+      onClose={save}
+      footer={
+        <div className="space-y-2">
+          <Done onClick={save} />
+          <button
+            type="button"
+            onClick={() => {
+              onUngroup()
+              onClose()
+            }}
+            className="w-full h-12 min-h-[48px] rounded-xl bg-danger/10 text-danger font-bold text-sm cursor-pointer"
+          >
+            Ungroup these exercises
+          </button>
+        </div>
+      }
+    >
+      <div>
+        <Label hint="shared instruction for the group">Shared round note</Label>
+        <textarea
+          value={gNote}
+          onChange={(e) => setGNote(e.target.value)}
+          rows={3}
+          placeholder="e.g. Perform exercises back-to-back with zero rest. Take full rest after the round."
+          className={`${inputCls} py-3 text-base resize-none`}
+        />
+        <div className="mt-2">
+          <Label hint="quick technique notes">Common notes</Label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              "Perform 1 exercise followed immediately by another with minimal rest.",
+              "Perform all 3 exercises consecutively before resting.",
+              "Continuous circuit. Rest 90-120s only after completing all exercises in round.",
+            ].map((n, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setGNote(n)}
+                className="text-left p-2.5 rounded-xl bg-white/5 border border-border-subtle text-xs text-text-muted hover:text-white cursor-pointer"
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
       <div>
-        <Label>Tips for the client</Label>
-        <LineList lines={r.cues.map((c) => c.text)} onChange={(l) => setR({ ...r, cues: l.map((text) => ({ text })) })} placeholder="e.g. Pause at top for 2 seconds" addLabel="Pick" />
-        <div className="mt-2"><Hint /></div>
+        <Label hint="rest between rounds">Rest after the round</Label>
+        <ChipSelect
+          value={rest}
+          options={[
+            { label: "60s", value: 60 },
+            { label: "90s", value: 90 },
+            { label: "2 min", value: 120 },
+            { label: "3 min", value: 180 },
+          ]}
+          onChange={setRest}
+        />
+      </div>
+    </Sheet>
+  )
+}
+
+/** Multi-select sheet to create a Superset / Tri-set / Giant set from a day's exercises. */
+export function SupersetPickerSheet({
+  dayTitle,
+  exercises,
+  onGroup,
+  onClose,
+}: {
+  dayTitle: string
+  exercises: WorkoutRow[]
+  onGroup: (selectedIds: string[]) => void
+  onClose: () => void
+}) {
+  const [sel, setSel] = useState<string[]>([])
+
+  const toggle = (id: string) => {
+    setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
+  }
+
+  const groupType =
+    sel.length === 2 ? "SUPERSET (2)" : sel.length === 3 ? "TRI-SET (3)" : sel.length >= 4 ? `GIANT SET (${sel.length})` : ""
+
+  const handleCreate = () => {
+    if (sel.length >= 2) {
+      onGroup(sel)
+      onClose()
+    }
+  }
+
+  return (
+    <Sheet
+      title="Create Superset"
+      onClose={onClose}
+      footer={
+        <button
+          type="button"
+          disabled={sel.length < 2}
+          onClick={handleCreate}
+          className="w-full h-14 min-h-[56px] rounded-2xl bg-accent-orange text-black font-bold text-lg disabled:opacity-30 cursor-pointer"
+        >
+          {sel.length >= 2 ? `Group as ${groupType}` : "Select at least 2 exercises"}
+        </button>
+      }
+    >
+      <p className="text-sm text-text-muted">
+        Select 2 or more exercises from <span className="text-white font-semibold">{dayTitle}</span> to group into a superset.
+      </p>
+
+      <div className="space-y-2 mt-2">
+        {exercises.map((r, i) => {
+          const isSelected = sel.includes(r.id)
+          return (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => toggle(r.id)}
+              className={`w-full text-left p-4 rounded-2xl border transition-colors flex items-center justify-between min-h-[56px] cursor-pointer ${
+                isSelected
+                  ? "bg-accent-orange/15 border-accent-orange text-white"
+                  : "bg-white/[0.03] border-border-subtle text-white/80"
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <span
+                  className={`size-7 rounded-full grid place-items-center text-xs font-bold shrink-0 ${
+                    isSelected ? "bg-accent-orange text-black" : "bg-white/10 text-white"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <span className="font-semibold text-base truncate">{plain(r.name) || "Unnamed"}</span>
+              </div>
+              <div
+                className={`size-6 rounded-full border-2 grid place-items-center shrink-0 ${
+                  isSelected ? "bg-accent-orange border-accent-orange" : "border-white/30"
+                }`}
+              >
+                {isSelected && <Check className="size-3.5 text-black stroke-[3]" />}
+              </div>
+            </button>
+          )
+        })}
       </div>
     </Sheet>
   )
 }
 
 /** Red full-width line (OR / walk / drop set). */
-export function BannerSheet({ text, library, onSave, onClose }: { text: string; library: LibraryItem[]; onSave: (t: string) => void; onClose: () => void }) {
+export function BannerSheet({
+  text,
+  library,
+  onSave,
+  onClose,
+}: {
+  text: string
+  library: LibraryItem[]
+  onSave: (t: string) => void
+  onClose: () => void
+}) {
   const [t, setT] = useState(text)
-  const save = () => { onSave(t.trim()); onClose() }
+  const save = () => {
+    onSave(t.trim())
+    onClose()
+  }
+
+  const defaultBanners = [
+    "*OR (Either Complete Option 1 OR Complete Option 2)*",
+    "*10-15 minutes of Normal walk within 10-15 minutes of finishing Meal 1*",
+    "*AFTER Minimum 30 - 60 minutes Gap*",
+    "*Mechanical Drop SET*",
+    "*SUPER SET*",
+  ]
+
   return (
     <Sheet title="Red line" onClose={save} footer={<Done onClick={save} />}>
-      <textarea autoFocus value={t} onChange={(e) => setT(e.target.value)} rows={3} className={`${inputCls} py-3 resize-none`} placeholder="*OR (Either Complete Option 1 OR Complete Option 2)*" />
+      <textarea
+        autoFocus
+        value={t}
+        onChange={(e) => setT(e.target.value)}
+        rows={3}
+        className={`${inputCls} py-3 text-base resize-none`}
+        placeholder="*OR (Either Complete Option 1 OR Complete Option 2)*"
+      />
       <Hint />
-      <Label>Your usual lines</Label>
-      <Chips items={uniq([...byKind(library, "banner").map((i) => i.name), ...DEFAULT_BANNERS]).slice(0, 16)} onPick={setT} />
+      <Label>Common lines</Label>
+      <div className="flex flex-wrap gap-2">
+        {uniq([...byKind(library, "banner").map((i) => i.name), ...defaultBanners])
+          .slice(0, 16)
+          .map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setT(b)}
+              className="h-11 min-h-[44px] px-3.5 rounded-xl bg-white/5 border border-border-subtle text-xs font-semibold cursor-pointer text-left"
+            >
+              {b}
+            </button>
+          ))}
+      </div>
     </Sheet>
   )
 }
 
 /** One meal (or option of a meal): name, foods, supplements. */
-export function MealSheet({ row, library, onSave, onClose }: { row: DietRow; library: LibraryItem[]; onSave: (r: DietRow) => void; onClose: () => void }) {
+export function MealSheet({
+  row,
+  library,
+  onSave,
+  onClose,
+}: {
+  row: DietRow
+  library: LibraryItem[]
+  onSave: (r: DietRow) => void
+  onClose: () => void
+}) {
   const [r, setR] = useState<DietRow>(row)
-  const save = () => { onSave({ ...r, items: r.items.filter((i) => i.text.trim()), supplements: r.supplements.filter((i) => i.text.trim()) }); onClose() }
+  const save = () => {
+    onSave({
+      ...r,
+      items: r.items.filter((i) => i.text.trim()),
+      supplements: r.supplements.filter((i) => i.text.trim()),
+    })
+    onClose()
+  }
   return (
     <Sheet title="Meal" onClose={save} footer={<Done onClick={save} />}>
       <div className="grid grid-cols-3 gap-2">
-        <div className="col-span-3 sm:col-span-1"><Label>Meal</Label><input value={r.label} onChange={(e) => setR({ ...r, label: e.target.value })} placeholder="MEAL 1" className={`${inputCls} h-12 font-semibold`} /></div>
-        <div className="col-span-2 sm:col-span-1"><Label>Time / name</Label><input value={r.sub} onChange={(e) => setR({ ...r, sub: e.target.value })} placeholder="Breakfast" className={`${inputCls} h-12`} /></div>
-        <div><Label>Option</Label><input value={r.option} onChange={(e) => setR({ ...r, option: e.target.value })} placeholder="Option 1" className={`${inputCls} h-12`} /></div>
+        <div className="col-span-3 sm:col-span-1">
+          <Label>Meal</Label>
+          <input
+            value={r.label}
+            onChange={(e) => setR({ ...r, label: e.target.value })}
+            placeholder="MEAL 1"
+            className={`${inputCls} h-12 font-semibold`}
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <Label>Time / name</Label>
+          <input
+            value={r.sub}
+            onChange={(e) => setR({ ...r, sub: e.target.value })}
+            placeholder="Breakfast"
+            className={`${inputCls} h-12`}
+          />
+        </div>
+        <div>
+          <Label>Option</Label>
+          <input
+            value={r.option}
+            onChange={(e) => setR({ ...r, option: e.target.value })}
+            placeholder="Option 1"
+            className={`${inputCls} h-12`}
+          />
+        </div>
       </div>
       <div>
         <Label>Foods</Label>
-        <LineList lines={r.items.map((i) => i.text)} onChange={(l) => setR({ ...r, items: l.map((text) => ({ text })) })} placeholder="e.g. 200ml Nestle Skimmed Milk" library={byKind(library, "food")} addLabel="Pick foods" />
+        <LineList
+          lines={r.items.map((i) => i.text)}
+          onChange={(l) => setR({ ...r, items: l.map((text) => ({ text })) })}
+          placeholder="e.g. 200ml Nestle Skimmed Milk"
+          library={byKind(library, "food")}
+          addLabel="Pick foods"
+        />
       </div>
       <div>
         <Label>Supplements</Label>
-        <LineList lines={r.supplements.map((i) => i.text)} onChange={(l) => setR({ ...r, supplements: l.map((text) => ({ text })) })} placeholder="e.g. 1 Omega 3 (With or After Meal)" library={byKind(library, "supplement")} addLabel="Pick supplements" />
+        <LineList
+          lines={r.supplements.map((i) => i.text)}
+          onChange={(l) => setR({ ...r, supplements: l.map((text) => ({ text })) })}
+          placeholder="e.g. 1 Omega 3 (With or After Meal)"
+          library={byKind(library, "supplement")}
+          addLabel="Pick supplements"
+        />
       </div>
-      <p className="text-xs text-text-muted">Tip: *4* makes the 4 red. Shop links from your old plans come along when you pick from your list.</p>
+      <p className="text-xs text-text-muted">
+        Tip: *4* makes the 4 red. Shop links from your old plans come along when you pick from your list.
+      </p>
     </Sheet>
   )
 }
 
 /** Page-1 client table + measurements. Filled from the app, every cell editable. */
-export function HeaderSheet({ header, onSave, onClose }: { header: PlanHeader; onSave: (h: PlanHeader) => void; onClose: () => void }) {
+export function HeaderSheet({
+  header,
+  onSave,
+  onClose,
+}: {
+  header: PlanHeader
+  onSave: (h: PlanHeader) => void
+  onClose: () => void
+}) {
   const [h, setH] = useState<PlanHeader>(header)
-  const save = () => { onSave(h); onClose() }
-  const setRow = (i: number, p: Partial<PlanHeader["rows"][number]>) => setH({ ...h, rows: h.rows.map((r, j) => (j === i ? { ...r, ...p } : r)) })
+  const save = () => {
+    onSave(h)
+    onClose()
+  }
+  const setRow = (i: number, p: Partial<PlanHeader["rows"][number]>) =>
+    setH({ ...h, rows: h.rows.map((r, j) => (j === i ? { ...r, ...p } : r)) })
   const setVal = (mi: number, di: number, v: string) =>
-    setH({ ...h, measures: h.measures.map((m, j) => (j === mi ? { ...m, values: h.dates.map((_, k) => (k === di ? v : m.values[k] ?? "")) } : m)) })
+    setH({
+      ...h,
+      measures: h.measures.map((m, j) =>
+        j === mi ? { ...m, values: h.dates.map((_, k) => (k === di ? v : m.values[k] ?? "")) } : m,
+      ),
+    })
   return (
     <Sheet title="Client details" onClose={save} footer={<Done onClick={save} />}>
       <label className="flex items-center gap-3 text-base cursor-pointer">
-        <input type="checkbox" checked={h.show} onChange={(e) => setH({ ...h, show: e.target.checked })} className="size-6 accent-[#FF6A1A]" /> Show on page 1
+        <input
+          type="checkbox"
+          checked={h.show}
+          onChange={(e) => setH({ ...h, show: e.target.checked })}
+          className="size-6 accent-[#FF6A1A]"
+        />{" "}
+        Show on page 1
       </label>
       <div className="space-y-2">
         {h.rows.map((r, i) => (
           <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-            <input value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} className={`${inputCls} h-11 text-sm text-text-muted`} />
-            <input value={r.value} onChange={(e) => setRow(i, { value: e.target.value })} className={`${inputCls} h-11 text-sm font-semibold`} />
-            <button type="button" onClick={() => setH({ ...h, rows: h.rows.filter((_, j) => j !== i) })} aria-label="Remove" className="size-11 grid place-items-center rounded-lg bg-danger/10 text-danger cursor-pointer"><X className="size-4" /></button>
+            <input
+              value={r.label}
+              onChange={(e) => setRow(i, { label: e.target.value })}
+              className={`${inputCls} h-11 text-sm text-text-muted`}
+            />
+            <input
+              value={r.value}
+              onChange={(e) => setRow(i, { value: e.target.value })}
+              className={`${inputCls} h-11 text-sm font-semibold`}
+            />
+            <button
+              type="button"
+              onClick={() => setH({ ...h, rows: h.rows.filter((_, j) => j !== i) })}
+              aria-label="Remove"
+              className="size-11 min-h-[44px] grid place-items-center rounded-lg bg-danger/10 text-danger cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
           </div>
         ))}
-        <button type="button" onClick={() => setH({ ...h, rows: [...h.rows, { label: "", value: "" }] })} className="h-11 px-4 rounded-xl bg-white/5 text-white font-semibold text-sm flex items-center gap-1.5 cursor-pointer"><Plus className="size-4" /> Add row</button>
+        <button
+          type="button"
+          onClick={() => setH({ ...h, rows: [...h.rows, { label: "", value: "" }] })}
+          className="h-11 min-h-[44px] px-4 rounded-xl bg-white/5 text-white font-semibold text-sm flex items-center gap-1.5 cursor-pointer"
+        >
+          <Plus className="size-4" /> Add row
+        </button>
       </div>
       <div>
         <Label>Measurements</Label>
@@ -150,16 +1058,41 @@ export function HeaderSheet({ header, onSave, onClose }: { header: PlanHeader; o
               <tr>
                 <th />
                 {h.dates.map((d, i) => (
-                  <th key={i} className="p-1"><input value={d} onChange={(e) => setH({ ...h, dates: h.dates.map((x, j) => (j === i ? e.target.value : x)) })} className={`${inputCls} h-10 w-28 text-xs text-center`} /></th>
+                  <th key={i} className="p-1">
+                    <input
+                      value={d}
+                      onChange={(e) =>
+                        setH({ ...h, dates: h.dates.map((x, j) => (j === i ? e.target.value : x)) })
+                      }
+                      className={`${inputCls} h-10 w-28 text-xs text-center`}
+                    />
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {h.measures.map((m, mi) => (
                 <tr key={mi}>
-                  <td className="p-1"><input value={m.label} onChange={(e) => setH({ ...h, measures: h.measures.map((x, j) => (j === mi ? { ...x, label: e.target.value } : x)) })} className={`${inputCls} h-10 w-36 text-xs`} /></td>
+                  <td className="p-1">
+                    <input
+                      value={m.label}
+                      onChange={(e) =>
+                        setH({
+                          ...h,
+                          measures: h.measures.map((x, j) => (j === mi ? { ...x, label: e.target.value } : x)),
+                        })
+                      }
+                      className={`${inputCls} h-10 w-36 text-xs`}
+                    />
+                  </td>
                   {h.dates.map((_, di) => (
-                    <td key={di} className="p-1"><input value={m.values[di] ?? ""} onChange={(e) => setVal(mi, di, e.target.value)} className={`${inputCls} h-10 w-28 text-center font-semibold`} /></td>
+                    <td key={di} className="p-1">
+                      <input
+                        value={m.values[di] ?? ""}
+                        onChange={(e) => setVal(mi, di, e.target.value)}
+                        className={`${inputCls} h-10 w-28 text-center font-semibold`}
+                      />
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -167,9 +1100,35 @@ export function HeaderSheet({ header, onSave, onClose }: { header: PlanHeader; o
           </table>
         </div>
         <div className="flex gap-2 mt-2 flex-wrap">
-          <button type="button" onClick={() => setH({ ...h, dates: [...h.dates, ""] })} className="h-10 px-3 rounded-xl bg-white/5 text-sm font-semibold cursor-pointer">+ Date column</button>
-          <button type="button" onClick={() => setH({ ...h, measures: [...h.measures, { label: "", values: [] }] })} className="h-10 px-3 rounded-xl bg-white/5 text-sm font-semibold cursor-pointer">+ Measurement</button>
-          {h.dates.length > 0 && <button type="button" onClick={() => setH({ ...h, dates: h.dates.slice(0, -1), measures: h.measures.map((m) => ({ ...m, values: m.values.slice(0, h.dates.length - 1) })) })} className="h-10 px-3 rounded-xl bg-danger/10 text-danger text-sm font-semibold cursor-pointer">Remove last date</button>}
+          <button
+            type="button"
+            onClick={() => setH({ ...h, dates: [...h.dates, ""] })}
+            className="h-11 min-h-[44px] px-3.5 rounded-xl bg-white/5 text-sm font-semibold cursor-pointer"
+          >
+            + Date column
+          </button>
+          <button
+            type="button"
+            onClick={() => setH({ ...h, measures: [...h.measures, { label: "", values: [] }] })}
+            className="h-11 min-h-[44px] px-3.5 rounded-xl bg-white/5 text-sm font-semibold cursor-pointer"
+          >
+            + Measurement
+          </button>
+          {h.dates.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                setH({
+                  ...h,
+                  dates: h.dates.slice(0, -1),
+                  measures: h.measures.map((m) => ({ ...m, values: m.values.slice(0, h.dates.length - 1) })),
+                })
+              }
+              className="h-11 min-h-[44px] px-3.5 rounded-xl bg-danger/10 text-danger text-sm font-semibold cursor-pointer"
+            >
+              Remove last date
+            </button>
+          )}
         </div>
       </div>
     </Sheet>
@@ -177,12 +1136,30 @@ export function HeaderSheet({ header, onSave, onClose }: { header: PlanHeader; o
 }
 
 export type Action = { label: string; danger?: boolean; run: () => void }
-export function ActionSheet({ title, actions, onClose }: { title: string; actions: Action[]; onClose: () => void }) {
+export function ActionSheet({
+  title,
+  actions,
+  onClose,
+}: {
+  title: string
+  actions: Action[]
+  onClose: () => void
+}) {
   return (
     <Sheet title={title} onClose={onClose}>
       <div className="grid gap-2 pb-2">
         {actions.map((a) => (
-          <button key={a.label} type="button" onClick={() => { a.run(); onClose() }} className={`h-13 min-h-[52px] rounded-xl font-semibold text-base text-left px-4 cursor-pointer ${a.danger ? "bg-danger/10 text-danger" : "bg-white/5 text-white"}`}>
+          <button
+            key={a.label}
+            type="button"
+            onClick={() => {
+              a.run()
+              onClose()
+            }}
+            className={`h-14 min-h-[52px] rounded-xl font-semibold text-base text-left px-4 cursor-pointer active:scale-[0.99] transition-transform ${
+              a.danger ? "bg-danger/10 text-danger" : "bg-white/5 text-white hover:bg-white/10"
+            }`}
+          >
             {a.label}
           </button>
         ))}
@@ -191,12 +1168,27 @@ export function ActionSheet({ title, actions, onClose }: { title: string; action
   )
 }
 
-/** Pick several exercises / warm-ups at once, or type a new one. */
-export function AddRowsPicker({ kind, library, onAdd, onNew, onClose }: { kind: "exercise" | "warmup"; library: LibraryItem[]; onAdd: (items: LibraryItem[]) => void; onNew: () => void; onClose: () => void }) {
+/** Pick several exercises / warm-ups at once, or type a new one. Supports muscle filtering. */
+export function AddRowsPicker({
+  kind,
+  library,
+  initialMuscle,
+  onAdd,
+  onNew,
+  onClose,
+}: {
+  kind: "exercise" | "warmup"
+  library: LibraryItem[]
+  initialMuscle?: string
+  onAdd: (items: LibraryItem[]) => void
+  onNew: () => void
+  onClose: () => void
+}) {
   return (
     <LibraryPicker
-      title={kind === "exercise" ? "Add exercises" : "Add warm-ups"}
+      title={kind === "exercise" ? "Add Exercises" : "Add Warm-ups & Stretches"}
       items={byKind(library, kind)}
+      initialMuscle={initialMuscle}
       multi
       onNew={onNew}
       onPick={onAdd}
