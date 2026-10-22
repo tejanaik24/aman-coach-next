@@ -171,8 +171,8 @@ export default function PlansLibraryPage() {
           </section>
         ))}
 
-        <button type="button" onClick={() => router.push("/plans/builder")} className="w-full h-12 rounded-xl bg-white/5 text-text-muted font-semibold text-base cursor-pointer">
-          Build a plan inside the app (advanced)
+        <button type="button" onClick={() => router.push("/plans/library")} className="w-full h-14 rounded-2xl bg-accent-orange/15 border border-accent-orange/40 text-accent-orange font-bold text-base cursor-pointer">
+          My plan library & templates
         </button>
       </div>
 

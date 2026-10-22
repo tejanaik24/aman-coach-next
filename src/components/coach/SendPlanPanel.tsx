@@ -7,6 +7,8 @@ import { Dumbbell, Salad, FileText, MessageCircle, Upload, Bookmark, Trash2, Ref
 import { createClient } from "@/lib/supabase/client"
 import { waLink } from "@/lib/quick-manage"
 import { openUrl } from "@/lib/utils"
+import { uploadPlanFile, schedulePlanUpdateReminder } from "@/lib/plan/send"
+import StartPlan from "@/components/plan/StartPlan"
 
 type Kind = "workout" | "diet" | "cycle"
 
@@ -27,13 +29,12 @@ interface Props {
   showCycle?: boolean // contest-prep clients get a third PDF: the cycle
 }
 
-const BUCKET = "client-documents"
 const MAX_BYTES = 15 * 1024 * 1024
 const KIND_LABEL: Record<Kind, string> = { workout: "Workout plan", diet: "Diet plan", cycle: "Cycle plan" }
-const inWeeks = (w: number) => format(new Date(Date.now() + w * 7 * 86400000), "yyyy-MM-dd")
+export const inWeeks = (w: number) => format(new Date(Date.now() + w * 7 * 86400000), "yyyy-MM-dd")
 
 // Aman picks the exact date he wants to be reminded to update this plan ("" = no reminder)
-function ReminderPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function ReminderPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div>
       <p className="text-text-muted text-xs font-semibold mb-2">Remind me (only you) to update on</p>
@@ -99,51 +100,12 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     if (fileRef.current) fileRef.current.value = ""
   }
 
-  async function schedulePlanUpdateReminder(coachId: string, kind: Kind, dueDate: string) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return
-    const supabase = createClient()
-    const noteText = `Update ${kind} plan`
-
-    // Check if an open plan_update for the same client and kind already exists
-    const { data: existing } = await supabase
-      .from("followups")
-      .select("id, note")
-      .eq("coach_id", coachId)
-      .eq("client_id", clientId)
-      .eq("type", "plan_update")
-      .is("done_at", null)
-
-    const match = ((existing ?? []) as { id: string; note: string | null }[]).find((f) => (f.note ?? "").toLowerCase().includes(kind))
-
-    if (match) {
-      await supabase.from("followups").update({ due_date: dueDate, note: noteText, auto_created: false }).eq("id", match.id)
-    } else {
-      await supabase.from("followups").insert({
-        coach_id: coachId,
-        client_id: clientId,
-        type: "plan_update",
-        due_date: dueDate,
-        note: noteText,
-        auto_created: false,
-      })
-    }
-  }
-
   async function upload() {
     if (!pending) return
     setBusy(true)
     try {
-      const res = await fetch("/api/coach/documents/upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: pending.file.name }),
-      })
-      const { path, token, error } = await res.json()
-      if (!res.ok) throw new Error(error ?? "Upload failed")
-
+      const path = await uploadPlanFile(pending.file, pending.file.name)
       const supabase = createClient()
-      const up = await supabase.storage.from(BUCKET).uploadToSignedUrl(path, token, pending.file)
-      if (up.error) throw up.error
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not signed in")
@@ -153,7 +115,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       const ins = await supabase.from("client_documents").insert(rows)
       if (ins.error) throw ins.error
 
-      await schedulePlanUpdateReminder(user.id, pending.kind, reminderDate)
+      await schedulePlanUpdateReminder(user.id, clientId, pending.kind, reminderDate)
 
       toast.success("Saved. Now tap WhatsApp to tell the client.")
       setPending(null)
@@ -179,7 +141,7 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
       })
       if (error) throw error
 
-      await schedulePlanUpdateReminder(user.id, t.kind, dueDate)
+      await schedulePlanUpdateReminder(user.id, clientId, t.kind, dueDate)
 
       toast.success(`${t.title} added for ${clientName.trim()}`)
       setSelectedTemplate(null)
@@ -217,12 +179,15 @@ export default function SendPlanPanel({ clientId, clientName, phone, showCycle =
     <div className="space-y-4">
       <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
 
+      <StartPlan clientId={clientId} />
+      <p className="text-text-muted text-sm pt-1">Or send a PDF you already have:</p>
+
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" onClick={() => choose("workout")} className="h-24 rounded-2xl bg-accent-orange text-black font-bold text-base flex flex-col items-center justify-center gap-1.5 cursor-pointer">
-          <Dumbbell className="size-6" /> Send workout plan
+        <button type="button" onClick={() => choose("workout")} className="h-16 rounded-2xl bg-white/10 text-white font-semibold text-base flex items-center justify-center gap-2 cursor-pointer">
+          <Dumbbell className="size-5" /> Upload workout PDF
         </button>
-        <button type="button" onClick={() => choose("diet")} className="h-24 rounded-2xl bg-accent-orange text-black font-bold text-base flex flex-col items-center justify-center gap-1.5 cursor-pointer">
-          <Salad className="size-6" /> Send diet plan
+        <button type="button" onClick={() => choose("diet")} className="h-16 rounded-2xl bg-white/10 text-white font-semibold text-base flex items-center justify-center gap-2 cursor-pointer">
+          <Salad className="size-5" /> Upload diet PDF
         </button>
         {showCycle && (
           <button type="button" onClick={() => choose("cycle")} className="col-span-2 h-16 rounded-2xl bg-white/10 border border-accent-orange/40 text-white font-bold text-base flex items-center justify-center gap-2 cursor-pointer">
