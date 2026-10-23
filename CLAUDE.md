@@ -216,3 +216,17 @@ Pending: DB CHECK on fees (needs Teja "YES-CONSTRAINT"); Aman's real photos (her
 - Code (e0e77f05): safe login redirects, header-only timing-safe automation secrets, ownership checks, push endpoint allowlist, /messages + /payments behind login.
 - DB (migrations 20261019000004 + 20261019000005, applied on VPS): role locked, signup = client only, RLS on all 27 tables, tightened inserts, profiles column-level update (name, notifications_enabled, must_reset_password).
 - Open (low): in-memory rate limits on public forms/forgot-password; no CAPTCHA.
+
+# Session 2026-10-23 (afternoon) — Aman's 5 asks (DEPLOYED, not pushed to GitHub)
+
+## What's Done
+- Slow app: removed ~730 KB of JS from every screen (agentation dev tool, jspdf now lazy, plan JSON lazy), fewer queries on client detail + plan library, sw.js v27 caches static files only. Commit aa039bda.
+- Template `client_message_alert` created + APPROVED (Utility). Inbound business-number messages now alert Aman's personal WhatsApp (before: failed with #132001 every time). `akf_team_message` also approved, used by "Message a number".
+- PDF rules + cardio pages redesigned (section cards, 3-col vegetable chips, cardio stat cards "56000 STEPS / WEEK"). Split "*DIGITAL FOOD*\n*WEIGHING SCALE.*" line auto-joined in renderer + fixed in seed. Commit e0499be0. Also affects workout "Important Points" page (same renderer).
+- Library: built-in exercises can now be edited (saves coach copy) and deleted (saves hidden copy, `data.hidden`). Commit after e0499be0.
+- Imported Aman's "WORKOUT DATA" PDF (21 pages): 123 new coach_library rows (`data.source = "Aman WORKOUT DATA pdf 23 Oct"`), 18 skipped because already saved. 33 YouTube links are dead (oEmbed + thumbnail both 404) → kept in `data.deadLinks`, red note in library list until he adds a working link. 6 Instagram links unchecked.
+
+## What's Pending
+- Razorpay: waiting on Aman's Payment Page link → set NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK in Vercel + redeploy. Only test keys exist.
+- Send Aman the WhatsApp update (drafted in chat 23 Oct).
+- Push to GitHub.
