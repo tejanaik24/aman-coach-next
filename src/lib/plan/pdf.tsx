@@ -4,6 +4,7 @@
 // day tables / meal tables, red banners, linked products and videos), cleaner look.
 import { Document, Page, View, Text, Link, Image, Font, StyleSheet, Svg, Polygon, pdf } from "@react-pdf/renderer"
 import type { Style } from "@react-pdf/types"
+import type { ReactNode } from "react"
 import { format } from "date-fns"
 import {
   tokenize,
@@ -175,6 +176,24 @@ const s = StyleSheet.create({
     textDecoration: "none",
   },
   bullet: { flexDirection: "row", marginTop: 2 },
+  // Rules / cardio pages
+  rulesBand: { backgroundColor: C.band, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 16, marginTop: 4, marginBottom: 12 },
+  rulesBandTitle: { fontFamily: "Fraunces", fontStyle: "italic", fontWeight: 600, fontSize: 19, color: "#FFFFFF", lineHeight: 1.15 },
+  rulesBandBar: { width: 36, height: 3, borderRadius: 2, backgroundColor: C.orange, marginTop: 7 },
+  ruleCard: { borderWidth: 0.8, borderColor: C.rule, borderRadius: 8, marginBottom: 10, backgroundColor: "#FFFFFF" },
+  ruleCardHead: { flexDirection: "row", alignItems: "center", backgroundColor: C.tint, borderTopLeftRadius: 8, borderTopRightRadius: 8, paddingVertical: 7, paddingHorizontal: 12, marginBottom: 6 },
+  ruleNum: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.orange, color: "#FFFFFF", fontSize: 9.5, fontWeight: 700, textAlign: "center", paddingTop: 3.5, marginRight: 9 },
+  ruleCardTitle: { flex: 1, fontWeight: 700, fontSize: 10.5, letterSpacing: 0.9, color: C.ink },
+  ruleBullet: { flexDirection: "row", marginTop: 4, fontSize: 10, lineHeight: 1.5 },
+  ruleSub: { fontWeight: 700, fontSize: 9.5, color: C.orange, letterSpacing: 0.6, marginTop: 9, marginBottom: 1 },
+  ruleCallout: { backgroundColor: C.tint, borderLeftWidth: 2.5, borderLeftColor: C.orange, borderRadius: 4, paddingVertical: 6, paddingHorizontal: 9, marginTop: 7, fontSize: 10, lineHeight: 1.5 },
+  chipGrid: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
+  chip: { width: "33.33%", flexDirection: "row", paddingVertical: 2.5, paddingRight: 6, fontSize: 10 },
+  statCard: { flexDirection: "row", alignItems: "stretch", borderWidth: 0.8, borderColor: C.rule, borderRadius: 8, marginBottom: 8, backgroundColor: "#FFFFFF" },
+  statLeft: { width: 92, backgroundColor: C.tint, borderTopLeftRadius: 8, borderBottomLeftRadius: 8, alignItems: "center", justifyContent: "center", paddingVertical: 10, paddingHorizontal: 6 },
+  statValue: { fontFamily: "Fraunces", fontWeight: 700, fontSize: 19, color: C.orange, lineHeight: 1.05, textAlign: "center" },
+  statUnit: { fontSize: 7.5, fontWeight: 700, letterSpacing: 1.4, color: C.soft, marginTop: 3 },
+  statText: { flex: 1, paddingVertical: 9, paddingHorizontal: 11, fontSize: 10, lineHeight: 1.5, color: C.ink },
   dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: C.orange, marginTop: 5, marginRight: 6 },
   sets: { fontWeight: 700, textAlign: "center", fontSize: 9.5 },
   setMetaPill: {
@@ -233,41 +252,157 @@ function Bullets({
   )
 }
 
-/** Markdown-lite rules page: "- " bullet, "1. " numbered, CAPS line = heading. */
-function RulesText({ md }: { md: string }) {
+/** "*CARDIO, STEPS & BREATHING*" = page title band. */
+function RulesBand({ text }: { text: string }) {
   return (
-    <View>
-      {md
-        .split("\n")
-        .filter((l) => l.trim())
-        .map((l, i) => {
-          const t = l.trim()
-          if (t.startsWith("- "))
-            return (
-              <View key={i} style={[s.bullet, { marginLeft: 12 }]}>
-                <View style={s.dot} />
-                <Rich text={t.slice(2)} style={{ flex: 1 }} />
-              </View>
-            )
-          const num = t.match(/^(\d+)\.\s*(.*)$/)
-          if (num)
-            return (
-              <View key={i} style={{ flexDirection: "row", marginTop: 6 }}>
-                <Text style={{ width: 16, color: C.orange, fontWeight: 700 }}>{num[1]}.</Text>
-                <Rich text={num[2]} style={{ flex: 1 }} />
-              </View>
-            )
-          const isHead = t.replace(/[^A-Za-z]/g, "").length > 4 && t === t.toUpperCase()
-          return (
-            <Rich
-              key={i}
-              text={t}
-              style={isHead ? { fontWeight: 700, marginTop: 8, fontSize: 10.5 } : { marginTop: 4 }}
-            />
-          )
-        })}
+    <View style={s.rulesBand} wrap={false}>
+      <Text style={s.rulesBandTitle}>{text}</Text>
+      <View style={s.rulesBandBar} />
     </View>
   )
+}
+
+/** First "56000 Steps" / "90 minutes" / "130-140 bpm" in a cardio line, shown big on its card. */
+function cardioStat(t: string): { value: string; unit: string } | null {
+  const m = t.match(/(\d[\d,.]*(?:\s*-\s*\d[\d,.]*)?)\s*(steps|minutes|mins?|bpm)\b/i)
+  if (!m) return null
+  const per = /per\s+week/i.test(t) ? " / WEEK" : /every\s*day|per\s+day|daily/i.test(t) ? " / DAY" : ""
+  return { value: m[1].replace(/\s+/g, ""), unit: m[2].toUpperCase() + per }
+}
+
+type RuleLine = { t: string; i: number }
+const isTitleLine = (t: string) => /^\*[^*]+\*$/.test(t) && t === t.toUpperCase()
+const isSectionLine = (t: string) => /^(\d+)\.\s*(.+:)$/.test(t)
+// Short name like "Broccoli" or "Green Peas (use less)": 3 words or fewer outside brackets
+const isChip = (t: string) =>
+  t.startsWith("- ") && !t.endsWith(":") && t.slice(2).replace(/\([^)]*\)/g, "").trim().split(/\s+/).length <= 3
+
+/**
+ * Markdown-lite rules page (same text Aman edits): "*CAPS*" alone = title band, "1. TITLE:" = numbered
+ * section card, "- " bullet, a bullet ending ":" = sub-heading, 4+ short bullets in a row = chip grid,
+ * "LABEL: text" = callout. variant "cardio" turns each bullet into a stat card.
+ */
+function RulesText({ md, variant }: { md: string; variant?: "cardio" }) {
+  // A "*CAPS*" line straight after an unfinished bullet is the rest of that bullet
+  // (old text had "*DIGITAL FOOD*\n*WEIGHING SCALE.*" split over two lines).
+  const lines: RuleLine[] = []
+  md.split("\n").forEach((l, i) => {
+    const t = l.trim()
+    if (!t) return
+    const prev = lines[lines.length - 1]
+    if (prev && prev.t.startsWith("- ") && !/[.:!?)]$/.test(prev.t) && /^\*[^*]+\*$/.test(t)) prev.t += " " + t
+    else lines.push({ t, i })
+  })
+
+  const out: ReactNode[] = []
+  let k = 0
+  while (k < lines.length) {
+    const { t, i } = lines[k]
+    if (isTitleLine(t)) {
+      out.push(<RulesBand key={i} text={t.slice(1, -1).trim()} />)
+      k++
+      continue
+    }
+    const sec = t.match(/^(\d+)\.\s*(.+:)$/)
+    if (sec) k++
+    // Body runs until the next section or title
+    const body: RuleLine[] = []
+    while (k < lines.length && !isSectionLine(lines[k].t) && !isTitleLine(lines[k].t)) body.push(lines[k++])
+    out.push(
+      sec ? (
+        <View key={i} style={s.ruleCard}>
+          <View style={s.ruleCardHead} minPresenceAhead={40}>
+            <Text style={s.ruleNum}>{sec[1]}</Text>
+            <Rich text={sec[2].replace(/:$/, "")} style={s.ruleCardTitle} />
+          </View>
+          <View style={{ paddingHorizontal: 12, paddingBottom: 9 }}>{ruleBody(body, variant)}</View>
+        </View>
+      ) : (
+        <View key={i}>{ruleBody(body, variant)}</View>
+      ),
+    )
+  }
+  return <View>{out}</View>
+}
+
+function ruleBody(lines: RuleLine[], variant?: "cardio"): ReactNode[] {
+  const out: ReactNode[] = []
+  let k = 0
+  while (k < lines.length) {
+    const { t, i } = lines[k]
+    const isBullet = t.startsWith("- ")
+    const text = isBullet ? t.slice(2) : t
+
+    // Run of short names (vegetable list etc.) → 3-column chips
+    if (variant !== "cardio" && isChip(t)) {
+      let j = k
+      while (j < lines.length && isChip(lines[j].t)) j++
+      if (j - k >= 4) {
+        out.push(
+          <View key={i} style={s.chipGrid}>
+            {lines.slice(k, j).map((c) => (
+              <View key={c.i} style={s.chip} wrap={false}>
+                <View style={s.dot} />
+                <Rich text={c.t.slice(2)} style={{ flex: 1 }} />
+              </View>
+            ))}
+          </View>,
+        )
+        k = j
+        continue
+      }
+    }
+    k++
+
+    if (isBullet && text.endsWith(":")) {
+      out.push(<Rich key={i} text={text} style={s.ruleSub} />)
+    } else if (isBullet && variant === "cardio") {
+      const st = cardioStat(text)
+      out.push(
+        <View key={i} style={s.statCard} wrap={false}>
+          <View style={s.statLeft}>
+            {st ? (
+              <>
+                <Text style={s.statValue}>{st.value}</Text>
+                <Text style={s.statUnit}>{st.unit}</Text>
+              </>
+            ) : (
+              <Text style={[s.statUnit, { color: C.orange, fontSize: 9, marginTop: 0 }]}>
+                {/bicycl|bike|elliptical|jog|walk|swim/i.test(text) ? "HOW" : "NOTE"}
+              </Text>
+            )}
+          </View>
+          <Rich text={text} style={s.statText} />
+        </View>,
+      )
+    } else if (isBullet) {
+      out.push(
+        <View key={i} style={s.ruleBullet} wrap={false}>
+          <View style={s.dot} />
+          <Rich text={text} style={{ flex: 1 }} />
+        </View>,
+      )
+    } else {
+      const num = text.match(/^(\d+)\.\s*(.*)$/)
+      const label = text.match(/^([A-Z][A-Z &/-]{3,}):\s*(.*)$/)
+      if (num)
+        out.push(
+          <View key={i} style={s.ruleBullet} wrap={false}>
+            <Text style={{ width: 14, color: C.orange, fontWeight: 700 }}>{num[1]}.</Text>
+            <Rich text={num[2]} style={{ flex: 1 }} />
+          </View>,
+        )
+      else if (label)
+        out.push(
+          <View key={i} style={s.ruleCallout} wrap={false}>
+            <Text style={{ color: C.orange, fontWeight: 700, letterSpacing: 0.8, fontSize: 9 }}>{label[1]}</Text>
+            <Rich text={label[2]} style={{ marginTop: 2 }} />
+          </View>,
+        )
+      else out.push(<Rich key={i} text={text} style={{ marginTop: 5 }} />)
+    }
+  }
+  return out
 }
 
 function Footer() {
@@ -811,7 +946,7 @@ export function PlanPdf({ doc, assetBase }: { doc: PlanDoc; assetBase: string })
         ))}
         {d.diet?.cardio ? (
           <View break>
-            <RulesText md={d.diet.cardio} />
+            <RulesText md={d.diet.cardio} variant="cardio" />
           </View>
         ) : null}
         {d.workout?.note ? (
