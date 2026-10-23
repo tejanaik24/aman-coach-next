@@ -5,7 +5,7 @@ import { useStaggerReveal } from "@/hooks/useStaggerReveal";
 import { createClient } from "@/lib/supabase/client";
 import type { Client, Exercise, WorkoutDay, WorkoutPlan } from "@/types";
 import { differenceInWeeks, format } from "date-fns";
-import jsPDF from "jspdf";
+
 import {
   Check,
   Clock,
@@ -528,12 +528,13 @@ export default function WorkoutPage() {
       {/* Download PDF */}
       <motion.button
         whileTap={{ scale: 0.97 }}
-        onClick={() => {
+        onClick={async () => {
           if (!plan || days.length === 0) {
             toast("No workout data to export");
             return;
           }
           try {
+            const { default: jsPDF } = await import("jspdf");
             const doc = new jsPDF();
             doc.setFont("helvetica", "bold");
             doc.setFontSize(22);

@@ -1,7 +1,5 @@
 import { format, differenceInCalendarWeeks, addDays } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
-import seed from "./seed-aman.json"
-import exerciseDb from "./exercise-db.json"
 import {
   cloneWithNewIds, plain, schemeText, textIndex, uid,
   type DietData, type LibraryItem, type LibraryKind, type PlanDoc, type PlanDocData, type PlanHeader, type PlanKind, type WorkoutData,
@@ -53,7 +51,8 @@ export async function loadHeader(clientId: string): Promise<PlanHeader> {
   }
 }
 
-export function blankData(kind: PlanKind, header: PlanHeader): PlanDocData {
+export async function blankData(kind: PlanKind, header: PlanHeader): Promise<PlanDocData> {
+  const seed = (await import("./seed-aman.json")).default
   const s = seed as unknown as { workout: WorkoutData; diet: DietData }
   return kind === "workout"
     ? {
@@ -86,6 +85,7 @@ export async function ensureStarterTemplates() {
   if (!user) return
   const { count } = await sb.from("plan_docs").select("id", { count: "exact", head: true }).eq("coach_id", user.id).eq("is_template", true)
   if (count) return
+  const seed = (await import("./seed-aman.json")).default
   const s = seed as unknown as { workout: WorkoutData; diet: DietData }
   const header: PlanHeader = { show: true, rows: [], dates: [], measures: [] }
   const docs = [
@@ -113,7 +113,7 @@ export async function createPlan(opts: { clientId: string | null; kind: PlanKind
     data.markChanges = sameClient
     data.base = sameClient ? textIndex(data) : undefined
     title = opts.from.title
-  } else data = blankData(opts.kind, header)
+  } else data = await blankData(opts.kind, header)
 
   const start = new Date()
   const { data: row, error } = await sb.from("plan_docs").insert({
@@ -190,6 +190,7 @@ export async function loadLibrary(): Promise<LibraryItem[]> {
   })
 
   // Built-in database items
+  const exerciseDb = (await import("./exercise-db.json")).default
   const dbExercises = (exerciseDb.exercises ?? []) as Array<{
     name: string
     muscle: string

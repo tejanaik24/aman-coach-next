@@ -151,18 +151,16 @@ export default function ClientDetailPage() {
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
-    const [clientRes, r1, r2, r3, r4, badges, r5, formsRes, unattachedRes, remLogRes, allFuRes] = await Promise.allSettled([
+    const [clientRes, r1, r2, r3, r4, badges, formsRes, remLogRes, allFuRes] = await Promise.allSettled([
       supabase.from("clients").select("*, profile:profiles!user_id(*)").eq("id", id).single(),
       supabase.from("checkins").select("*").eq("client_id", id).order("submitted_at", { ascending: false }),
       supabase.from("fees").select("*").eq("client_id", id).order("due_date", { ascending: false }),
       supabase.from("workout_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       supabase.from("nutrition_plans").select("*").eq("client_id", id).order("created_at", { ascending: false }),
       getClientBadges(id),
-      supabase.from("followups").select("id, type, due_date, note").eq("client_id", id).is("done_at", null).not("auto_created", "is", true).order("due_date").limit(5),
       supabase.from("form_submissions").select("id, form_type, submitted_at").eq("client_id", id).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }),
-      supabase.from("form_submissions").select("id, form_type, submitted_at, sender:form_data->>q1_name").is("client_id", null).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }).limit(30),
       supabase.from("reminder_log").select("id, reminder_type, sent_at, status, error, followup_id").eq("client_id", id).order("sent_at", { ascending: false }).limit(50),
-      supabase.from("followups").select("id, type, due_date, done_at, note").eq("client_id", id).order("due_date", { ascending: false }).limit(50),
+      supabase.from("followups").select("id, type, due_date, done_at, note, auto_created").eq("client_id", id).order("due_date", { ascending: false }).limit(50),
     ])
 
     if (clientRes.status === "fulfilled" && clientRes.value.data) {
@@ -179,18 +177,31 @@ export default function ClientDetailPage() {
     if (r3.status === "fulfilled") setWorkoutPlans(r3.value.data ?? [])
     if (r4.status === "fulfilled") setNutritionPlans(r4.value.data ?? [])
     if (badges.status === "fulfilled") setClientBadges(badges.value)
-    if (r5.status === "fulfilled") setFollowups(r5.value.data ?? [])
-    if (formsRes.status === "fulfilled") setJoiningForms((formsRes.value.data ?? []) as { id: string; form_type: string; submitted_at: string }[])
+    if (allFuRes.status === "fulfilled") {
+      const fuList = (allFuRes.value.data ?? []) as { id: string; type: string; due_date: string; done_at: string | null; note: string | null; auto_created?: boolean }[]
+      setAllFollowups(fuList)
+      const active5 = fuList
+        .filter((f) => !f.done_at && !f.auto_created)
+        .sort((a, b) => a.due_date.localeCompare(b.due_date))
+        .slice(0, 5)
+      setFollowups(active5)
+    }
+    const jForms = formsRes.status === "fulfilled" ? ((formsRes.value.data ?? []) as { id: string; form_type: string; submitted_at: string }[]) : []
+    setJoiningForms(jForms)
     if (remLogRes.status === "fulfilled") setReminderLogs((remLogRes.value.data ?? []) as { id: string; reminder_type: string; sent_at: string; status: string; error?: string | null; followup_id?: string | null }[])
-    if (allFuRes.status === "fulfilled") setAllFollowups((allFuRes.value.data ?? []) as { id: string; type: string; due_date: string; done_at: string | null; note: string | null }[])
-    if (unattachedRes.status === "fulfilled") {
-      const list = ((unattachedRes.value.data ?? []) as unknown as { id: string; form_type: string; submitted_at: string; sender: string | null }[]).map((u) => ({
-        id: u.id,
-        form_type: u.form_type,
-        submitted_at: u.submitted_at,
-        senderName: u.sender || "Questionnaire",
-      }))
-      setUnattachedForms(list)
+    if (jForms.length === 0) {
+      const { data: unattached } = await supabase.from("form_submissions").select("id, form_type, submitted_at, sender:form_data->>q1_name").is("client_id", null).in("form_type", ["standard_joining", "antenatal_joining"]).order("submitted_at", { ascending: false }).limit(20)
+      if (unattached) {
+        const list = (unattached as unknown as { id: string; form_type: string; submitted_at: string; sender: string | null }[]).map((u) => ({
+          id: u.id,
+          form_type: u.form_type,
+          submitted_at: u.submitted_at,
+          senderName: u.sender || "Questionnaire",
+        }))
+        setUnattachedForms(list)
+      }
+    } else {
+      setUnattachedForms([])
     }
     setIsLoading(false)
   }, [id])

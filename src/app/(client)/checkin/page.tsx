@@ -7,7 +7,7 @@ import { ClientLayout } from "@/components/layout/ClientLayout"
 import { useAuth } from "@/hooks/useAuth"
 import { getClientProfile, getCheckins } from "@/lib/store"
 import toast from "react-hot-toast"
-import jsPDF from "jspdf"
+
 import {
   AlertTriangle, Sparkles, Download, Flame, Check, ShieldAlert
 } from "lucide-react"
@@ -325,7 +325,8 @@ export default function CheckinFormPage() {
     touchEndX.current = null
   }
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
+    const { default: jsPDF } = await import("jspdf")
     const doc = new jsPDF()
     doc.setFillColor(10, 10, 10)
     doc.rect(0, 0, 210, 297, "F")

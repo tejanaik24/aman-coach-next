@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
-import { jsPDF } from "jspdf"
+import type { jsPDF as JsPDFType } from "jspdf"
 import { createClient as createSessionClient } from "@/lib/supabase/client"
 import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK, generateUpiLink } from "@/lib/upi"
 
@@ -156,7 +156,8 @@ function sanitizePdfText(s?: string | null): string {
  * established invoice format: Client Detail / Description / Billing Detail
  * sections, pending-amount line, and the real Terms & Conditions.
  */
-export async function generatePaymentReceiptPdf(inv: Invoice): Promise<jsPDF> {
+export async function generatePaymentReceiptPdf(inv: Invoice): Promise<JsPDFType> {
+  const { jsPDF } = await import("jspdf")
   const doc = new jsPDF()
   const left = 14
   const right = 196

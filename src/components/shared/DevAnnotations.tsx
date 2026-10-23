@@ -1,7 +1,16 @@
 'use client';
-import { Agentation } from 'agentation';
+
+import { useEffect, useState, type ComponentType } from 'react';
 
 export function DevAnnotations() {
-  if (process.env.NODE_ENV !== 'development') return null;
-  return <Agentation endpoint="http://localhost:4747" />;
+  const [Component, setComponent] = useState<ComponentType<{ endpoint: string }> | null>(null);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      import('agentation').then((m) => setComponent(() => m.Agentation)).catch(() => {});
+    }
+  }, []);
+
+  if (!Component || process.env.NODE_ENV !== 'development') return null;
+  return <Component endpoint="http://localhost:4747" />;
 }

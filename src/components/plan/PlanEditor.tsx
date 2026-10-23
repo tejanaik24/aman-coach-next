@@ -109,7 +109,9 @@ export default function PlanEditor({
 
   // ---- edits with undo
   const docRef = useRef(doc)
-  docRef.current = doc
+  useEffect(() => {
+    docRef.current = doc
+  }, [doc])
   const edit = useCallback((fn: (d: PlanDoc) => void) => {
     const cur = docRef.current
     const next = structuredClone(cur)

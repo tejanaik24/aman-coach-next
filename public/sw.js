@@ -1,11 +1,5 @@
-const CACHE_NAME = "ak-coach-v26";
+const CACHE_NAME = "ak-coach-v27";
 const OFFLINE_URLS = [
-  "/",
-  "/home",
-  "/workout",
-  "/nutrition",
-  "/progress",
-  "/checkin",
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
@@ -39,24 +33,40 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  // Leave other sites (Google Fonts, Supabase, Razorpay) to the browser: the
-  // worker's CSP blocks them and the /home fallback would be served as their body.
-  if (new URL(event.request.url).origin !== self.location.origin) return;
+  const url = new URL(event.request.url);
+  // Leave other sites (Google Fonts, Supabase, Razorpay) to the browser
+  if (url.origin !== self.location.origin) return;
+  // Never cache API endpoints or Next data requests in SW
+  if (url.pathname.startsWith("/api/") || url.searchParams.has("_rsc")) return;
 
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
-          const cacheCopy = networkResponse.clone();
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, cacheCopy));
+          // Cache static assets only (JS chunks, images, icons, manifest)
+          const isStatic =
+            url.pathname.startsWith("/_next/static/") ||
+            url.pathname.startsWith("/images/") ||
+            url.pathname.startsWith("/icons/") ||
+            url.pathname.endsWith(".png") ||
+            url.pathname.endsWith(".webp") ||
+            url.pathname.endsWith(".svg");
+          if (isStatic) {
+            const cacheCopy = networkResponse.clone();
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, cacheCopy));
+          }
         }
         return networkResponse;
       })
       .catch(() => {
         return caches.match(event.request).then((cachedResponse) => {
-          return cachedResponse || caches.match("/home");
+          if (cachedResponse) return cachedResponse;
+          if (event.request.mode === "navigate") {
+            return caches.match("/home");
+          }
+          return undefined;
         });
       }),
   );

@@ -5,7 +5,7 @@ import { format } from "date-fns"
 import { X, Search, Check, Users, ArrowRight, ArrowLeft, Send, Calendar } from "lucide-react"
 import toast from "react-hot-toast"
 import { createClient } from "@/lib/supabase/client"
-import { inWeeks, ReminderPicker } from "./SendPlanPanel"
+import { inWeeks, ReminderPicker } from "./ReminderPicker"
 
 interface Props {
   isOpen: boolean

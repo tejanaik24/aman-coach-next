@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Snapshot output and a one-off local generator are not application source.
     "mock/**",
+    "qa-shots/**",
     "make_pdf_forms.js",
     "_phase*/**",
     "public/js/vendor/**",

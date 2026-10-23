@@ -5,7 +5,7 @@ import { motion } from "motion/react"
 import { Apple, Download, Coffee, Soup, Flame } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
-import jsPDF from "jspdf"
+
 import { createClient } from "@/lib/supabase/client"
 import { useStaggerReveal } from "@/hooks/useStaggerReveal"
 import KineticText from "@/components/ui/KineticText"
@@ -88,9 +88,10 @@ export default function ClientDietPage() {
     fetchData()
   }, [])
 
-  function handleDownloadPDF() {
+  async function handleDownloadPDF() {
     if (!plan) return
     try {
+      const { default: jsPDF } = await import("jspdf")
       const doc = new jsPDF()
       doc.setFont("helvetica", "bold")
       doc.setFontSize(22)

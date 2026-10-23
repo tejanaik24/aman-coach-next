@@ -8,7 +8,7 @@ import { waLink } from "@/lib/quick-manage"
 import { openUrl } from "@/lib/utils"
 import { saveDoc, saveToLibrary } from "@/lib/plan/store"
 import { uploadPlanFile, schedulePlanUpdateReminder } from "@/lib/plan/send"
-import { ReminderPicker, inWeeks } from "@/components/coach/SendPlanPanel"
+import { ReminderPicker, inWeeks } from "@/components/coach/ReminderPicker"
 import type { PlanDoc } from "@/lib/plan/types"
 import { Sheet, Label, inputCls } from "./parts"
 

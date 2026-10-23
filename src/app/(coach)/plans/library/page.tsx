@@ -34,13 +34,17 @@ export default function PlanLibraryPage() {
   const [giveTarget, setGiveTarget] = useState<Tpl | null>(null)
 
   const load = useCallback(async () => {
-    await ensureStarterTemplates().catch(() => {})
-    const [lib, t] = await Promise.all([
-      loadLibrary(),
-      createClient().from("plan_docs").select("id, title, kind, updated_at").eq("is_template", true).order("updated_at", { ascending: false }),
-    ])
-    setItems(lib)
-    setTpls((t.data ?? []) as Tpl[])
+    const supabase = createClient()
+    const { data } = await supabase.from("plan_docs").select("id, title, kind, updated_at").eq("is_template", true).order("updated_at", { ascending: false })
+    const list = (data ?? []) as Tpl[]
+    if (list.length === 0) {
+      await ensureStarterTemplates().catch(() => {})
+      const { data: retry } = await supabase.from("plan_docs").select("id, title, kind, updated_at").eq("is_template", true).order("updated_at", { ascending: false })
+      setTpls((retry ?? []) as Tpl[])
+    } else {
+      setTpls(list)
+    }
+    loadLibrary().then(setItems).catch(() => {})
   }, [])
   useEffect(() => { load() }, [load])
 
