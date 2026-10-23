@@ -178,16 +178,17 @@ export async function saveToLibrary(d: PlanDocData) {
  */
 export async function loadLibrary(): Promise<LibraryItem[]> {
   const { data } = await createClient().from("coach_library").select("id, kind, name, data, use_count").order("updated_at", { ascending: false }).limit(3000)
-  const userItems = ((data ?? []) as LibraryItem[]).map((it) => ({
+  const allUser = ((data ?? []) as LibraryItem[]).map((it) => ({
     ...it,
     data: it.data ?? {},
   }))
 
-  // Create lookup for fast matching
+  // Create lookup for fast matching (hidden rows still block their built-in twin)
   const userMap = new Map<string, LibraryItem>()
-  userItems.forEach((i) => {
+  allUser.forEach((i) => {
     userMap.set(plain(i.name).toLowerCase().trim(), i)
   })
+  const userItems = allUser.filter((i) => !(i.data as { hidden?: boolean }).hidden)
 
   // Built-in database items
   const exerciseDb = (await import("./exercise-db.json")).default

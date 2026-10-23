@@ -56,14 +56,23 @@ export default function PlanLibraryPage() {
   async function saveItem(it: LibraryItem) {
     const sb = createClient()
     const row = { kind: it.kind, name: it.name.trim(), data: it.data, updated_at: new Date().toISOString() }
-    const { error } = it.id ? await sb.from("coach_library").update(row).eq("id", it.id) : await sb.from("coach_library").insert(row)
+    // Built-in exercises live in exercise-db.json: first edit saves Aman's own copy, which then wins
+    const isNew = !it.id || it.id.startsWith("builtin_")
+    const coach_id = (await sb.auth.getUser()).data.user?.id
+    const { error } = isNew ? await sb.from("coach_library").insert({ ...row, coach_id }) : await sb.from("coach_library").update(row).eq("id", it.id)
     if (error) { toast.error(error.message.includes("duplicate") ? "That one is already saved" : "Could not save"); return }
     toast.success("Saved")
     load()
   }
   async function removeItem(it: LibraryItem) {
     if (!confirm(`Delete "${plain(it.name).slice(0, 60)}" from your list? Plans already made keep it.`)) return
-    await createClient().from("coach_library").delete().eq("id", it.id)
+    const sb = createClient()
+    // A built-in can't be deleted from the file, so save a hidden copy that hides it
+    const coach_id = (await sb.auth.getUser()).data.user?.id
+    const { error } = it.id.startsWith("builtin_")
+      ? await sb.from("coach_library").insert({ coach_id, kind: it.kind, name: it.name.trim(), data: { ...it.data, hidden: true }, updated_at: new Date().toISOString() })
+      : await sb.from("coach_library").delete().eq("id", it.id)
+    if (error) { toast.error("Could not delete"); return }
     setItems((x) => x.filter((y) => y.id !== it.id))
   }
   async function newTemplate(kind: PlanKind) {
@@ -140,8 +149,11 @@ export default function PlanLibraryPage() {
             <div key={i.id} className="flex items-stretch rounded-2xl bg-bg-card border border-border-subtle overflow-hidden">
               <button type="button" onClick={() => setEditing(i)} className="flex-1 min-w-0 text-left px-4 py-3 cursor-pointer">
                 <p className="leading-snug whitespace-pre-line">{plain(i.name)}</p>
-                {(i.data.sets || i.data.links?.length) && (
+                {Boolean(i.data.sets || i.data.links?.length) && (
                   <p className="text-xs text-text-muted mt-1">{[i.data.sets?.replace(/\s*\n\s*/g, " "), i.data.links?.length ? `${i.data.links.length} video` : ""].filter(Boolean).join(" · ")}</p>
+                )}
+                {Boolean((i.data as { deadLinks?: unknown[] }).deadLinks?.length) && (
+                  <p className="text-xs text-danger mt-1">Old video link not working · tap to add a new one</p>
                 )}
               </button>
               <button type="button" onClick={() => removeItem(i)} aria-label="Delete" className="w-12 grid place-items-center text-danger/80 cursor-pointer"><Trash2 className="size-5" /></button>
@@ -155,7 +167,7 @@ export default function PlanLibraryPage() {
           row={{ id: editing.id || "new", type: editing.kind, name: editing.name, links: editing.data.links ?? [], cues: editing.data.cues ?? [], sets: editing.data.sets ?? "" }}
           library={[]}
           onClose={() => setEditing(null)}
-          onSave={(r) => { if (r.name) saveItem({ ...editing, kind: r.type, name: r.name, data: { links: r.links, cues: r.cues, sets: r.sets } }) }}
+          onSave={(r) => { if (r.name) saveItem({ ...editing, kind: r.type, name: r.name, data: { ...editing.data, links: r.links, cues: r.cues, sets: r.sets, ...(r.links?.length ? { deadLinks: undefined } : {}) } }) }}
         />
       )}
       {editing && editing.kind !== "exercise" && editing.kind !== "warmup" && (
