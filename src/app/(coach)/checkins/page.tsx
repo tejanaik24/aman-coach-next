@@ -180,7 +180,7 @@ export default function CheckinsPage() {
                 <motion.div
                   key={checkin.id}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => router.push(`/clients/${checkin.clientId}`)}
+                  onClick={() => router.push(`/clients/${checkin.clientId}?tab=checkins&open=${checkin.id}`)}
                   className={`bg-[#F3EDE2] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-start gap-3 cursor-pointer ${isReviewed ? "opacity-70" : ""}`}
                 >
                   <div className="relative flex-shrink-0">

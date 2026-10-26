@@ -61,6 +61,52 @@ function flatField(c: Checkin, key: string): string | undefined {
   return v == null || v === "" ? undefined : String(v)
 }
 
+// Every answer of the current check-in form (client/checkin/page.tsx), in form order.
+const CHECKIN_SECTIONS: { title: string; fields: [string, string][] }[] = [
+  { title: "Training", fields: [
+    ["t1_energy_workout", "Energy during workouts"],
+    ["t2_days_worked_out", "Workouts in last 2 weeks"],
+    ["t3_workout_deviation", "Workout deviation / missed"],
+    ["t4_exercise_issues", "Exercise issues"],
+    ["t5_cardio_steps_goal", "Cardio / steps goal"],
+    ["t6_injury_pain", "Injury / pain"],
+  ] },
+  { title: "Diet", fields: [
+    ["d1_diet_deviation", "Diet deviation"],
+    ["d2_appetite", "Appetite / hunger"],
+    ["d3_digestion", "Digestion"],
+    ["d4_constipation", "Constipation / stool"],
+    ["d5_diet_changes_wanted", "Diet changes wanted"],
+    ["d6_food_add_remove", "Food to add / remove"],
+  ] },
+  { title: "General", fields: [
+    ["g1_day_energy", "Energy during the day"],
+    ["g2_sleep_quality", "Sleep"],
+    ["g3_water_intake", "Water intake"],
+    ["g4_urine_color", "Urine colour"],
+    ["g5_coaching_feedback", "Feedback on coaching"],
+  ] },
+  { title: "Measurements", fields: [
+    ["w1_weight", "Weight (kg)"],
+    ["w2_abdomen", "Abdomen (in)"],
+    ["w3_hips", "Hips (in)"],
+  ] },
+]
+
+const CHECKIN_PHOTOS: [string, string][] = [
+  ["front_pic", "Front"],
+  ["back_pic", "Back"],
+  ["both_side_pic", "Left side"],
+  ["right_side_pic", "Right side"],
+  ["fav_pose_pic", "Favourite pose"],
+  ["mandatory_pose_pic", "Mandatory poses"],
+]
+
+function photoPaths(c: Checkin, key: string): string[] {
+  const v = (c.form_data as unknown as Record<string, unknown> | null)?.[key]
+  return Array.isArray(v) ? v.filter((p): p is string => typeof p === "string" && !!p) : []
+}
+
 // Optional BCA report path stored inside the existing check-in form_data (no schema change).
 function bcaReportPath(c: Checkin): string | null {
   const v = (c.form_data as unknown as Record<string, unknown> | null)?.bca_report
@@ -132,7 +178,7 @@ export default function ClientDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>(
     initialTab === "plans" || initialTab === "checkins" || initialTab === "fees" || initialTab === "history" ? initialTab : "overview"
   )
-  const [expandedCheckin, setExpandedCheckin] = useState<string | null>(null)
+  const [expandedCheckin, setExpandedCheckin] = useState<string | null>(searchParams.get("open"))
   const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({})
   const [savingFeedback, setSavingFeedback] = useState<string | null>(null)
   const [followups, setFollowups] = useState<{ id: string; type: string; due_date: string; note: string | null }[]>([])
@@ -886,11 +932,45 @@ export default function ClientDetailPage() {
 
                         {isExpanded && (
                           <div className="px-4 pb-4 space-y-3 border-t border-[#181310]/[0.08] pt-3">
-                            {c.form_data ? (
+                            {c.form_data && flatField(c, "t1_energy_workout") === undefined && flatField(c, "w1_weight") === undefined ? (
                               <div className="space-y-2 text-xs">
                                 <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Workout deviation:</span> {c.form_data.training?.workout_deviation || flatField(c, "t3_workout_deviation") || "—"}</p>
                                 <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Diet:</span> {c.form_data.diet?.diet_deviation || flatField(c, "d1_diet_deviation") || "—"}</p>
                                 <p className="text-[#8A7F70]"><span className="font-bold text-[#181310]">Sleep:</span> {c.form_data.general?.sleep_quality || flatField(c, "g2_sleep_quality") || "—"}</p>
+                              </div>
+                            ) : c.form_data ? (
+                              <div className="space-y-3">
+                                {CHECKIN_SECTIONS.map((s) => (
+                                  <div key={s.title} className="space-y-1.5">
+                                    <p className="text-accent-orange text-[10px] uppercase font-bold">{s.title}</p>
+                                    {s.fields.map(([key, label]) => (
+                                      <p key={key} className="text-sm text-[#8A7F70]">
+                                        <span className="font-bold text-[#181310]">{label}:</span> {flatField(c, key) ?? "—"}
+                                      </p>
+                                    ))}
+                                  </div>
+                                ))}
+                                <div className="space-y-1.5">
+                                  <p className="text-accent-orange text-[10px] uppercase font-bold">Photos</p>
+                                  {CHECKIN_PHOTOS.some(([key]) => photoPaths(c, key).length > 0) ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {CHECKIN_PHOTOS.flatMap(([key, label]) =>
+                                        photoPaths(c, key).map((p, i, all) => (
+                                          <button
+                                            key={p}
+                                            type="button"
+                                            onClick={() => openCheckinFile(p)}
+                                            className="h-9 px-3 rounded-full border border-accent-orange/40 text-accent-orange text-xs font-bold cursor-pointer"
+                                          >
+                                            {all.length > 1 ? `${label} ${i + 1}` : label}
+                                          </button>
+                                        ))
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-[#8A7F70]">No photos</p>
+                                  )}
+                                </div>
                               </div>
                             ) : null}
                             <div className="space-y-2">
