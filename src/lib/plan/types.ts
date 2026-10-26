@@ -127,6 +127,8 @@ export interface LibraryItem {
     muscle?: string
     kind?: "strength" | "cardio" | "stretch"
     equipment?: string
+    /** How Aman prescribed it the last time he sent it, so picking it fills his sets back in */
+    rx?: Partial<Pick<WorkoutRow, "warmupSets" | "workingSets" | "reps" | "restSec" | "tempo" | "rir" | "side" | "technique" | "custom" | "customSets">>
   }
   use_count: number
 }

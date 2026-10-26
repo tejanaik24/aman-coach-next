@@ -153,6 +153,10 @@ export async function saveToLibrary(d: PlanDocData) {
         sets: r.sets,
         why: r.why,
         kind: r.kind,
+        rx: {
+          warmupSets: r.warmupSets, workingSets: r.workingSets, reps: r.reps, restSec: r.restSec, tempo: r.tempo,
+          rir: r.rir, side: r.side, technique: r.technique, custom: r.custom, customSets: r.customSets,
+        },
       })
       if (r.sets.trim()) put("sets", r.sets.trim())
     }),
@@ -164,10 +168,40 @@ export async function saveToLibrary(d: PlanDocData) {
       r.supplements.forEach((i) => put("supplement", i.text))
     }),
   )
-  const list = [...rows.values()].map((r) => ({ ...r, coach_id: user.id, updated_at: new Date().toISOString() }))
+  // Each sent plan counts once per name, so the most used exercises rank first in search
+  const { data: old } = await sb.from("coach_library").select("kind, name, use_count").eq("coach_id", user.id).limit(5000)
+  const count = new Map(((old ?? []) as { kind: string; name: string; use_count: number | null }[]).map((o) => [o.kind + "|" + o.name.toLowerCase(), o.use_count ?? 0]))
+  const list = [...rows.entries()].map(([k, r]) => ({ ...r, coach_id: user.id, use_count: (count.get(k) ?? 0) + 1, updated_at: new Date().toISOString() }))
   for (let i = 0; i < list.length; i += 200) {
     await sb.from("coach_library").upsert(list.slice(i, i + 200), { onConflict: "coach_id,kind,name" })
   }
+}
+
+/**
+ * One-time catch-up: use_count was never filled, so count how often each saved exercise appears in
+ * Aman's client workout plans. Runs only while every count is still 0; only updates rows that exist
+ * (a new empty row would hide its built-in twin's videos and tips).
+ */
+export async function backfillUsage(items: LibraryItem[]): Promise<boolean> {
+  const own = items.filter((i) => !i.id.startsWith("builtin_") && (i.kind === "exercise" || i.kind === "warmup"))
+  if (!own.length || own.some((i) => i.use_count > 0)) return false
+  const sb = createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return false
+  const { data: docs } = await sb.from("plan_docs").select("data").eq("coach_id", user.id).eq("kind", "workout").eq("is_template", false).limit(500)
+  const seen = new Map<string, number>()
+  for (const d of (docs ?? []) as { data: PlanDocData }[]) {
+    const names = new Set<string>()
+    d.data?.workout?.days.forEach((day) => day.rows.forEach((r) => r.type !== "banner" && names.add(plain(r.name).toLowerCase().trim())))
+    names.forEach((n) => seen.set(n, (seen.get(n) ?? 0) + 1))
+  }
+  const updates = own.filter((i) => seen.has(i.name.toLowerCase().trim()))
+  if (!updates.length) return false
+  const rows = updates.map((i) => ({ coach_id: user.id, kind: i.kind, name: i.name, use_count: seen.get(i.name.toLowerCase().trim())! }))
+  for (let i = 0; i < rows.length; i += 200) {
+    await sb.from("coach_library").upsert(rows.slice(i, i + 200), { onConflict: "coach_id,kind,name" })
+  }
+  return true
 }
 
 /**

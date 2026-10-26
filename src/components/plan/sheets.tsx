@@ -71,7 +71,38 @@ function Stepper({
   )
 }
 
-const libName = (s: string) => plain(s).replace(/\s*\([^)]*reference[^)]*\)?/gi, "").trim()
+const libName = (s: string) => plain(s).replace(/\s*\([^)]*\breference\b[^)]*\)?/gi, "").trim()
+
+// Short forms Aman types -> words in exercise names
+const SHORT: Record<string, string> = {
+  db: "dumbbell", bb: "barbell", kb: "kettlebell", sm: "smith", inc: "incline", dec: "decline",
+  ext: "extension", ohp: "overhead", rdl: "romanian", bw: "bodyweight",
+}
+const words = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean)
+
+// Exercises picked in this visit rank up straight away (the saved count updates when the plan is sent)
+const sessionPicks = new Map<string, number>()
+
+/**
+ * Every library exercise whose words start with each typed word, in any order
+ * ("inc db" finds "Incline Dumbbell Press"). Most used first, then most recently saved.
+ */
+export function searchLibrary(library: LibraryItem[], query: string): LibraryItem[] {
+  const q = words(query).map((w) => SHORT[w] ?? w)
+  if (!q.length || q.join("").length < 2) return []
+  const typed = words(query).join(" ")
+  const seen = new Set<string>()
+  const hits: { item: LibraryItem; score: number; i: number }[] = []
+  library.forEach((item, i) => {
+    const name = libName(item.name)
+    const key = name.toLowerCase()
+    const w = words(name)
+    if (seen.has(key) || w.join(" ") === typed || !q.every((p) => w.some((x) => x.startsWith(p)))) return
+    seen.add(key)
+    hits.push({ item, i, score: (item.use_count ?? 0) + (sessionPicks.get(key) ?? 0) * 100 })
+  })
+  return hits.sort((a, b) => b.score - a.score || a.i - b.i).slice(0, 50).map((h) => h.item)
+}
 
 function ChipSelect<T extends string | number>({
   options,
@@ -146,19 +177,7 @@ export function RowSheet({
 
   // Lookup matches from library. Names imported from Aman's docs carry "(Reference 1)" etc. (that was the
   // video label), so it is dropped from the name; once the typed name equals a library name, no suggestion.
-  const q = plain(r.name).toLowerCase().trim()
-  const seen = new Set<string>()
-  const matches =
-    q.length >= 2
-      ? library
-          .filter((i) => {
-            const n = libName(i.name).toLowerCase()
-            if (!n.includes(q) || n === q || seen.has(n)) return false
-            seen.add(n)
-            return true
-          })
-          .slice(0, 5)
-      : []
+  const matches = searchLibrary(library.filter((i) => i.kind === "exercise" || i.kind === "warmup"), plain(r.name))
 
   const updateState = (patch: Partial<WorkoutRow>) => {
     const next = { ...r, ...patch }
@@ -170,8 +189,12 @@ export function RowSheet({
 
   const pickLibraryItem = (m: LibraryItem) => {
     const k = m.data.kind ?? (m.kind === "warmup" && m.name.toLowerCase().includes("stretch") ? "stretch" : "strength")
+    sessionPicks.set(libName(m.name).toLowerCase(), (sessionPicks.get(libName(m.name).toLowerCase()) ?? 0) + 1)
+    // His last sets for this exercise come back too (only fields he actually set)
+    const rx = Object.fromEntries(Object.entries(m.data.rx ?? {}).filter(([, v]) => v !== undefined && v !== null))
     const next: WorkoutRow = {
       ...r,
+      ...rx,
       name: libName(m.name),
       kind: k,
       links: m.data.links?.length ? m.data.links : r.links,
@@ -250,18 +273,29 @@ export function RowSheet({
         />
         {matches.length > 0 && (
           <div className="mt-2 space-y-1.5">
-            <p className="text-xs text-text-muted">From library (fills videos, cues & why):</p>
-            {matches.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => pickLibraryItem(m)}
-                className="w-full text-left px-4 py-3 rounded-xl bg-accent-orange/10 border border-accent-orange/30 text-sm font-semibold cursor-pointer hover:bg-accent-orange/20"
-              >
-                {libName(m.name)}
-                {m.data.why && <span className="block text-xs font-normal text-text-muted mt-0.5 line-clamp-1">{m.data.why}</span>}
-              </button>
-            ))}
+            <p className="text-xs text-text-muted">
+              {matches.length} from library · most used first · tap fills videos, tips & your last sets
+            </p>
+            <div className="max-h-72 overflow-y-auto overscroll-contain space-y-1.5 pr-1">
+              {matches.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => pickLibraryItem(m)}
+                  className="w-full text-left px-4 py-3 rounded-xl bg-accent-orange/10 border border-accent-orange/30 text-sm font-semibold cursor-pointer hover:bg-accent-orange/20"
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span>{libName(m.name)}</span>
+                    {m.use_count > 0 && <span className="shrink-0 text-[11px] font-bold text-accent-orange">{m.use_count}×</span>}
+                  </span>
+                  {m.data.rx && m.data.sets ? (
+                    <span className="block text-xs font-normal text-text-muted mt-0.5 line-clamp-1">{m.data.sets}</span>
+                  ) : m.data.why ? (
+                    <span className="block text-xs font-normal text-text-muted mt-0.5 line-clamp-1">{m.data.why}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

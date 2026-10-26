@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { loadLibrary } from "@/lib/plan/store"
+import { backfillUsage, loadLibrary } from "@/lib/plan/store"
 import type { LibraryItem, PlanDoc } from "@/lib/plan/types"
 import PlanEditor from "@/components/plan/PlanEditor"
 
@@ -14,7 +14,12 @@ export default function PlanMakerPage() {
   const [library, setLibrary] = useState<LibraryItem[]>([])
   const [missing, setMissing] = useState(false)
 
-  const refreshLibrary = useCallback(() => { loadLibrary().then(setLibrary) }, [])
+  const refreshLibrary = useCallback(() => {
+    loadLibrary().then(async (items) => {
+      setLibrary(items)
+      if (await backfillUsage(items).catch(() => false)) loadLibrary().then(setLibrary)
+    })
+  }, [])
 
   useEffect(() => {
     const sb = createClient()
