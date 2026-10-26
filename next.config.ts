@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Plan PDFs are built on the server (api/coach/plans/pdf). react-pdf loads pdfkit's built-in font
+  // files at run time, so keep it unbundled and ship those files with the function.
+  serverExternalPackages: ["@react-pdf/renderer", "pdfkit"],
+  outputFileTracingIncludes: {
+    "/api/coach/plans/pdf": ["./node_modules/pdfkit/js/**/*"],
+  },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
     return [{
