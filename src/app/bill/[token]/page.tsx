@@ -1,11 +1,12 @@
 "use client"
 
+import UpiPay from "@/components/payments/UpiPay"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { CheckCircle2, Download, Copy, Check, MessageCircle, ArrowRight, ShieldCheck, CreditCard } from "lucide-react"
+import { CheckCircle2, Download, Copy, Check, MessageCircle, ArrowRight, ShieldCheck } from "lucide-react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
-import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK, generateUpiLink } from "@/lib/upi"
+import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK } from "@/lib/upi"
 import { generatePaymentReceiptPdf, DEFAULT_UPI_ID, type Invoice } from "@/lib/payments"
 import { RazorpayCheckoutButton } from "@/components/payments/RazorpayCheckoutButton"
 
@@ -133,7 +134,6 @@ export default function PublicBillPage() {
 
   const isPaid = bill.status === "paid" || bill.balanceDue <= 0
   const payable = isPaid ? 0 : bill.balanceDue || bill.totalAmount
-  const upiDeepLink = generateUpiLink(payable, `AKF ${bill.clientName} ${bill.invoiceNumber}`)
   const dueFormatted = format(new Date(bill.dueDate + "T00:00:00"), "dd MMM yyyy")
 
   const amanWaNumber = "919815690656"
@@ -229,13 +229,11 @@ export default function PublicBillPage() {
         {!isPaid ? (
           <div className="space-y-3">
             {/* Big UPI Deep Link Button */}
-            <a
-              href={upiDeepLink}
+            <UpiPay
+              amount={payable}
+              note={`AKF ${bill.clientName} ${bill.invoiceNumber}`}
               className="w-full min-h-[52px] py-3 px-3 rounded-2xl bg-[#FF6A1A] text-black font-bold text-sm sm:text-base flex items-center justify-center gap-2 text-center leading-tight shadow-[0_8px_30px_rgba(255,106,26,0.35)] cursor-pointer hover:bg-[#ff7b33] active:scale-[0.99] transition-all"
-            >
-              <CreditCard className="size-5 shrink-0" />
-              <span className="break-words">Pay with UPI (GPay / PhonePe / Paytm)</span>
-            </a>
+            />
 
             {/* Copy UPI ID */}
             <button

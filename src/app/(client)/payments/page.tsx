@@ -1,11 +1,12 @@
 "use client"
 
+import UpiPay from "@/components/payments/UpiPay"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { QrCode, Download, CheckCircle2, Copy, MessageCircle } from "lucide-react"
+import { Download, CheckCircle2, Copy, MessageCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generatePaymentReceiptPdf, type Invoice } from "@/lib/payments"
-import { COACH_UPI_ID, COACH_BANK, generateUpiLink } from "@/lib/upi"
+import { COACH_UPI_ID, COACH_BANK } from "@/lib/upi"
 import { finalAmount, paidSoFar, amountDue } from "@/lib/fee-math"
 import toast from "react-hot-toast"
 import { COACH_WHATSAPP } from "@/lib/coach-contact"
@@ -143,7 +144,6 @@ export default function ClientPaymentsPage() {
           activeBills.length > 1
             ? `Invoices ${activeBills.map((b) => `#${b.invoiceNumber}`).join(", ")}`
             : `Invoice #${activeBill.invoiceNumber}`
-        const upiHref = generateUpiLink(dueAmt, `Coaching Fee ${clientName || "Client"}`)
         return (
           <div className={`rounded-2xl border p-6 space-y-4 shadow-xl ${
             hasOverdue
@@ -236,12 +236,12 @@ export default function ClientPaymentsPage() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5 pt-1">
-              <a
-                href={upiHref}
+              <UpiPay
+                amount={dueAmt}
+                note={`Coaching Fee ${clientName || "Client"}`}
+                label={`Pay by UPI (₹${dueAmt.toLocaleString("en-IN")})`}
                 className="flex-1 min-w-0 py-3.5 px-5 rounded-full bg-accent-orange text-black font-heading font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-110 transition-all"
-              >
-                <QrCode className="size-4" /> Pay by UPI (₹{dueAmt.toLocaleString("en-IN")})
-              </a>
+              />
               <button
                 type="button"
                 onClick={() => handleDownloadInvoice(activeBill)}

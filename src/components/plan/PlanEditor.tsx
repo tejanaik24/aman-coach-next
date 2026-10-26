@@ -55,6 +55,7 @@ import {
   type Action,
 } from "./sheets"
 import SendSheet from "./SendSheet"
+import CopyDaySheet from "./CopyDaySheet"
 import QuickFoodPickerSheet from "./QuickFoodPickerSheet"
 import QuantityChips from "./QuantityChips"
 import exerciseDb from "@/lib/plan/exercise-db.json"
@@ -74,6 +75,7 @@ type Open =
   | { k: "actions"; title: string; actions: Action[] }
   | { k: "header" }
   | { k: "send" }
+  | { k: "copyday" }
   | null
 
 const move = <T,>(a: T[], i: number, d: number) => {
@@ -112,7 +114,18 @@ export default function PlanEditor({
   useEffect(() => {
     docRef.current = doc
   }, [doc])
+  // Build-time meter: counts 10s steps while the screen is open and he edited in the last 2 minutes
+  const buildSec = useRef(initial.data.buildSeconds ?? 0)
+  const lastEdit = useRef(Date.now())
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible" && Date.now() - lastEdit.current < 120_000) buildSec.current += 10
+    }, 10_000)
+    return () => clearInterval(t)
+  }, [])
+
   const edit = useCallback((fn: (d: PlanDoc) => void) => {
+    lastEdit.current = Date.now()
     const cur = docRef.current
     const next = structuredClone(cur)
     fn(next)
@@ -141,7 +154,7 @@ export default function PlanEditor({
         title: doc.title,
         period_start: doc.period_start,
         period_end: doc.period_end,
-        data: doc.data,
+        data: { ...doc.data, buildSeconds: buildSec.current },
       })
         .then(() => setSaved("saved"))
         .catch(() => setSaved("error"))
@@ -1492,6 +1505,13 @@ export default function PlanEditor({
               >
                 <Moon className="size-5" /> Rest day
               </button>
+              <button
+                type="button"
+                onClick={() => setOpen({ k: "copyday" })}
+                className="col-span-2 h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-white/80 font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <Copy className="size-4 text-accent-orange" /> Copy a day from another plan
+              </button>
             </div>
           </div>
         )}
@@ -2070,6 +2090,21 @@ export default function PlanEditor({
       )}
 
       {/* Quick Day Split Chooser Sheet */}
+      {open?.k === "copyday" && (
+        <CopyDaySheet
+          currentId={doc.id}
+          onClose={() => setOpen(null)}
+          onPick={(day) => {
+            data((pd) => {
+              day.title = day.title.replace(/^DAY\s*\d+/i, `DAY ${pd.workout!.days.length + 1}`)
+              pd.workout!.days.push(day)
+              setActiveDayIndex(pd.workout!.days.length - 1)
+            })
+            setOpen(null)
+            toast.success("Day copied")
+          }}
+        />
+      )}
       {open?.k === "quickday" && (
         <ActionSheet
           title="Choose Split for Quick Day"
@@ -2346,6 +2381,8 @@ export default function PlanEditor({
           onSent={(sent) => {
             setDoc(sent)
             onLibraryChange()
+            saveDoc(doc.id, { data: { ...sent.data, buildSeconds: buildSec.current } }).catch(() => {})
+            toast(`Plan made in ${Math.max(1, Math.round(buildSec.current / 60))} min`, { icon: "⏱️" })
           }}
         />
       )}

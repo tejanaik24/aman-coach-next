@@ -96,6 +96,8 @@ export interface PlanDocData {
   base?: Record<string, string> // id -> text in the plan this was copied from
   workout?: WorkoutData
   diet?: DietData
+  /** Seconds Aman actively spent building this plan (goal: 5-10 min a plan) */
+  buildSeconds?: number
 }
 
 export interface PlanDoc {

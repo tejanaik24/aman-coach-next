@@ -2,10 +2,11 @@
 
 // Payment page for someone who is NOT a client yet (Aman sends it before adding them).
 // Everything comes from the link: ?a=amount&n=name&p=package. No login, no database.
+import UpiPay from "@/components/payments/UpiPay"
 import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Check, Copy, CreditCard, MessageCircle, ShieldCheck } from "lucide-react"
-import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK, generateUpiLink } from "@/lib/upi"
+import { Check, Copy, MessageCircle, ShieldCheck } from "lucide-react"
+import { COACH_UPI_ID, COACH_UPI_NAME, COACH_BANK } from "@/lib/upi"
 
 const AMAN_WA = "919815690656"
 
@@ -21,7 +22,6 @@ function PayInner() {
     setCopied(k)
     setTimeout(() => setCopied(null), 2000)
   }
-  const upi = generateUpiLink(amount, `AKF ${name || "New client"}`.slice(0, 40))
   const waText = `Hi Coach Aman, I have paid ₹${amount.toLocaleString("en-IN")}${pkg ? ` for ${pkg}` : ""}. Name: ${name || "-"}. Please verify.`
   const showRazorpay = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK?.startsWith("https://")
 
@@ -48,9 +48,11 @@ function PayInner() {
 
         <div className="space-y-3">
           {amount > 0 && (
-            <a href={upi} className="w-full min-h-[52px] py-3 px-3 rounded-2xl bg-[#FF6A1A] text-black font-bold text-base flex items-center justify-center gap-2 text-center">
-              <CreditCard className="size-5 shrink-0" /> Pay with UPI (GPay / PhonePe / Paytm)
-            </a>
+            <UpiPay
+              amount={amount}
+              note={`AKF ${name || "New client"}`.slice(0, 40)}
+              className="w-full min-h-[52px] py-3 px-3 rounded-2xl bg-[#FF6A1A] text-black font-bold text-base flex items-center justify-center gap-2 text-center"
+            />
           )}
           <button type="button" onClick={() => copy(COACH_UPI_ID, "upi")} className="w-full min-h-[48px] py-2 px-3 rounded-2xl bg-white/5 border border-white/10 text-sm flex items-center justify-between gap-2 cursor-pointer">
             <span className="text-text-muted truncate text-left">UPI ID: <strong className="text-white font-mono">{COACH_UPI_ID}</strong></span>

@@ -106,6 +106,7 @@ export async function createPlan(opts: { clientId: string | null; kind: PlanKind
   if (opts.from) {
     data = cloneWithNewIds(opts.from.data)
     data.header = header
+    data.buildSeconds = 0
     // only a copy of this client's own last plan highlights what changed
     const sameClient = !!opts.clientId && opts.from.client_id === opts.clientId
     data.markChanges = sameClient
