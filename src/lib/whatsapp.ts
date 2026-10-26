@@ -663,10 +663,11 @@ export async function sendFeeReminder(
   packageName: string,
   dueDate: string,
   stage: FeeReminderStage,
+  payLink?: string,
 ): Promise<WhatsAppSendResult> {
   const name = (fullName || "").trim() || "there"
   const pkg = (packageName || "").trim() || "your coaching"
-  const link = `${SITE_URL}/payments`
+  const link = payLink || `${SITE_URL}/payments`
   const templateName =
     stage === "before" ? "fee_reminder_before" : stage === "due" ? "fee_reminder_due" : "fee_reminder_overdue"
 

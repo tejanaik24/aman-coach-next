@@ -66,6 +66,7 @@ export default function FeesPage() {
   const [clientOptions, setClientOptions] = useState<{ id: string; name: string; packageName?: string | null; startDate?: string | null; endDate?: string | null; feeAmount?: number | null }[]>([])
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<FeeWithClient | null>(null)
+  const [remindingId, setRemindingId] = useState<string | null>(null)
 
   // Package fixed fees modal state (#3)
   const [packageFeesModalOpen, setPackageFeesModalOpen] = useState(false)
@@ -260,14 +261,19 @@ export default function FeesPage() {
     { key: "all", label: `All (${fees.length})` },
   ]
 
-  function reminderText(f: FeeWithClient): string {
-    const first = f.clientName.trim()
-    const dueAmt = amountDue(f)
-    const amt = `₹${dueAmt.toLocaleString("en-IN")}`
-    const due = format(new Date(f.dueDate + "T00:00:00"), "d MMM")
-    return isLate(f)
-      ? `Hi ${first}, a gentle reminder: your coaching fee of ${amt} was due on ${due}. Kindly pay via UPI (${COACH_UPI_ID}) when you can. Thank you! — Aman`
-      : `Hi ${first}, a reminder: your coaching fee of ${amt} is due on ${due}. You can pay via UPI (${COACH_UPI_ID}). Thank you! — Aman`
+  // Sent from the business WhatsApp number with the bill link (Aman 26 Oct: not from his own number)
+  async function sendReminder(f: FeeWithClient) {
+    setRemindingId(f.id)
+    try {
+      const res = await fetch(`/api/coach/fees/${f.id}/remind`, { method: "POST" })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) toast.success(`Reminder sent to ${f.clientName}`)
+      else toast.error(body.error || "Could not send the reminder")
+    } catch {
+      toast.error("Could not send the reminder")
+    } finally {
+      setRemindingId(null)
+    }
   }
 
   function billWhatsAppText(f: FeeWithClient): string {
@@ -349,7 +355,6 @@ export default function FeesPage() {
             {shown.map((f) => {
               const late = isLate(f)
               const open = expanded === f.id
-              const wa = waLink(f.clientPhone || null, reminderText(f))
               const waBill = waLink(f.clientPhone || null, billWhatsAppText(f))
               const days = differenceInCalendarDays(new Date(f.dueDate + "T00:00:00"), new Date())
               const dueAmt = f.status === "paid" ? f.amount : amountDue(f)
@@ -392,10 +397,15 @@ export default function FeesPage() {
 
                   {f.status !== "paid" && (
                     <div className="grid grid-cols-2 gap-2 mt-3">
-                      {wa ? (
-                        <a href={wa} target="_blank" rel="noopener noreferrer" className="h-11 rounded-xl bg-[#25D366] text-black font-bold text-sm flex items-center justify-center gap-1.5">
-                          <MessageCircle className="size-4" /> Remind
-                        </a>
+                      {f.clientPhone ? (
+                        <button
+                          type="button"
+                          disabled={remindingId === f.id}
+                          onClick={() => sendReminder(f)}
+                          className="h-11 rounded-xl bg-[#25D366] text-black font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <MessageCircle className="size-4" /> {remindingId === f.id ? "Sending…" : "Remind"}
+                        </button>
                       ) : (
                         <span className="h-11 rounded-xl bg-white/5 text-text-muted text-xs flex items-center justify-center">No number</span>
                       )}

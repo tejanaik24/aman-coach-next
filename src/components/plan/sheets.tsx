@@ -71,6 +71,8 @@ function Stepper({
   )
 }
 
+const libName = (s: string) => plain(s).replace(/\s*\([^)]*reference[^)]*\)?/gi, "").trim()
+
 function ChipSelect<T extends string | number>({
   options,
   value,
@@ -142,16 +144,19 @@ export function RowSheet({
     stretchHoldSec: row.stretchHoldSec ?? 30,
   })
 
-  // Lookup matches from library
+  // Lookup matches from library. Names imported from Aman's docs carry "(Reference 1)" etc. (that was the
+  // video label), so it is dropped from the name; once the typed name equals a library name, no suggestion.
   const q = plain(r.name).toLowerCase().trim()
+  const seen = new Set<string>()
   const matches =
     q.length >= 2
       ? library
-          .filter(
-            (i) =>
-              plain(i.name).toLowerCase().includes(q) &&
-              plain(i.name).toLowerCase() !== q,
-          )
+          .filter((i) => {
+            const n = libName(i.name).toLowerCase()
+            if (!n.includes(q) || n === q || seen.has(n)) return false
+            seen.add(n)
+            return true
+          })
           .slice(0, 5)
       : []
 
@@ -167,7 +172,7 @@ export function RowSheet({
     const k = m.data.kind ?? (m.kind === "warmup" && m.name.toLowerCase().includes("stretch") ? "stretch" : "strength")
     const next: WorkoutRow = {
       ...r,
-      name: m.name,
+      name: libName(m.name),
       kind: k,
       links: m.data.links?.length ? m.data.links : r.links,
       cues: m.data.cues?.length ? m.data.cues : r.cues,
@@ -253,7 +258,7 @@ export function RowSheet({
                 onClick={() => pickLibraryItem(m)}
                 className="w-full text-left px-4 py-3 rounded-xl bg-accent-orange/10 border border-accent-orange/30 text-sm font-semibold cursor-pointer hover:bg-accent-orange/20"
               >
-                {plain(m.name)}
+                {libName(m.name)}
                 {m.data.why && <span className="block text-xs font-normal text-text-muted mt-0.5 line-clamp-1">{m.data.why}</span>}
               </button>
             ))}
@@ -276,10 +281,10 @@ export function RowSheet({
               />
             </div>
             <div>
-              <Label hint="1 to 6">Working sets</Label>
+              <Label hint="0 = reps only">Working sets</Label>
               <Stepper
                 value={r.workingSets ?? 3}
-                min={1}
+                min={0}
                 max={6}
                 onChange={(v) => updateState({ workingSets: v })}
               />
@@ -297,6 +302,7 @@ export function RowSheet({
                 { label: "10-15", value: "10-15" },
                 { label: "12-15", value: "12-15" },
                 { label: "15-20", value: "15-20" },
+                { label: "20-30", value: "20-30" },
                 { label: "Max", value: "max" },
                 { label: "Time (Hold)", value: "30s hold" },
               ]}
@@ -322,9 +328,27 @@ export function RowSheet({
           </div>
 
           {/* Scheme Preview */}
-          <div className="p-3 rounded-xl bg-accent-orange/10 border border-accent-orange/20 flex items-center justify-between">
-            <span className="text-xs text-text-muted">Generated sets:</span>
-            <span className="text-sm font-bold text-accent-orange">{schemeText(r)}</span>
+          <div className="p-3 rounded-xl bg-accent-orange/10 border border-accent-orange/20 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-text-muted">{r.custom ? "Your own text:" : "Generated sets:"}</span>
+              {!r.custom && <span className="text-sm font-bold text-accent-orange text-right">{schemeText(r)}</span>}
+              <button
+                type="button"
+                onClick={() => updateState({ custom: !r.custom, customSets: r.customSets ?? schemeText(r) })}
+                className="shrink-0 text-xs px-3 py-1.5 rounded-lg font-bold cursor-pointer bg-white/10 text-white"
+              >
+                {r.custom ? "Use buttons" : "Type my own"}
+              </button>
+            </div>
+            {r.custom && (
+              <textarea
+                value={r.customSets ?? r.sets}
+                onChange={(e) => setR({ ...r, customSets: e.target.value, sets: e.target.value })}
+                rows={2}
+                placeholder="e.g. 20-30 Reps total (in as many sets)"
+                className={`${inputCls} py-2.5 text-sm resize-none`}
+              />
+            )}
           </div>
 
           {/* Scientific Why Note */}

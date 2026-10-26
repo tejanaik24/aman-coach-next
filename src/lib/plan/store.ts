@@ -1,4 +1,4 @@
-import { format, differenceInCalendarWeeks, addDays } from "date-fns"
+import { format, addDays } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import {
   cloneWithNewIds, plain, schemeText, textIndex, uid,
@@ -22,7 +22,6 @@ export async function loadHeader(clientId: string): Promise<PlanHeader> {
   const prof = Array.isArray(client?.profile) ? client?.profile[0] : client?.profile
   const jf = ((joining.data?.[0]?.form_data ?? {}) as Record<string, unknown>)
   const str = (v: unknown) => (typeof v === "string" || typeof v === "number" ? String(v) : "")
-  const week = client?.start_date ? Math.max(1, differenceInCalendarWeeks(new Date(), new Date(client.start_date + "T00:00:00"), { weekStartsOn: 1 }) + 1) : ""
 
   // measurement columns: joining form first, then check-ins oldest -> newest
   const cols: { date: string; weight: string; abdomen: string }[] = []
@@ -40,7 +39,6 @@ export async function loadHeader(clientId: string): Promise<PlanHeader> {
       { label: "Height", value: str(jf.q7_height) },
       { label: "Date of Birth", value: str(jf.q6_dob) },
       { label: "Next Check IN Date", value: dmy(nextCheckin.data?.[0]?.due_date) },
-      { label: "Coaching Week", value: String(week) },
       { label: "Next Payment Due Date", value: dmy(nextFee.data?.[0]?.due_date ?? client?.end_date) },
     ],
     dates: shown.map((c) => c.date),

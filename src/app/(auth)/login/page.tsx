@@ -193,6 +193,11 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {searchParams.get("error") === "already_set" && (
+            <p className="text-[11px] font-medium text-white bg-white/10 px-3 py-2 rounded-lg">
+              Your password is already set. Log in with your mobile number and password.
+            </p>
+          )}
           {isLinkExpired && (
             <p className="text-[11px] font-medium text-danger bg-danger/10 px-3 py-2 rounded-lg">
               This link has expired. Log in with your mobile number, or ask Coach Aman for a new link.

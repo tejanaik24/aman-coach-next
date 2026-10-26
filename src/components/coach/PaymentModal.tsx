@@ -49,6 +49,8 @@ interface Props {
     status?: string
     paidDate?: string | null
     paid_date?: string | null
+    emiNo?: number | null
+    emi_no?: number | null
   } | null
   onSuccess: () => void
 }
@@ -294,8 +296,13 @@ export default function PaymentModal({
   }, [isEmi, emiParts, finalAmount, dueDate])
 
   const emiSum = emiRows.reduce((t, r) => t + (Number(r.amount) || 0), 0)
+  // EMI on new bills, and on an existing unpaid bill that is not already an EMI part (Aman 26 Oct:
+  // he opened a client's ₹40,000 bill to split it and found no EMI option).
+  const canEmi =
+    mode === "add" ||
+    (mode === "edit" && !!initialFee && !(initialFee.emiNo ?? initialFee.emi_no) && initialFee.status !== "paid")
   const paidNow = Number(amountPaidStr) || 0
-  const isPartPaid = !(mode === "add" && isEmi) && finalAmount > 0 && paidNow > 0 && paidNow < finalAmount
+  const isPartPaid = !(canEmi && isEmi) && finalAmount > 0 && paidNow > 0 && paidNow < finalAmount
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -341,7 +348,7 @@ export default function PaymentModal({
     const existingPaidDate = initialFee?.paidDate ?? initialFee?.paid_date ?? null
     const resolvedPaidDate = resolvedStatus === "paid" ? (existingPaidDate || today) : null
 
-    const useEmi = mode === "add" && isEmi
+    const useEmi = canEmi && isEmi
     if (useEmi) {
       if (emiRows.some((r) => !(Number(r.amount) > 0) || !r.due)) {
         toast.error("Every EMI needs an amount and a date")
@@ -370,8 +377,7 @@ export default function PaymentModal({
           .eq("id", targetClientId)
       }
 
-      if (mode === "add") {
-        if (useEmi) {
+      if (useEmi) {
           const emiGroupId = crypto.randomUUID()
           const partCount = emiRows.length
 
@@ -429,13 +435,25 @@ export default function PaymentModal({
             })
           }
 
-          const { error } = await supabase.from("fees").insert(rowsToInsert)
-          if (error) {
-            toast.error("Could not add EMI instalments: " + error.message)
-            return
+          if (mode === "edit" && initialFee) {
+            // The existing bill becomes EMI 1 (keeps its bill number and link); the others are added
+            const [first, ...others] = rowsToInsert
+            const { client_id: _c, currency: _cur, ...firstUpdate } = first
+            const { error: upErr } = await supabase.from("fees").update(firstUpdate).eq("id", initialFee.id)
+            const { error } = upErr ? { error: upErr } : await supabase.from("fees").insert(others)
+            if (error) {
+              toast.error("Could not split into EMIs: " + error.message)
+              return
+            }
+          } else {
+            const { error } = await supabase.from("fees").insert(rowsToInsert)
+            if (error) {
+              toast.error("Could not add EMI instalments: " + error.message)
+              return
+            }
           }
           toast.success(`${partCount} EMI instalments created`)
-        } else {
+      } else if (mode === "add") {
           const { error } = await supabase.from("fees").insert({
             client_id: targetClientId,
             package_fee: validPkgFee,
@@ -454,7 +472,6 @@ export default function PaymentModal({
             return
           }
           toast.success("Payment added")
-        }
       } else if (mode === "edit" && initialFee) {
         const { error } = await supabase
           .from("fees")
@@ -832,8 +849,8 @@ export default function PaymentModal({
               </div>
             </div>
 
-            {/* EMI option: any client, new bills only */}
-            {mode === "add" && (
+            {/* EMI option: any client, new bills and unpaid existing bills */}
+            {canEmi && (
               <div className="rounded-2xl bg-[#1A1A1A] border border-[#C9A84C]/40 p-4 space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input

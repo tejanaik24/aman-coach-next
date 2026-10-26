@@ -7,6 +7,7 @@ import {
 } from "@/lib/automation"
 import { amountDue } from "@/lib/fee-math"
 import { sendFeeReminder, type FeeReminderStage } from "@/lib/whatsapp"
+import { SITE_URL } from "@/lib/site"
 
 // Daily job (Vercel cron): fee reminders before, on and after the due date.
 //  Aman's rule (WhatsApp 2026-10-14 23:44): before = 3 days before ("will be due"), due = due day ("is due"),
@@ -42,7 +43,7 @@ async function run(request: Request) {
 
   const { data: fees, error } = await db
     .from("fees")
-    .select("id, client_id, amount, amount_paid, due_date, status")
+    .select("id, client_id, amount, amount_paid, due_date, status, token")
     .in("status", ["pending", "overdue"])
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -105,6 +106,7 @@ async function run(request: Request) {
       client?.package_name || "",
       prettyDate(fee.due_date),
       stage,
+      fee.token ? `${SITE_URL}/bill/${fee.token}` : undefined,
     )
     const ok = res.success && !res.dryRun
     if (ok) {

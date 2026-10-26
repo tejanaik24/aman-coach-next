@@ -282,7 +282,7 @@ const isChip = (t: string) =>
  * section card, "- " bullet, a bullet ending ":" = sub-heading, 4+ short bullets in a row = chip grid,
  * "LABEL: text" = callout. variant "cardio" turns each bullet into a stat card.
  */
-function RulesText({ md, variant }: { md: string; variant?: "cardio" }) {
+function RulesText({ md, variant, big }: { md: string; variant?: "cardio"; big?: boolean }) {
   // A "*CAPS*" line straight after an unfinished bullet is the rest of that bullet
   // (old text had "*DIGITAL FOOD*\n*WEIGHING SCALE.*" split over two lines).
   const lines: RuleLine[] = []
@@ -315,17 +315,18 @@ function RulesText({ md, variant }: { md: string; variant?: "cardio" }) {
             <Text style={s.ruleNum}>{sec[1]}</Text>
             <Rich text={sec[2].replace(/:$/, "")} style={s.ruleCardTitle} />
           </View>
-          <View style={{ paddingHorizontal: 12, paddingBottom: 9 }}>{ruleBody(body, variant)}</View>
+          <View style={{ paddingHorizontal: 12, paddingBottom: 9 }}>{ruleBody(body, variant, big)}</View>
         </View>
       ) : (
-        <View key={i}>{ruleBody(body, variant)}</View>
+        <View key={i}>{ruleBody(body, variant, big)}</View>
       ),
     )
   }
   return <View>{out}</View>
 }
 
-function ruleBody(lines: RuleLine[], variant?: "cardio"): ReactNode[] {
+function ruleBody(lines: RuleLine[], variant?: "cardio", big?: boolean): ReactNode[] {
+  const bulletStyle = big ? [s.ruleBullet, { fontSize: 11.5, lineHeight: 1.5, marginTop: 6 }] : s.ruleBullet
   const out: ReactNode[] = []
   let k = 0
   while (k < lines.length) {
@@ -377,7 +378,7 @@ function ruleBody(lines: RuleLine[], variant?: "cardio"): ReactNode[] {
       )
     } else if (isBullet) {
       out.push(
-        <View key={i} style={s.ruleBullet} wrap={false}>
+        <View key={i} style={bulletStyle} wrap={false}>
           <View style={s.dot} />
           <Rich text={text} style={{ flex: 1 }} />
         </View>,
@@ -387,8 +388,8 @@ function ruleBody(lines: RuleLine[], variant?: "cardio"): ReactNode[] {
       const label = text.match(/^([A-Z][A-Z &/-]{3,}):\s*(.*)$/)
       if (num)
         out.push(
-          <View key={i} style={s.ruleBullet} wrap={false}>
-            <Text style={{ width: 14, color: C.orange, fontWeight: 700 }}>{num[1]}.</Text>
+          <View key={i} style={bulletStyle} wrap={false}>
+            <Text style={{ width: big ? 20 : 14, color: C.orange, fontWeight: 700 }}>{num[1]}.</Text>
             <Rich text={num[2]} style={{ flex: 1 }} />
           </View>,
         )
@@ -426,7 +427,8 @@ function Cover({ doc, logo }: { doc: PlanDoc; logo: string }) {
           "d MMM yyyy",
         )}`
       : ""
-  const filled = h.rows.filter((r) => r.value.trim())
+  // Aman 26 Oct: no "Coaching Week" on the PDF (older plans still have the row saved)
+  const filled = h.rows.filter((r) => r.value.trim() && !/coaching\s*week/i.test(r.label))
   return (
     <View>
       <View style={s.band}>
@@ -656,13 +658,7 @@ function Day({
   let generalExerciseIndex = 0
   const groupItemIndex = new Map<string, number>()
 
-  return (
-    <View style={{ marginBottom: 12 }}>
-      <View style={s.dayHead} wrap={false} minPresenceAhead={120}>
-        <Text style={s.dayNo}>{no}</Text>
-        <Text style={s.dayTitle}>{name}</Text>
-      </View>
-      <View style={s.card}>
+  const head = (
         <View style={{ flexDirection: "row" }}>
           <View style={[s.th, { width: "66%" }]}>
             <Text>EXERCISES</Text>
@@ -675,8 +671,9 @@ function Day({
             ) : null}
           </View>
         </View>
+  )
 
-        {day.rows.map((r, ri) => {
+  const rowEls = day.rows.map((r, ri) => {
           let label: number | string = 0
           let isGrouped = false
 
@@ -745,8 +742,26 @@ function Day({
               )}
             </View>
           )
-        })}
+        })
+
+  // Day title + table header + first exercise never split (Aman 26 Oct: a day must not start at the
+  // bottom of a page with its exercises on the next one). The rest of the rows may flow onto new pages.
+  const rest = rowEls.slice(1)
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <View wrap={false}>
+        <View style={s.dayHead}>
+          <Text style={s.dayNo}>{no}</Text>
+          <Text style={s.dayTitle}>{name}</Text>
+        </View>
+        <View style={[s.card, rest.length ? { marginBottom: 0, borderBottomWidth: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 } : {}]}>
+          {head}
+          {rowEls[0]}
+        </View>
       </View>
+      {rest.length > 0 && (
+        <View style={[s.card, { borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}>{rest}</View>
+      )}
     </View>
   )
 }
@@ -915,9 +930,10 @@ export function PlanPdf({ doc, assetBase }: { doc: PlanDoc; assetBase: string })
       <Page size="A4" style={s.page}>
         <Cover doc={doc} logo={logo} />
         {d.showRules && d.workout?.rules ? (
-          <View>
-            <Text style={s.h2}>Important Points</Text>
-            <RulesText md={d.workout.rules} />
+          // Aman 26 Oct: highlight these points and make the text bigger
+          <View style={{ backgroundColor: C.tint, borderLeftWidth: 3, borderLeftColor: C.orange, borderRadius: 6, padding: 12, marginBottom: 12 }}>
+            <Text style={[s.h2, { fontSize: 20 }]}>Important Points</Text>
+            <RulesText md={d.workout.rules} big />
           </View>
         ) : null}
         {d.showRules && d.diet?.rules ? (

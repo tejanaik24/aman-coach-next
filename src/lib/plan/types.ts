@@ -203,7 +203,8 @@ export function schemeText(row: Partial<WorkoutRow> & { sets?: string | number; 
     repsText += " each side"
   }
 
-  const workingPart = workingCount > 0 ? `${workingCount} × ${repsText}` : ""
+  // 0 working sets = reps only, no set count (Aman 26 Oct: "20-30 Reps total, in as many sets")
+  const workingPart = workingCount > 0 ? `${workingCount} × ${repsText}` : `${repsText} total`
 
   if (warmupPart && workingPart) return `${warmupPart} + ${workingPart}`
   if (workingPart) return workingPart

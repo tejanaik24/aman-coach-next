@@ -6,6 +6,7 @@ import { randomBytes } from "crypto"
 import { queueWebhook } from "@/lib/webhook-queue"
 import { phoneEmail } from "@/lib/phone-login"
 import { SITE_URL } from "@/lib/site"
+import { makeLoginLink } from "@/lib/server/login-link"
 import { validateBillInput } from "@/lib/bill-validation"
 
 function calculateFirstDueDate(startDate: string, explicitDueDate?: string): string {
@@ -137,17 +138,8 @@ export async function POST(request: Request) {
 
     const newUserId = authData.user.id
 
-    const { data: recoveryData, error: recoveryError } = await admin.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: { redirectTo: `${SITE_URL}/reset-password` },
-    })
-    const hashedToken = recoveryData?.properties?.hashed_token
-    if (recoveryError || !hashedToken) {
-      await admin.auth.admin.deleteUser(newUserId)
-      return NextResponse.json({ error: "Failed to create secure account setup link" }, { status: 500 })
-    }
-    const setupUrl = `${SITE_URL}/auth/confirm?token_hash=${hashedToken}&type=recovery&next=/reset-password`
+    // Valid for 7 days or until the client sets a password (Supabase's own token died in ~1 hour)
+    const setupUrl = makeLoginLink(newUserId, "setup")
 
     const { data: clientData, error: clientError } = await withRetry(() =>
       supabase
