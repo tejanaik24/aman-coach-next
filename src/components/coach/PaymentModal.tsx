@@ -96,7 +96,9 @@ export default function PaymentModal({
   const [alsoUpdateClient, setAlsoUpdateClient] = useState(mode === "add")
   const [currentClientSnapshot, setCurrentClientSnapshot] = useState<ClientSnapshot | null>(null)
   const [isEmi, setIsEmi] = useState(false)
-  const [emiParts, setEmiParts] = useState<2 | 3 | 4>(3)
+  const [emiParts, setEmiParts] = useState(3)
+  const [emiRows, setEmiRows] = useState<{ amount: string; due: string }[]>([])
+  const [balanceRemindOn, setBalanceRemindOn] = useState("")
   const [fieldErrors, setFieldErrors] = useState<BillFieldErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [packageFeeMap, setPackageFeeMap] = useState<Record<string, number>>({})
@@ -121,6 +123,7 @@ export default function PaymentModal({
   useEffect(() => {
     if (!isOpen) return
     setFieldErrors({})
+    setBalanceRemindOn("")
     if (initialFee) {
       const initDisc = Number(initialFee.discount ?? 0)
       const initOther = Number(initialFee.otherCharges ?? initialFee.other_charges ?? 0)
@@ -277,6 +280,23 @@ export default function PaymentModal({
   const numOtherCharges = preview.otherCharges
   const finalAmount = preview.finalAmount
 
+  // Even monthly split as the starting point; Aman can then change any amount or date.
+  useEffect(() => {
+    if (!isEmi) return
+    const base = Math.floor(finalAmount / emiParts)
+    const rest = finalAmount - base * emiParts
+    setEmiRows(
+      Array.from({ length: emiParts }, (_, i) => ({
+        amount: String(i === emiParts - 1 ? base + rest : base),
+        due: dueDate ? format(addMonths(new Date(dueDate + "T00:00:00"), i), "yyyy-MM-dd") : "",
+      }))
+    )
+  }, [isEmi, emiParts, finalAmount, dueDate])
+
+  const emiSum = emiRows.reduce((t, r) => t + (Number(r.amount) || 0), 0)
+  const paidNow = Number(amountPaidStr) || 0
+  const isPartPaid = !(mode === "add" && isEmi) && finalAmount > 0 && paidNow > 0 && paidNow < finalAmount
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const targetClientId = clientId || selectedClientId
@@ -321,6 +341,18 @@ export default function PaymentModal({
     const existingPaidDate = initialFee?.paidDate ?? initialFee?.paid_date ?? null
     const resolvedPaidDate = resolvedStatus === "paid" ? (existingPaidDate || today) : null
 
+    const useEmi = mode === "add" && isEmi
+    if (useEmi) {
+      if (emiRows.some((r) => !(Number(r.amount) > 0) || !r.due)) {
+        toast.error("Every EMI needs an amount and a date")
+        return
+      }
+      if (emiSum !== validFinalAmount) {
+        toast.error(`EMIs add up to ₹${emiSum.toLocaleString("en-IN")}, but the bill is ₹${validFinalAmount.toLocaleString("en-IN")}`)
+        return
+      }
+    }
+
     setIsSubmitting(true)
     const supabase = createClient()
 
@@ -339,11 +371,9 @@ export default function PaymentModal({
       }
 
       if (mode === "add") {
-        if (isEmi && currentClientSnapshot?.emiAllowed) {
+        if (useEmi) {
           const emiGroupId = crypto.randomUUID()
-          const partCount = emiParts
-          const basePartAmount = Math.floor(validFinalAmount / partCount)
-          const remainder = validFinalAmount - basePartAmount * partCount
+          const partCount = emiRows.length
 
           let remainingPaid = resolvedAmountPaid
           const rowsToInsert = []
@@ -355,11 +385,8 @@ export default function PaymentModal({
           const fullBreakdownNote = `Package ₹${validPkgFee.toLocaleString("en-IN")}${discText}${otherText} = ₹${validFinalAmount.toLocaleString("en-IN")}, in ${partCount} EMIs`
 
           for (let i = 1; i <= partCount; i++) {
-            // Due date: monthly intervals using date-fns addMonths
-            const partDueDate = format(addMonths(new Date(dueDate + "T00:00:00"), i - 1), "yyyy-MM-dd")
-
-            // Last instalment gets the rounding remainder
-            const partAmount = i === partCount ? basePartAmount + remainder : basePartAmount
+            const partDueDate = emiRows[i - 1].due
+            const partAmount = Number(emiRows[i - 1].amount)
 
             let partPaid = 0
             let partStatus: "paid" | "pending" = "pending"
@@ -448,6 +475,21 @@ export default function PaymentModal({
           return
         }
         toast.success("Payment updated")
+      }
+      if (!useEmi && balanceRemindOn && validFinalAmount > resolvedAmountPaid && resolvedAmountPaid > 0) {
+        const { data: me } = await supabase.auth.getUser()
+        const balance = validFinalAmount - resolvedAmountPaid
+        const { error: fuError } = me.user
+          ? await supabase.from("followups").insert({
+              client_id: targetClientId,
+              coach_id: me.user.id,
+              type: "payment",
+              due_date: balanceRemindOn,
+              note: `Balance ₹${balance.toLocaleString("en-IN")} pending`,
+            })
+          : { error: new Error("Not logged in") }
+        if (fuError) toast.error("Bill saved, but the reminder was not: " + fuError.message)
+        else toast.success(`Reminder set for ${format(new Date(balanceRemindOn + "T00:00:00"), "d MMM")}`)
       }
       onSuccess()
       onClose()
@@ -790,8 +832,8 @@ export default function PaymentModal({
               </div>
             </div>
 
-            {/* EMI option: only shown when client has EMI allowed and adding new payment */}
-            {mode === "add" && currentClientSnapshot?.emiAllowed && (
+            {/* EMI option: any client, new bills only */}
+            {mode === "add" && (
               <div className="rounded-2xl bg-[#1A1A1A] border border-[#C9A84C]/40 p-4 space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
@@ -802,31 +844,45 @@ export default function PaymentModal({
                   />
                   <div>
                     <span className="text-sm font-bold text-white block">Pay in instalments (EMI)</span>
-                    <span className="text-xs text-text-muted">Split total into monthly instalments</span>
+                    <span className="text-xs text-text-muted">Choose how many EMIs, then change any amount or date</span>
                   </div>
                 </label>
 
                 {isEmi && (
-                  <div className="pt-2 border-t border-white/10 space-y-2">
-                    <p className="text-xs text-text-muted font-semibold">Number of monthly parts:</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {([2, 3, 4] as const).map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => setEmiParts(n)}
-                          className={`h-10 rounded-xl text-xs font-bold transition-colors cursor-pointer border ${
-                            emiParts === n
-                              ? "bg-[#C9A84C] text-black border-[#C9A84C]"
-                              : "bg-[#141414] border-[#333333] text-white hover:border-[#555]"
-                          }`}
-                        >
-                          {n} parts
-                        </button>
+                  <div className="pt-2 border-t border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-text-muted font-semibold">Number of EMIs</p>
+                      <div className="flex items-center gap-2">
+                        <button type="button" aria-label="Fewer EMIs" onClick={() => setEmiParts((n) => Math.max(2, n - 1))} className="size-10 rounded-xl bg-[#141414] border border-[#333333] text-lg font-bold cursor-pointer">−</button>
+                        <span className="w-8 text-center text-base font-bold">{emiParts}</span>
+                        <button type="button" aria-label="More EMIs" onClick={() => setEmiParts((n) => Math.min(12, n + 1))} className="size-10 rounded-xl bg-[#141414] border border-[#333333] text-lg font-bold cursor-pointer">+</button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {emiRows.map((r, i) => (
+                        <div key={i} className="grid grid-cols-[3.5rem_1fr_1fr] gap-2 items-center">
+                          <span className="text-xs font-bold text-text-muted">EMI {i + 1}</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            aria-label={`EMI ${i + 1} amount`}
+                            value={r.amount}
+                            onChange={(e) => setEmiRows((rows) => rows.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))}
+                            className={inputClass}
+                          />
+                          <input
+                            type="date"
+                            aria-label={`EMI ${i + 1} date`}
+                            value={r.due}
+                            onChange={(e) => setEmiRows((rows) => rows.map((x, j) => (j === i ? { ...x, due: e.target.value } : x)))}
+                            className={inputClass}
+                          />
+                        </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-[#C9A84C] font-medium pt-1">
-                      Will create {emiParts} bills of ~₹{Math.floor(finalAmount / emiParts).toLocaleString("en-IN")}/mo starting on due date.
+                    <p className={`text-[11px] font-medium ${emiSum === finalAmount ? "text-[#C9A84C]" : "text-red-400"}`}>
+                      EMIs total ₹{emiSum.toLocaleString("en-IN")} of ₹{finalAmount.toLocaleString("en-IN")}
+                      {emiSum !== finalAmount && " (must match)"}
                     </p>
                   </div>
                 )}
@@ -906,6 +962,22 @@ export default function PaymentModal({
                 className={inputClass}
               />
             </div>
+
+            {isPartPaid && (
+              <div className="rounded-2xl bg-[#1A1A1A] border border-accent-orange/40 p-4 space-y-2">
+                <p className="text-sm font-bold text-white">
+                  ₹{(finalAmount - paidNow).toLocaleString("en-IN")} still to collect
+                </p>
+                <label className="block text-xs text-text-muted">Remind me to collect it on</label>
+                <input
+                  type="date"
+                  value={balanceRemindOn}
+                  onChange={(e) => setBalanceRemindOn(e.target.value)}
+                  className={inputClass}
+                />
+                <p className="text-[11px] text-text-muted">Shows in Home follow-ups on that day. Leave empty for no reminder.</p>
+              </div>
+            )}
 
             <div className="pt-1">
               <button

@@ -69,7 +69,7 @@ type CheckinFormData = {
 
 const defaultCheckinForm: CheckinFormData = {
   t1_energy_workout: "",
-  t2_days_worked_out: "10",
+  t2_days_worked_out: "",
   t3_workout_deviation: "",
   t4_exercise_issues: "",
   t5_cardio_steps_goal: "",
@@ -86,9 +86,9 @@ const defaultCheckinForm: CheckinFormData = {
   g4_urine_color: "",
   g5_coaching_feedback: "",
   g6_additional_notes: "",
-  w1_weight: "73.5",
-  w2_abdomen: "33.5",
-  w3_hips: "37.5",
+  w1_weight: "",
+  w2_abdomen: "",
+  w3_hips: "",
   front_pic: [],
   back_pic: [],
   both_side_pic: [],
@@ -234,6 +234,16 @@ export default function CheckinFormPage() {
         if (daysAgo < 5) {
           setCooldownDaysLeft(Math.ceil(5 - daysAgo))
         }
+
+        // Start measurements from the client's own last check-in, never made-up numbers.
+        const last = (lastCheckin.form_data ?? {}) as unknown as Record<string, unknown>
+        const prev = (k: string) => (typeof last[k] === "string" ? (last[k] as string) : "")
+        setForm(f => ({
+          ...f,
+          w1_weight: f.w1_weight || prev("w1_weight"),
+          w2_abdomen: f.w2_abdomen || prev("w2_abdomen"),
+          w3_hips: f.w3_hips || prev("w3_hips"),
+        }))
       }
     }).catch(() => {}).finally(() => setCheckinDataLoading(false))
   }, [user?.id, authLoading])

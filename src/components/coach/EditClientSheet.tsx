@@ -295,23 +295,6 @@ export default function EditClientSheet({ isOpen, onClose, client, onSuccess, on
                 </div>
               </div>
 
-              {/* EMI Option */}
-              <div className="rounded-2xl bg-[#1A1A1A] border border-[#333333] p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-white text-sm font-semibold">Allow EMI for this client</p>
-                  <p className="text-text-muted text-xs mt-0.5">Enables paying fees in monthly instalments in Add Bill</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={emiAllowed}
-                    onChange={(e) => setEmiAllowed(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-[#333333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C9A84C]"></div>
-                </label>
-              </div>
-
               {/* Notes */}
               <div>
                 <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
