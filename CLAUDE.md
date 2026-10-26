@@ -230,3 +230,8 @@ Pending: DB CHECK on fees (needs Teja "YES-CONSTRAINT"); Aman's real photos (her
 - Razorpay: waiting on Aman's Payment Page link → set NEXT_PUBLIC_RAZORPAY_PAYMENT_LINK in Vercel + redeploy. Only test keys exist.
 - Send Aman the WhatsApp update (drafted in chat 23 Oct).
 - Push to GitHub.
+
+## Session 2026-10-26
+- Done (LIVE, pushed df20ed13 + cfc4508f): coach check-in view shows every answer + photo buttons (was only 3 fields); check-in list opens that check-in directly; EMI shown in Add Bill for every client, 2-12 parts with editable amount/date (old "Allow EMI" switch removed); part-paid bill asks a reminder date -> followups type 'payment'; client check-in form no longer prefills fake weight/abdomen/hips/days.
+- Checked: all coach screens load (~3-4s), no runtime errors 7d, crons followups/fee-reminders/coach-summary ran 200 today. All WhatsApp templates incl. fee_reminder_* APPROVED.
+- Pending: set FEE_REMINDERS_ENABLED=true in Vercel Production (Aman OK'd 10-26; my env write was blocked) then redeploy; Razorpay live link from Aman; Aman's feedback on PDF redesign + phone test of EMI/part-payment.
