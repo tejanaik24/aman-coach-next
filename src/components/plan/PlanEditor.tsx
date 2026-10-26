@@ -165,7 +165,7 @@ export default function PlanEditor({
   async function openPreview() {
     const w = window.open("", "_blank")
     try {
-      const { renderPlanPdf } = await import("@/lib/plan/pdf")
+      const { renderPlanPdf } = await import("@/lib/plan/pdf-client")
       const url = URL.createObjectURL(await renderPlanPdf(doc))
       if (w) w.location.href = url
       else window.location.href = url

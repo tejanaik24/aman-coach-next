@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { ChevronDown, Plus, Sparkles, X, Heart, Dumbbell, Activity, Check } from "lucide-react"
 import { Sheet, Label, LineList, LibraryPicker, inputCls, byKind } from "./parts"
 import {
@@ -83,6 +83,23 @@ const words = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().
 // Exercises picked in this visit rank up straight away (the saved count updates when the plan is sent)
 const sessionPicks = new Map<string, number>()
 
+// Names and words worked out once per library load, not on every tap (measured 0.3s per tap on a phone)
+type Prepared = { item: LibraryItem; key: string; words: string[]; i: number }
+const prepared = new WeakMap<LibraryItem[], Prepared[]>()
+function prepare(library: LibraryItem[]): Prepared[] {
+  let list = prepared.get(library)
+  if (!list) {
+    list = library
+      .filter((item) => item.kind === "exercise" || item.kind === "warmup")
+      .map((item, i) => {
+        const name = libName(item.name)
+        return { item, key: name.toLowerCase(), words: words(name), i }
+      })
+    prepared.set(library, list)
+  }
+  return list
+}
+
 /**
  * Every library exercise whose words start with each typed word, in any order
  * ("inc db" finds "Incline Dumbbell Press"). Most used first, then most recently saved.
@@ -93,14 +110,11 @@ export function searchLibrary(library: LibraryItem[], query: string): LibraryIte
   const typed = words(query).join(" ")
   const seen = new Set<string>()
   const hits: { item: LibraryItem; score: number; i: number }[] = []
-  library.forEach((item, i) => {
-    const name = libName(item.name)
-    const key = name.toLowerCase()
-    const w = words(name)
-    if (seen.has(key) || w.join(" ") === typed || !q.every((p) => w.some((x) => x.startsWith(p)))) return
+  for (const { item, key, words: w, i } of prepare(library)) {
+    if (seen.has(key) || w.join(" ") === typed || !q.every((p) => w.some((x) => x.startsWith(p)))) continue
     seen.add(key)
     hits.push({ item, i, score: (item.use_count ?? 0) + (sessionPicks.get(key) ?? 0) * 100 })
-  })
+  }
   return hits.sort((a, b) => b.score - a.score || a.i - b.i).slice(0, 50).map((h) => h.item)
 }
 
@@ -177,7 +191,7 @@ export function RowSheet({
 
   // Lookup matches from library. Names imported from Aman's docs carry "(Reference 1)" etc. (that was the
   // video label), so it is dropped from the name; once the typed name equals a library name, no suggestion.
-  const matches = searchLibrary(library.filter((i) => i.kind === "exercise" || i.kind === "warmup"), plain(r.name))
+  const matches = useMemo(() => searchLibrary(library, plain(r.name)), [library, r.name])
 
   const updateState = (patch: Partial<WorkoutRow>) => {
     const next = { ...r, ...patch }

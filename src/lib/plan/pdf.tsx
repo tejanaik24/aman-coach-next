@@ -1,5 +1,3 @@
-"use client"
-
 // Aman's plan PDF. Same structure as his Google Docs plans (header table, rules pages,
 // day tables / meal tables, red banners, linked products and videos), cleaner look.
 import { Document, Page, View, Text, Link, Image, Font, StyleSheet, Svg, Polygon, pdf } from "@react-pdf/renderer"
@@ -977,6 +975,7 @@ export function PlanPdf({ doc, assetBase }: { doc: PlanDoc; assetBase: string })
   )
 }
 
-export async function renderPlanPdf(doc: PlanDoc): Promise<Blob> {
+/** Builds the PDF on the phone itself. Slow there (~8s on a mid phone); used only as a fallback. */
+export async function renderPlanPdfLocally(doc: PlanDoc): Promise<Blob> {
   return pdf(<PlanPdf doc={doc} assetBase={window.location.origin} />).toBlob()
 }

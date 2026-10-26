@@ -38,7 +38,7 @@ export default function SendSheet({ doc, client, onClose, onSent }: {
       if (!user) throw new Error("Not signed in")
       await saveDoc(doc.id, { title: doc.title, period_start: doc.period_start, period_end: doc.period_end, data: doc.data })
 
-      const { renderPlanPdf } = await import("@/lib/plan/pdf")
+      const { renderPlanPdf } = await import("@/lib/plan/pdf-client")
       const blob = await renderPlanPdf(doc)
       const safe = `${first} ${doc.kind} ${doc.period_start ?? ""}`.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "plan"
       const path = await uploadPlanFile(new File([blob], `${safe}.pdf`, { type: "application/pdf" }), `${safe}.pdf`)
