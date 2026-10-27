@@ -4,11 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
-import { COACH_UPI_ID, generateUpiLink } from "@/lib/upi"
+import { COACH_UPI_ID } from "@/lib/upi"
 
 const UPI_ID = COACH_UPI_ID
 const AMOUNT = 2000
-const UPI_LINK = generateUpiLink(AMOUNT, "Consultation Call")
+// Exactly what Aman's own QR holds (his bank-signed ₹2,000 request, sent 26 Oct). Don't edit: any change breaks the signature.
+const UPI_LINK =
+  "upi://pay?pa=9815690656@upi&pn=AMAN KHURANA&am=2000.00&tn=&orgid=189999&sign=3+a9kZEWk0vYVDlNnL5ifr+/d8j5mrkPEbdC8/Me+6lz7PQ9jy1ZirMLWyta6Zk4hRp2aGN1QpjmesH0aNSzjs/v+tfjwbeIqF/W7pPDLf76EPyGX5Gh/g6F1sfcHSgEd9x+hn1bjffVTAUaE7hsbQHY+7a8b5h/XamIYs+C+7Q="
 
 export default function BookConsultationPage() {
   const [name, setName] = useState("")
@@ -82,6 +84,20 @@ export default function BookConsultationPage() {
         {/* Payment card */}
         <div className="ledger p-5 space-y-3">
           <p className="text-text-muted text-[11px] font-medium uppercase tracking-[0.14em]">Scan to pay with any UPI app</p>
+          <img
+            src="/images/consultation-upi-qr.jpg"
+            alt="UPI QR code to pay Aman Khurana ₹2,000"
+            width={682}
+            height={683}
+            className="w-56 h-56 mx-auto rounded-xl bg-white p-2"
+          />
+          <a
+            href="/images/consultation-upi-qr.jpg"
+            download="AKF-consultation-QR.jpg"
+            className="block text-center text-accent-orange text-xs font-medium"
+          >
+            On this phone? Save the QR, then scan it from your gallery in any UPI app
+          </a>
           <div className="flex items-baseline justify-between border-t border-border-subtle pt-3">
             <span className="text-text-muted text-xs">UPI ID</span>
             <span className="font-heading text-sm text-text-primary">{UPI_ID}</span>
