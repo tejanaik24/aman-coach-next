@@ -407,9 +407,9 @@ function ruleBody(lines: RuleLine[], variant?: "cardio", big?: boolean): ReactNo
 function Footer() {
   return (
     <View style={s.footer} fixed>
-      <Link src="https://www.amankhuranafitness.com" style={{ color: C.mute, textDecoration: "none" }}>
-        www.AmanKhuranaFitness.com
-      </Link>
+      {/* Plain text on purpose: react-pdf gives a Link in a fixed footer a broken, page-tall tap box that sat
+          over the video links, so iPhones opened nothing for most of them. */}
+      <Text>www.AmanKhuranaFitness.com</Text>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   )
