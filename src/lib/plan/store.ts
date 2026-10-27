@@ -134,16 +134,23 @@ export async function saveDoc(id: string, patch: Partial<Pick<PlanDoc, "title" |
   if (error) throw error
 }
 
+/** Deletes a client plan that was never sent (a mis-tapped Blank/template). Sent plans and templates are never touched. */
+export async function deleteUnsentPlan(id: string) {
+  const { error } = await createClient().from("plan_docs").delete().eq("id", id).is("sent_at", null).eq("is_template", false)
+  if (error) throw error
+}
+
 /** Everything Aman writes goes into his library, so next time it is one tap. */
-export async function saveToLibrary(d: PlanDocData) {
+// count: a sent plan adds 1 use per name; a single "Save for all" from the exercise sheet does not.
+export async function saveToLibrary(d: PlanDocData, count = true) {
   const sb = createClient()
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return
-  const rows = new Map<string, { kind: LibraryKind; name: string; data: LibraryItem["data"] }>()
-  const put = (kind: LibraryKind, name: string, data: LibraryItem["data"] = {}) => {
+  const rows = new Map<string, { kind: LibraryKind; name: string; data: LibraryItem["data"]; skip?: boolean }>()
+  const put = (kind: LibraryKind, name: string, data: LibraryItem["data"] = {}, skip?: boolean) => {
     const n = name.trim()
     if (n.length < 2 || n.length > 400) return
-    rows.set(kind + "|" + n.toLowerCase(), { kind, name: n, data })
+    rows.set(kind + "|" + n.toLowerCase(), { kind, name: n, data, skip })
   }
   d.workout?.days.forEach((day) =>
     day.rows.forEach((r) => {
@@ -158,7 +165,7 @@ export async function saveToLibrary(d: PlanDocData) {
           warmupSets: r.warmupSets, workingSets: r.workingSets, reps: r.reps, restSec: r.restSec, tempo: r.tempo,
           rir: r.rir, side: r.side, technique: r.technique, custom: r.custom, customSets: r.customSets,
         },
-      })
+      }, r.libSkip)
       if (r.sets.trim()) put("sets", r.sets.trim())
     }),
   )
@@ -176,11 +183,13 @@ export async function saveToLibrary(d: PlanDocData) {
     const k = o.kind + "|" + o.name.toLowerCase()
     if (!prev.has(k)) prev.set(k, o) // newest row for this name
   }
-  const list = [...rows.entries()].map(([k, r]) => {
+  const list = [...rows.entries()].flatMap(([k, { skip, ...r }]) => {
     const p = prev.get(k)
+    // "Only this client": library keeps its own version (only the use count moves); never add it as new
+    if (skip && !p) return []
     // Fresh video link replaces the old one; an empty one never wipes it. Old spelling kept so it updates, not duplicates.
-    const data = p?.data && !r.data.links?.length && p.data.links?.length ? { ...r.data, links: p.data.links } : r.data
-    return { ...r, name: p?.name ?? r.name, data, coach_id: user.id, use_count: (p?.use_count ?? 0) + 1, updated_at: new Date().toISOString() }
+    const data = skip ? p!.data ?? {} : p?.data && !r.data.links?.length && p.data.links?.length ? { ...r.data, links: p.data.links } : r.data
+    return [{ ...r, name: p?.name ?? r.name, data, coach_id: user.id, use_count: (p?.use_count ?? 0) + (count ? 1 : 0), updated_at: new Date().toISOString() }]
   })
   for (let i = 0; i < list.length; i += 200) {
     await sb.from("coach_library").upsert(list.slice(i, i + 200), { onConflict: "coach_id,kind,name" })

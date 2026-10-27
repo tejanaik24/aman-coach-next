@@ -151,17 +151,45 @@ function ChipSelect<T extends string | number>({
 }
 
 /** Edit one exercise / cardio / stretch row. Steppers & chips only. Tap, don't type. */
+function cleanRow(r: WorkoutRow): WorkoutRow {
+  return {
+    ...r,
+    name: r.name.trim(),
+    why: r.why?.trim() || undefined,
+    links: r.links.filter((l) => l.url.trim()),
+    cues: r.cues.filter((c) => c.text.trim()),
+    sets: r.custom ? (r.customSets || r.sets) : schemeText(r),
+  }
+}
+
+/** The parts of an exercise the library keeps: video links, tips, why, sets. */
+function libFingerprint(x: { links?: Link[]; cues?: { text: string }[]; why?: string; sets?: string }) {
+  return JSON.stringify([
+    (x.links ?? []).map((l) => l.url.trim()),
+    (x.cues ?? []).map((c) => c.text.trim()),
+    (x.why ?? "").trim(),
+    (x.sets ?? "").trim(),
+  ])
+}
+
+const libraryTwin = (library: LibraryItem[], name: string) => {
+  const n = plain(name).toLowerCase().trim()
+  return n ? library.find((i) => (i.kind === "exercise" || i.kind === "warmup") && plain(i.name).toLowerCase().trim() === n) : undefined
+}
+
 export function RowSheet({
   row,
   library,
   clientAge,
   onSave,
+  onSaveForAll,
   onClose,
 }: {
   row: WorkoutRow
   library: LibraryItem[]
   clientAge?: number
   onSave: (r: WorkoutRow) => void
+  onSaveForAll?: (r: WorkoutRow) => void
   onClose: () => void
 }) {
   // Infer kind if not explicitly saved
@@ -224,17 +252,23 @@ export function RowSheet({
   const setLink = (i: number, p: Partial<Link>) =>
     setR({ ...r, links: r.links.map((l, j) => (j === i ? { ...l, ...p } : l)) })
 
-  const save = () => {
-    const clean: WorkoutRow = {
-      ...r,
-      name: r.name.trim(),
-      why: r.why?.trim() || undefined,
-      links: r.links.filter((l) => l.url.trim()),
-      cues: r.cues.filter((c) => c.text.trim()),
-      sets: r.custom ? (r.customSets || r.sets) : schemeText(r),
-    }
-    onSave(clean)
+  // Aman 27 Oct: editing a library exercise asks "Save for all" (library) or "Only this client" (this plan)
+  const [ask, setAsk] = useState<WorkoutRow | null>(null)
+  const [startFp] = useState(() => libFingerprint(cleanRow(r)))
+  const finish = (row: WorkoutRow, forAll?: boolean) => {
+    if (ask) row = { ...row, libSkip: !forAll } // libSkip: Send leaves the library alone for this row
+    onSave(row)
+    if (forAll) onSaveForAll?.(row)
     onClose()
+  }
+  const save = () => {
+    if (ask) return // choice still open
+    const clean = cleanRow(r)
+    const lib = libraryTwin(library, clean.name)
+    // Ask only if he changed something in this sheet AND it now differs from the library
+    if (lib && onSaveForAll && libFingerprint(clean) !== startFp && libFingerprint(clean) !== libFingerprint(lib.data))
+      return setAsk(clean)
+    finish(clean)
   }
 
   // Active cardio bpm string
@@ -740,6 +774,26 @@ export function RowSheet({
           </div>
         </div>
       </details>
+
+      {ask && (
+        <div className="fixed inset-0 z-[90] bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-3xl bg-[#111111] border border-border-subtle p-5 space-y-3">
+            <p className="font-heading text-xl leading-tight">You changed “{plain(ask.name)}”</p>
+            <p className="text-text-muted text-sm">Keep this change for every future plan, or only for this client?</p>
+            <button type="button" onClick={() => finish(ask, true)} className="w-full min-h-14 rounded-2xl bg-accent-orange text-black font-bold text-base px-4 py-3 text-left cursor-pointer">
+              Save for all
+              <span className="block text-xs font-medium text-black/70">Updates your exercise library</span>
+            </button>
+            <button type="button" onClick={() => finish(ask)} className="w-full min-h-14 rounded-2xl bg-white/10 font-bold text-base px-4 py-3 text-left cursor-pointer">
+              Only this client
+              <span className="block text-xs font-medium text-text-muted">Library stays as it was</span>
+            </button>
+            <button type="button" onClick={() => setAsk(null)} className="w-full h-11 text-text-muted text-sm font-semibold cursor-pointer">
+              Back to editing
+            </button>
+          </div>
+        </div>
+      )}
     </Sheet>
   )
 }

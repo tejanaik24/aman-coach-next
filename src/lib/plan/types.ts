@@ -42,6 +42,7 @@ export interface WorkoutRow {
   group?: string
   custom?: boolean
   customSets?: string
+  libSkip?: boolean // "Only this client": changes stay in this plan, never written to the library
   // Cardio specific
   cardioMachine?: string // Bike, Incline walk, Elliptical, Stair, Outdoor
   cardioMinutes?: number

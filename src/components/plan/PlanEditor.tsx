@@ -41,7 +41,7 @@ import {
   type WorkoutDay,
   type WorkoutRow,
 } from "@/lib/plan/types"
-import { saveDoc } from "@/lib/plan/store"
+import { deleteUnsentPlan, saveDoc, saveToLibrary } from "@/lib/plan/store"
 import { inputCls, Label } from "./parts"
 import {
   ActionSheet,
@@ -917,6 +917,25 @@ export default function PlanEditor({
             </div>
           </div>
 
+          {!doc.sent_at && !doc.is_template && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm("Delete this plan? It was never sent.")) return
+                try {
+                  await deleteUnsentPlan(doc.id)
+                  toast.success("Deleted")
+                  back()
+                } catch {
+                  toast.error("Could not delete. Try again.")
+                }
+              }}
+              aria-label="Delete this unsent plan"
+              className="size-12 min-h-[48px] grid place-items-center rounded-full bg-white/5 text-danger active:bg-white/10 cursor-pointer shrink-0"
+            >
+              <Trash2 className="size-5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={undo}
@@ -2068,6 +2087,11 @@ export default function PlanEditor({
               const day = findDay(pd, open.day)
               day.rows = day.rows.map((x) => (x.id === nr.id ? nr : x))
             })
+          }
+          onSaveForAll={(nr) =>
+            saveToLibrary({ workout: { days: [{ rows: [nr] }] } } as unknown as PlanDocData, false)
+              .then(() => toast.success("Saved to your library"))
+              .catch(() => toast.error("Library not updated. Try again."))
           }
         />
       )}

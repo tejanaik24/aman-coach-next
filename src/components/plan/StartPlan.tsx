@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { format } from "date-fns"
-import { Copy, Dumbbell, FilePlus2, LayoutTemplate, PenLine, Salad, Sparkles } from "lucide-react"
+import { Copy, Dumbbell, FilePlus2, LayoutTemplate, PenLine, Salad, Sparkles, Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { createPlan, ensureStarterTemplates } from "@/lib/plan/store"
+import { createPlan, deleteUnsentPlan, ensureStarterTemplates } from "@/lib/plan/store"
 import type { PlanDoc, PlanKind } from "@/lib/plan/types"
 import { Sheet } from "./parts"
 
@@ -46,6 +46,18 @@ export default function StartPlan({ clientId }: { clientId: string }) {
     }
   }
 
+  // Aman 27 Oct: a mis-tapped Blank/template opened a plan he could only save or send. Unsent plans only.
+  async function removeDraft(p: Row) {
+    if (!confirm(`Delete "${p.title || p.kind}"? It was never sent.`)) return
+    try {
+      await deleteUnsentPlan(p.id)
+    } catch {
+      return toast.error("Could not delete. Try again.")
+    }
+    setMine((m) => m.filter((x) => x.id !== p.id))
+    toast.success("Deleted")
+  }
+
   const last = kind ? mine.find((p) => p.kind === kind && p.sent_at) : null
   const drafts = mine.filter((p) => !p.sent_at)
 
@@ -63,11 +75,16 @@ export default function StartPlan({ clientId }: { clientId: string }) {
         <div className="space-y-2">
           <p className="text-xs text-text-muted font-semibold">Not sent yet{drafts.length > 3 ? ` · latest 3 of ${drafts.length}` : ""}</p>
           {drafts.slice(0, 3).map((p) => (
-            <button key={p.id} type="button" onClick={() => router.push(`/plans/maker/${p.id}`)} className="w-full h-12 rounded-xl bg-white/5 px-4 text-left flex items-center gap-2 cursor-pointer">
-              <PenLine className="size-4 text-accent-orange" />
-              <span className="flex-1 truncate font-semibold">{p.title || p.kind}</span>
-              <span className="text-xs text-text-muted">{format(new Date(p.created_at), "d MMM")}</span>
-            </button>
+            <div key={p.id} className="flex gap-2">
+              <button type="button" onClick={() => router.push(`/plans/maker/${p.id}`)} className="flex-1 min-w-0 h-12 rounded-xl bg-white/5 px-4 text-left flex items-center gap-2 cursor-pointer">
+                <PenLine className="size-4 text-accent-orange" />
+                <span className="flex-1 truncate font-semibold">{p.title || p.kind}</span>
+                <span className="text-xs text-text-muted">{format(new Date(p.created_at), "d MMM")}</span>
+              </button>
+              <button type="button" aria-label="Delete this unsent plan" onClick={() => removeDraft(p)} className="size-12 shrink-0 rounded-xl bg-white/5 text-danger grid place-items-center cursor-pointer">
+                <Trash2 className="size-5" />
+              </button>
+            </div>
           ))}
         </div>
       )}
