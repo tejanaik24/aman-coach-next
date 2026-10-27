@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     }
 
     let query = supabase.from("push_subscriptions").select("client_id, subscription")
-    if (client_id) query = query.eq("client_id", client_id)
+    // No client_id = all clients; coach phones (client_id NULL) never get client broadcasts
+    query = client_id ? query.eq("client_id", client_id) : query.not("client_id", "is", null)
 
     const { data: rows, error: fetchErr } = await query
     if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 })

@@ -12,6 +12,11 @@ export default function PwaInstallPrompt() {
 
   useEffect(() => {
     // Show prompt if demo parameter is present
+    // Register Service Worker first: phone alerts need it even if the install prompt was dismissed
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(err => console.log("SW reg note:", err))
+    }
+
     if (typeof window !== "undefined" && window.location.search.includes("pwa_prompt=1")) {
       setShowPrompt(true)
       return
@@ -20,11 +25,6 @@ export default function PwaInstallPrompt() {
     // Check if dismissed before
     if (typeof window !== "undefined" && localStorage.getItem("pwa_install_dismissed") === "true") {
       return
-    }
-
-    // Register Service Worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(err => console.log("SW reg note:", err))
     }
 
     const handleBeforeInstall = (e: Event) => {

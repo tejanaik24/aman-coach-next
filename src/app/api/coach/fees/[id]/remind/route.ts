@@ -3,11 +3,11 @@ import { createClient as createServerClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { SITE_URL } from "@/lib/site"
 import { amountDue } from "@/lib/fee-math"
-import { sendFeeReminder, type FeeReminderStage } from "@/lib/whatsapp"
+import { feeReminderText, sendFeeReminder, type FeeReminderStage } from "@/lib/whatsapp"
 
 // Coach taps "Remind" on a bill: the fee reminder goes from the business WhatsApp number
 // (approved fee_reminder_* templates, bill link inside), not from Aman's own number (Aman 26 Oct).
-export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,14 +43,15 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })
   const stage: FeeReminderStage = fee.due_date < today ? "late" : fee.due_date === today ? "due" : "before"
   const d = fee.due_date
-  const res = await sendFeeReminder(
-    phone,
-    profile?.name ?? "",
-    client.package_name || "",
-    `${d.slice(8, 10)}-${d.slice(5, 7)}-${d.slice(0, 4)}`,
-    stage,
-    fee.token ? `${SITE_URL}/bill/${fee.token}` : undefined,
-  )
+  const dueText = `${d.slice(8, 10)}-${d.slice(5, 7)}-${d.slice(0, 4)}`
+  const link = fee.token ? `${SITE_URL}/bill/${fee.token}` : `${SITE_URL}/payments`
+
+  // ?preview=1: show Aman the exact message first, send nothing (Aman 26 Oct: "what the client will see")
+  if (new URL(req.url).searchParams.get("preview")) {
+    return NextResponse.json({ phone, text: feeReminderText(profile?.name ?? "", client.package_name || "", dueText, stage, link) })
+  }
+
+  const res = await sendFeeReminder(phone, profile?.name ?? "", client.package_name || "", dueText, stage, link)
   if (!res.success || res.dryRun) return NextResponse.json({ error: "WhatsApp did not send. Try again." }, { status: 502 })
 
   await admin.from("reminder_log").insert({ client_id: fee.client_id, reminder_type: `fee_${fee.id}_manual|wa:ok` })

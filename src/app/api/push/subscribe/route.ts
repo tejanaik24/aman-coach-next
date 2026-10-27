@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -16,6 +16,11 @@ function isKnownPushEndpoint(endpoint: unknown): boolean {
   }
 }
 
+async function isCoach(supabase: SupabaseClient, userId: string) {
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle()
+  return data?.role === "coach"
+}
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization")?.replace("Bearer ", "")
@@ -25,14 +30,23 @@ export async function POST(req: Request) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader)
     if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
-    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
-
     const { subscription } = await req.json()
     if (!subscription) return NextResponse.json({ error: "Missing subscription" }, { status: 400 })
     if (!isKnownPushEndpoint(subscription?.endpoint)) {
       return NextResponse.json({ error: "Invalid subscription" }, { status: 400 })
     }
+
+    // Coach phones are stored with no client_id (see lib/server/coach-push.ts).
+    // The unique index treats NULL client_ids as different, so replace by endpoint instead of upsert.
+    if (await isCoach(supabase, user.id)) {
+      await supabase.from("push_subscriptions").delete().is("client_id", null).eq("subscription->>endpoint", subscription.endpoint)
+      const { error } = await supabase.from("push_subscriptions").insert({ client_id: null, subscription })
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: true })
+    }
+
+    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
+    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
 
     const { error: upsertErr } = await supabase.from("push_subscriptions").upsert(
       { client_id: client.id, subscription },
@@ -62,11 +76,17 @@ export async function DELETE(req: Request) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader)
     if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
-    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
-
     const { endpoint } = await req.json()
     if (!endpoint) return NextResponse.json({ error: "Missing endpoint" }, { status: 400 })
+
+    if (await isCoach(supabase, user.id)) {
+      const { error } = await supabase.from("push_subscriptions").delete().is("client_id", null).eq("subscription->>endpoint", endpoint)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ success: true })
+    }
+
+    const { data: client } = await supabase.from("clients").select("id").eq("user_id", user.id).single()
+    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 })
 
     const { error: delErr } = await supabase
       .from("push_subscriptions")

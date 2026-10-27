@@ -67,6 +67,7 @@ export default function FeesPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<FeeWithClient | null>(null)
   const [remindingId, setRemindingId] = useState<string | null>(null)
+  const [reminderPreview, setReminderPreview] = useState<{ fee: FeeWithClient; text: string; phone: string } | null>(null)
 
   // Package fixed fees modal state (#3)
   const [packageFeesModalOpen, setPackageFeesModalOpen] = useState(false)
@@ -262,13 +263,30 @@ export default function FeesPage() {
   ]
 
   // Sent from the business WhatsApp number with the bill link (Aman 26 Oct: not from his own number)
+  // Tap Remind = show the exact message first; only "Send" sends (Aman 26 Oct: a wrong tap sent one)
+  async function previewReminder(f: FeeWithClient) {
+    setRemindingId(f.id)
+    try {
+      const res = await fetch(`/api/coach/fees/${f.id}/remind?preview=1`, { method: "POST" })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) setReminderPreview({ fee: f, text: body.text, phone: body.phone })
+      else toast.error(body.error || "Could not load the reminder")
+    } catch {
+      toast.error("Could not load the reminder")
+    } finally {
+      setRemindingId(null)
+    }
+  }
+
   async function sendReminder(f: FeeWithClient) {
     setRemindingId(f.id)
     try {
       const res = await fetch(`/api/coach/fees/${f.id}/remind`, { method: "POST" })
       const body = await res.json().catch(() => ({}))
-      if (res.ok) toast.success(`Reminder sent to ${f.clientName}`)
-      else toast.error(body.error || "Could not send the reminder")
+      if (res.ok) {
+        toast.success(`Reminder sent to ${f.clientName}`)
+        setReminderPreview(null)
+      } else toast.error(body.error || "Could not send the reminder")
     } catch {
       toast.error("Could not send the reminder")
     } finally {
@@ -401,10 +419,10 @@ export default function FeesPage() {
                         <button
                           type="button"
                           disabled={remindingId === f.id}
-                          onClick={() => sendReminder(f)}
+                          onClick={() => previewReminder(f)}
                           className="h-11 rounded-xl bg-[#25D366] text-black font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
-                          <MessageCircle className="size-4" /> {remindingId === f.id ? "Sending…" : "Remind"}
+                          <MessageCircle className="size-4" /> {remindingId === f.id && !reminderPreview ? "Loading…" : "Remind"}
                         </button>
                       ) : (
                         <span className="h-11 rounded-xl bg-white/5 text-text-muted text-xs flex items-center justify-center">No number</span>
@@ -582,6 +600,42 @@ export default function FeesPage() {
                   </>
                 )
               })()}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {reminderPreview && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              className="w-full max-w-md bg-[#111111] border border-[#222222] rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col overflow-hidden text-white"
+            >
+              <div className="p-5 border-b border-[#222222] shrink-0">
+                <h2 className="text-lg font-bold font-heading">Send this to {reminderPreview.fee.clientName}?</h2>
+                <p className="text-xs text-text-muted mt-0.5">From the business WhatsApp number to +{reminderPreview.phone}</p>
+              </div>
+              <p className="p-5 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed bg-[#0B141A] m-4 rounded-2xl">{reminderPreview.text}</p>
+              <div className="grid grid-cols-2 gap-2 p-4 pt-0 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setReminderPreview(null)}
+                  className="h-12 rounded-xl bg-white/10 font-bold text-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={remindingId === reminderPreview.fee.id}
+                  onClick={() => sendReminder(reminderPreview.fee)}
+                  className="h-12 rounded-xl bg-[#25D366] text-black font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="size-4" /> {remindingId === reminderPreview.fee.id ? "Sending…" : "Send"}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

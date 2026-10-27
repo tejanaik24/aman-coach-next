@@ -507,6 +507,10 @@ export async function sendCoachFormAlert(
   const var2 = (clientName || "").trim() || "Client";
   const var3 = `${SITE_URL}/dashboard`;
 
+  // Same alert on Aman's phone as a notification (WhatsApp alone was easy to miss)
+  const { sendCoachPush } = await import("@/lib/server/coach-push");
+  await sendCoachPush(`New ${var1}`, `${var2} just submitted it. Tap to open.`, formLabel === "checkin" ? "/checkins" : "/submissions");
+
   const components = [
     {
       type: "body",
@@ -679,13 +683,17 @@ export async function sendFeeReminder(
   ])
   if (t.success && !t.dryRun) return t
 
+  return sendWhatsAppText(phone, feeReminderText(fullName, packageName, dueDate, stage, link))
+}
+
+/** Exact fee reminder wording (same as the approved fee_reminder_* templates). Also shown to Aman before Remind sends. */
+export function feeReminderText(fullName: string, packageName: string, dueDate: string, stage: FeeReminderStage, link: string) {
+  const name = (fullName || "").trim() || "there"
+  const pkg = (packageName || "").trim() || "your coaching"
   // Aman's own fee template (his old app), with the stage wording he asked for. No UPI/bank text: link only.
   const when =
     stage === "before" ? `will be due on ${dueDate}` : stage === "due" ? `is due on ${dueDate}` : `has been overdue since ${dueDate}`
-  return sendWhatsAppText(
-    phone,
-    `Dear ${name}, this is to Remind you that, Fee For your "${pkg}" package with Aman Khurana Fitness ${when}, kindly Timely Renew it, if you wish to continue with our services or if you wish to upgrade or change your package, kindly discuss with your Coach Aman Khurana for the same. Thank you.\n\nView your bill and pay here: ${link}\n\nThanks & Regards\n#teamAKF`,
-  )
+  return `Dear ${name}, this is to Remind you that, Fee For your "${pkg}" package with Aman Khurana Fitness ${when}, kindly Timely Renew it, if you wish to continue with our services or if you wish to upgrade or change your package, kindly discuss with your Coach Aman Khurana for the same. Thank you.\n\nView your bill and pay here: ${link}\n\nThanks & Regards\n#teamAKF`
 }
 
 /**

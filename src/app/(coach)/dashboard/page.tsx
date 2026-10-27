@@ -10,6 +10,7 @@ import AddClientModal from "@/components/coach/AddClientModal"
 import BroadcastModal from "@/components/coach/BroadcastModal"
 import MessageAnyNumberModal from "@/components/coach/MessageAnyNumberModal"
 import PaymentLinkModal from "@/components/coach/PaymentLinkModal"
+import CoachPushCard from "@/components/coach/CoachPushCard"
 import ProfileMenu from "@/components/shared/ProfileMenu"
 import ChangeDateSheet from "@/components/coach/ChangeDateSheet"
 import { markInvoicePaid } from "@/lib/payments"
@@ -266,6 +267,8 @@ export default function QuickManagePage() {
           role="coach"
           onNameUpdated={setCoachName}
         />
+
+        <CoachPushCard />
 
         <div className="grid grid-cols-2 gap-3">
           <button

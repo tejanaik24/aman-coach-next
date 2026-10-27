@@ -84,6 +84,16 @@ const move = <T,>(a: T[], i: number, d: number) => {
   ;[a[i], a[j]] = [a[j], a[i]]
 }
 
+/** Numbered exercises = exercise rows outside a superset (same count as the badges in the day list). */
+const isNumbered = (r: WorkoutRow) => r.type === "exercise" && !r.group
+/** Puts row i where the exercise numbered `no` is now (Aman: "move to no 1 or 2"). */
+const moveToNumber = (rows: WorkoutRow[], i: number, no: number) => {
+  const t = rows.map((r, k) => (isNumbered(r) ? k : -1)).filter((k) => k >= 0)[no - 1]
+  if (t === undefined || t === i) return
+  const [r] = rows.splice(i, 1)
+  rows.splice(t, 0, r)
+}
+
 export default function PlanEditor({
   initial,
   library,
@@ -636,6 +646,18 @@ export default function PlanEditor({
       : []),
     { label: "Move up", run: () => data((pd) => move(findDay(pd, day.id).rows, i, -1)) },
     { label: "Move down", run: () => data((pd) => move(findDay(pd, day.id).rows, i, 1)) },
+    ...(isNumbered(r)
+      ? [
+          {
+            label: "Move to number…",
+            run: () => {
+              const total = day.rows.filter(isNumbered).length
+              const no = Number(window.prompt(`Move to which number? (1 to ${total})`, "1"))
+              if (Number.isInteger(no) && no >= 1 && no <= total) data((pd) => moveToNumber(findDay(pd, day.id).rows, i, no))
+            },
+          },
+        ]
+      : []),
     {
       label: "Duplicate",
       run: () =>

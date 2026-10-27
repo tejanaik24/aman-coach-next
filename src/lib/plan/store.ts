@@ -170,9 +170,18 @@ export async function saveToLibrary(d: PlanDocData) {
     }),
   )
   // Each sent plan counts once per name, so the most used exercises rank first in search
-  const { data: old } = await sb.from("coach_library").select("kind, name, use_count").eq("coach_id", user.id).limit(5000)
-  const count = new Map(((old ?? []) as { kind: string; name: string; use_count: number | null }[]).map((o) => [o.kind + "|" + o.name.toLowerCase(), o.use_count ?? 0]))
-  const list = [...rows.entries()].map(([k, r]) => ({ ...r, coach_id: user.id, use_count: (count.get(k) ?? 0) + 1, updated_at: new Date().toISOString() }))
+  const { data: old } = await sb.from("coach_library").select("kind, name, data, use_count").eq("coach_id", user.id).order("updated_at", { ascending: false }).limit(5000)
+  const prev = new Map<string, { name: string; data: LibraryItem["data"] | null; use_count: number | null }>()
+  for (const o of (old ?? []) as { kind: string; name: string; data: LibraryItem["data"] | null; use_count: number | null }[]) {
+    const k = o.kind + "|" + o.name.toLowerCase()
+    if (!prev.has(k)) prev.set(k, o) // newest row for this name
+  }
+  const list = [...rows.entries()].map(([k, r]) => {
+    const p = prev.get(k)
+    // Fresh video link replaces the old one; an empty one never wipes it. Old spelling kept so it updates, not duplicates.
+    const data = p?.data && !r.data.links?.length && p.data.links?.length ? { ...r.data, links: p.data.links } : r.data
+    return { ...r, name: p?.name ?? r.name, data, coach_id: user.id, use_count: (p?.use_count ?? 0) + 1, updated_at: new Date().toISOString() }
+  })
   for (let i = 0; i < list.length; i += 200) {
     await sb.from("coach_library").upsert(list.slice(i, i + 200), { onConflict: "coach_id,kind,name" })
   }
@@ -221,7 +230,14 @@ export async function loadLibrary(): Promise<LibraryItem[]> {
   allUser.forEach((i) => {
     userMap.set(plain(i.name).toLowerCase().trim(), i)
   })
-  const userItems = allUser.filter((i) => !(i.data as { hidden?: boolean }).hidden)
+  // Same name in different capitals = one exercise; rows come newest first, so the newest wins
+  const seenName = new Set<string>()
+  const userItems = allUser.filter((i) => {
+    const k = i.kind + "|" + plain(i.name).toLowerCase().trim()
+    if (seenName.has(k)) return false
+    seenName.add(k)
+    return !(i.data as { hidden?: boolean }).hidden
+  })
 
   // Built-in database items
   const exerciseDb = (await import("./exercise-db.json")).default
@@ -244,6 +260,7 @@ export async function loadLibrary(): Promise<LibraryItem[]> {
       if (!it.data.muscle && matched.muscle) it.data.muscle = matched.muscle
       if (!it.data.kind && matched.kind) it.data.kind = matched.kind
       if (!it.data.equipment && matched.equipment) it.data.equipment = matched.equipment
+      if (!it.data.links?.length && matched.links?.length) it.data.links = matched.links
     }
   })
 
