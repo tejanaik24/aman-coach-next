@@ -81,7 +81,17 @@ export interface DietRow {
   items: Line[]
   supplements: Line[]
 }
-export interface DietPlan { id: string; title: string; rows: DietRow[] }
+export type MacroKey = "kcal" | "protein" | "carbs" | "fats" | "fiber"
+/** Aman 27 Oct: day totals per diet plan; show = print on the client's PDF, otherwise his eyes only */
+export type Macros = Partial<Record<MacroKey, string>> & { show?: boolean }
+export const MACRO_FIELDS: { k: MacroKey; label: string; unit: string }[] = [
+  { k: "kcal", label: "Calories", unit: "kcal" },
+  { k: "protein", label: "Protein", unit: "g" },
+  { k: "carbs", label: "Carbs", unit: "g" },
+  { k: "fats", label: "Fats", unit: "g" },
+  { k: "fiber", label: "Fibre", unit: "g" },
+]
+export interface DietPlan { id: string; title: string; rows: DietRow[]; macros?: Macros }
 export interface DietData {
   rules: string
   plans: DietPlan[]

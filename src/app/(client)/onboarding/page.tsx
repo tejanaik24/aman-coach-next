@@ -21,6 +21,19 @@ import {
   FormFooter,
 } from "@/components/forms/ConversationalFormComponents"
 
+// Same required answers as the public form (Aman's * questions, weight/abdomen/hips, front/back/both side photos).
+const REQUIRED_BY_STEP: Record<number, string[]> = {
+  1: ["q1_name"], 2: ["q2_email"], 3: ["q3_address"], 4: ["q4_phone"], 6: ["q6_dob"], 7: ["q7_height"], 8: ["q8_goal"],
+  9: ["q9_wake_time"], 10: ["q10_sleep_time"], 12: ["q12_home_equipment"], 13: ["q13_work_schedule"], 14: ["q14_exercise_history"],
+  18: ["q18_workout_timings"], 19: ["q19_injuries_pain"], 20: ["q20_health_issues"], 22: ["q22_constipation_history"], 23: ["q23_addictions"],
+  27: ["q27_diet_preference"], 29: ["q29_lactose_intolerant"], 31: ["q31_max_meals"], 32: ["q32_preworkout_meal"], 33: ["q33_supplements"],
+  34: ["q34_whey_protein"], 36: ["q36_diet_bf", "q36_diet_lunch", "q36_diet_dinner"], 37: ["q37_water_intake"],
+  38: ["q38_food_love"], 39: ["q39_food_hate"], 40: ["q40_food_want"], 41: ["q41_seasonal_fruits"],
+  49: ["q49_front_pic"], 50: ["q50_back_pic"], 51: ["q51_left_pic"], 52: ["q52_right_pic"],
+  55: ["q55_weight"], 57: ["q57_abdomen"], 58: ["q58_hips"],
+}
+const isBlank = (v: unknown) => (Array.isArray(v) ? v.length === 0 : !String(v ?? "").trim())
+
 export default function StandardOnboardingPage() {
   const { user, profile } = useAuth()
   const router = useRouter()
@@ -159,6 +172,10 @@ export default function StandardOnboardingPage() {
   }, [step, user?.id])
 
   const handleNext = () => {
+    if ((REQUIRED_BY_STEP[step] ?? []).some((k) => isBlank(form[k]))) {
+      toast.error("This answer is required", { id: "required-answer" })
+      return
+    }
     if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: "smooth" })
@@ -174,8 +191,11 @@ export default function StandardOnboardingPage() {
     }
   }
 
+  // A double tap on Submit saved the same form twice (28 Oct): state updates too late to block the 2nd tap.
+  const sending = useRef(false)
   const handleSubmit = async () => {
-    if (!user?.id) return
+    if (!user?.id || sending.current) return
+    sending.current = true
     setSubmitting(true)
     try {
       const res = await fetch("/api/forms/submit", {
@@ -194,6 +214,7 @@ export default function StandardOnboardingPage() {
       toast.success("Standard joining questionnaire submitted!")
     } catch {
       toast.error("Submission failed")
+      sending.current = false
     } finally {
       setSubmitting(false)
     }
@@ -420,6 +441,9 @@ export default function StandardOnboardingPage() {
             <div className="pt-3"><TextInputDark value={form.q64_gym_link} onChange={v => set("q64_gym_link", v)} placeholder="Or paste Gym website / Instagram link..." /></div>
           </QuestionWrapper>
         )}
+        {REQUIRED_BY_STEP[step] && (
+          <p className="mt-4 text-xs text-zinc-400"><span className="text-[#FF6A1A] font-bold">*</span> Required</p>
+        )}
       </div>
 
       {step > 0 && (
@@ -427,7 +451,7 @@ export default function StandardOnboardingPage() {
           onNext={handleNext}
           isLastStep={step === TOTAL_STEPS}
           submitting={submitting}
-          showSkip={[5, 11, 12, 17, 21, 23, 26, 28, 35, 43, 45, 47, 48, 53, 54, 64].includes(step)}
+          showSkip={[5, 11, 17, 21, 26, 28, 35, 43, 45, 47, 48, 53, 54, 64].includes(step)}
           onSkip={handleNext}
         />
       )}

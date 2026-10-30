@@ -33,6 +33,7 @@ import {
   calcAge,
   plain,
   uid,
+  MACRO_FIELDS,
   type DietPlan,
   type DietRow,
   type LibraryItem,
@@ -1615,6 +1616,48 @@ export default function PlanEditor({
                   >
                     <MoreHorizontal className="size-5" />
                   </button>
+                </div>
+
+                {/* Day macros: hidden from the client unless "Show to client" is on */}
+                <div className="px-4 py-3 bg-bg-card border border-border-subtle rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold">Macros (per day)</span>
+                    <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(plan.macros?.show)}
+                        onChange={(e) =>
+                          data((pd) => {
+                            const p = findPlan(pd, plan.id)
+                            p.macros = { ...p.macros, show: e.target.checked }
+                          })
+                        }
+                        className="size-5 accent-[var(--color-accent-orange,#FF6A1A)]"
+                      />
+                      Show to client
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {MACRO_FIELDS.map((f) => (
+                      <label key={f.k} className="block">
+                        <span className="text-[11px] text-text-muted">{f.label} ({f.unit})</span>
+                        <input
+                          inputMode="decimal"
+                          value={plan.macros?.[f.k] ?? ""}
+                          onChange={(e) =>
+                            data((pd) => {
+                              const p = findPlan(pd, plan.id)
+                              p.macros = { ...p.macros, [f.k]: e.target.value }
+                            })
+                          }
+                          className="mt-1 w-full h-11 rounded-xl bg-white/5 border border-border-subtle px-3 text-sm outline-none focus:border-accent-orange"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-text-muted">
+                    {plan.macros?.show ? "These print on the client's PDF." : "Only you see these. Tick “Show to client” to print them on the PDF."}
+                  </p>
                 </div>
 
                 {/* List of Rows: Foldable Meal Cards and Banners */}

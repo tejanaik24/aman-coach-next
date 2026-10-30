@@ -13,6 +13,7 @@ import { SignedImage } from "@/components/shared/SignedImage"
 import { isPhotoPathValue } from "@/components/forms/ConversationalFormComponents"
 import { openUrl } from "@/lib/utils"
 import Link from "next/link"
+import { fieldLabel, orderedEntries } from "@/lib/form-fields"
 
 type Submission = {
   id: string
@@ -22,11 +23,6 @@ type Submission = {
   status: string
   submittedAt: string
   formData: Record<string, unknown>
-}
-
-// "q6_dob" / "t3_workout_deviation" -> "dob" / "workout deviation" (labels are uppercased by CSS)
-function fieldLabel(key: string): string {
-  return key.replace(/^[a-z]\d+_/, "").replace(/_/g, " ")
 }
 
 export default function CoachSubmissionsPage() {
@@ -342,8 +338,8 @@ export default function CoachSubmissionsPage() {
                 </div>
 
                 {/* Modal Content */}
-                <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm">
-                  {Object.entries(activeSubmission.formData).map(([key, value]) => {
+                <div className="p-6 overflow-y-auto space-y-4 flex-1 text-sm">
+                  {orderedEntries(activeSubmission.formData).map(([key, value]) => {
                     if (!value || (Array.isArray(value) && value.length === 0)) return null
 
                     if (typeof value === "string" && value.startsWith("data:image")) {
@@ -401,7 +397,7 @@ export default function CoachSubmissionsPage() {
                         <div key={key} className="p-4 rounded-xl border border-[#181310]/[0.08] bg-[#181310]/5 space-y-3">
                           <h4 className="font-bold text-xs uppercase tracking-wider text-accent-orange">{fieldLabel(key)}</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            {Object.entries(value as Record<string, unknown>).map(([subK, subV]) => (
+                            {orderedEntries(value as Record<string, unknown>).map(([subK, subV]) => (
                               subV ? (
                                 <div key={subK} className="space-y-1">
                                   <span className="text-[#8A7F70] uppercase text-[10px] font-semibold block">{fieldLabel(subK)}</span>
@@ -415,9 +411,9 @@ export default function CoachSubmissionsPage() {
                     }
 
                     return (
-                      <div key={key} className="border-b border-[#181310]/[0.08] pb-2">
-                        <span className="text-[11px] font-bold text-accent-orange uppercase tracking-wider block">{fieldLabel(key)}</span>
-                        <p className="text-xs text-[#181310] mt-1 whitespace-pre-wrap">{String(value)}</p>
+                      <div key={key} className="border-b border-[#181310]/[0.08] pb-3">
+                        <span className="text-xs font-semibold text-[#8A7F70] block">{fieldLabel(key)}</span>
+                        <p className="text-sm font-medium text-[#181310] mt-0.5 whitespace-pre-wrap">{String(value)}</p>
                       </div>
                     )
                   })}

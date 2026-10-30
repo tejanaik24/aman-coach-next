@@ -1401,7 +1401,7 @@ export default function ClientDetailPage() {
       <PaymentModal
         isOpen={paymentModalOpen}
         onClose={() => { setPaymentModalOpen(false); setEditingFee(null) }}
-        mode={editingFee ? "edit" : "add"}
+        mode={editingFee?.id ? "edit" : "add"}
         clientId={id}
         initialFee={editingFee}
         onSuccess={fetchData}

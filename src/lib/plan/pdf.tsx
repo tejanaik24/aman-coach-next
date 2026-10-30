@@ -14,6 +14,7 @@ import {
   type WorkoutRow,
   type DietPlan,
   type DietRow,
+  MACRO_FIELDS,
 } from "./types"
 import exerciseDb from "./exercise-db.json"
 
@@ -796,10 +797,22 @@ function MealRow({ r, changed }: { r: DietRow; changed: (k: string, t: string) =
 }
 
 function Diet({ plan, changed }: { plan: DietPlan; changed: (k: string, t: string) => boolean }) {
+  // Macros print only when Aman ticked "Show to client"
+  const macros = plan.macros?.show ? MACRO_FIELDS.filter((f) => plan.macros?.[f.k]?.trim()) : []
   return (
     <View style={{ marginBottom: 12 }}>
       <View wrap={false} minPresenceAhead={140}>
         <Text style={[s.h2, { fontSize: 19 }]}>{plan.title}</Text>
+        {macros.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", backgroundColor: C.tint, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 8, marginBottom: 8 }}>
+            {macros.map((f) => (
+              <Text key={f.k} style={{ fontSize: 9.5, color: C.ink, marginRight: 14 }}>
+                <Text style={{ color: C.mute, fontWeight: 600 }}>{f.label} </Text>
+                <Text style={{ fontWeight: 700 }}>{plan.macros![f.k]!.trim()} {f.unit}</Text>
+              </Text>
+            ))}
+          </View>
+        )}
       </View>
       <View style={s.card}>
         <View style={{ flexDirection: "row" }}>

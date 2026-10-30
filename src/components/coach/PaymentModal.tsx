@@ -147,7 +147,8 @@ export default function PaymentModal({
       // Never fall back to today's date when editing an old bill with no stored start date
       setStartDate(initialFee.startDate || "")
       setEndDate(initialFee.endDate || "")
-      setAlsoUpdateClient(false)
+      // A renewal is pre-filled but new (no id): it should move the client's package dates
+      setAlsoUpdateClient(mode === "add")
       setCurrentClientSnapshot((prev) =>
         prev ?? {
           packageName: initialFee.packageName || initialFee.package_name || null,
